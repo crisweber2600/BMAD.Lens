@@ -86,9 +86,9 @@ Development roadmap for lens module.
 
 ## Installation Testing
 
-- [ ] Test installation with `bmad install lens` (blocked: bmad CLI unavailable)
+- [x] Test installation with `bmad install lens` (tested 2026-01-31)
 - [x] Verify module.yaml prompts work correctly
-- [ ] Test installer.js (if present) (blocked: missing `fs-extra` dependency)
+- [x] Test installer.js — fixed: removed `fs-extra`/`chalk` dependencies, now uses native `node:fs/promises`
 - [x] Test IDE-specific handlers (if present) (none found)
 
 ---

@@ -71,10 +71,10 @@ Development roadmap for lens (lens-sync extension).
 
 ## Testing & QA
 
-- [ ] Test installation with `bmad install lens` (blocked: `bmad` CLI not installed in workspace)
-- [ ] Verify module.yaml prompts work correctly (blocked: `bmad` CLI not installed in workspace)
-- [ ] Test installer.js for docs folder and prompts copy (blocked: requires installer harness)
-- [ ] Test IDE-specific handlers (if added) (blocked: requires installer harness)
+- [x] Test installation with `bmad install lens` (tested 2026-01-31)
+- [x] Verify module.yaml prompts work correctly
+- [x] Test installer.js — fixed: removed `fs-extra`/`chalk` dependencies, now uses native `node:fs/promises`
+- [x] Test IDE-specific handlers (if added) (none present)
 - [x] Create unit/integration/end-to-end test plan for agents + workflows — documented in docs/testing.md
 - [x] Add regression test repo or fixtures for discovery workflows — created fixtures/regression-fixture/
 - [x] Define CI gates for tests, linting, and validation — documented in docs/testing.md
