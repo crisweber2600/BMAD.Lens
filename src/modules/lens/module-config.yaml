@@ -1,0 +1,18 @@
+# LENS Module Configuration
+# Default detection rules and settings
+
+branch_patterns:
+  domain:
+    - "main"
+    - "develop"
+    - "release/*"
+    - "hotfix/*"
+  service:
+    - "service/{name}"
+  microservice:
+    - "service/{service}/{name}"
+  feature:
+    - "feature/{service}/{microservice}/{name}"
+
+notification_level: smart
+session_store: ".lens/lens-session.yaml"

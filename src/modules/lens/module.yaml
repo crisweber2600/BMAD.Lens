@@ -1,0 +1,6 @@
+code: lens
+name: "LENS: Layered Enterprise Navigation System"
+header: "Git-aware architectural navigation for large interconnected projects"
+subheader: "Automatically detects and switches between Domain, Service, Microservice, and Feature lenses"
+default_selected: false
+global: true
