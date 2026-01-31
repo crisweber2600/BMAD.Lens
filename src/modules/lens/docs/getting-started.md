@@ -45,12 +45,15 @@ Follow the prompts to configure the module for your needs.
 - Check out the [Agents Reference](agents.md) to meet your team
 - Browse the [Workflows Reference](workflows.md) to see what you can do
 - See [Examples](examples.md) for real-world usage
+- Review [Configuration](configuration.md) to customize detection
+- Read [Session Store](session-store.md) to understand persistence
+- Use [Troubleshooting](troubleshooting.md) if something feels off
 
 ---
 
 ## Need Help?
 
 If you run into issues:
-1. Check the troubleshooting section in examples.md
+1. Check [Troubleshooting](troubleshooting.md)
 2. Review your module configuration
 3. Consult the broader BMAD documentation

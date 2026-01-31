@@ -1,0 +1,7 @@
+services:
+  - name: auth
+    path: services/auth
+    git_repo: https://example.invalid/fixtures/auth.git
+  - name: billing
+    path: services/billing
+    git_repo: https://example.invalid/fixtures/billing.git

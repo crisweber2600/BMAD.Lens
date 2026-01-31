@@ -6,7 +6,7 @@ Development roadmap for lens module.
 
 ## Agents to Build
 
-- [ ] Navigator (Architectural Context Navigator)
+- [x] Navigator (Architectural Context Navigator)
   - Use: `bmad:bmb:agents:agent-builder`
   - Spec: `agents/navigator.spec.md`
 
@@ -14,66 +14,91 @@ Development roadmap for lens module.
 
 ## Workflows to Build
 
-- [ ] lens-detect
+- [x] lens-detect
   - Use: `bmad:bmb:workflows:workflow` or `/workflow`
   - Spec: `workflows/lens-detect/lens-detect.spec.md`
-- [ ] lens-switch
+- [x] lens-switch
   - Use: `bmad:bmb:workflows:workflow` or `/workflow`
   - Spec: `workflows/lens-switch/lens-switch.spec.md`
-- [ ] context-load
+- [x] context-load
   - Use: `bmad:bmb:workflows:workflow` or `/workflow`
   - Spec: `workflows/context-load/context-load.spec.md`
-- [ ] lens-restore
+- [x] lens-restore
   - Use: `bmad:bmb:workflows:workflow` or `/workflow`
   - Spec: `workflows/lens-restore/lens-restore.spec.md`
-- [ ] lens-configure
+- [x] lens-configure
   - Use: `bmad:bmb:workflows:workflow` or `/workflow`
   - Spec: `workflows/lens-configure/lens-configure.spec.md`
-- [ ] workflow-guide
+- [x] workflow-guide
   - Use: `bmad:bmb:workflows:workflow` or `/workflow`
   - Spec: `workflows/workflow-guide/workflow-guide.spec.md`
-- [ ] domain-map
+- [x] domain-map
   - Use: `bmad:bmb:workflows:workflow` or `/workflow`
   - Spec: `workflows/domain-map/domain-map.spec.md`
-- [ ] impact-analysis
+- [x] impact-analysis
   - Use: `bmad:bmb:workflows:workflow` or `/workflow`
   - Spec: `workflows/impact-analysis/impact-analysis.spec.md`
-- [ ] new-service
+- [x] new-service
   - Use: `bmad:bmb:workflows:workflow` or `/workflow`
   - Spec: `workflows/new-service/new-service.spec.md`
-- [ ] new-microservice
+- [x] new-microservice
   - Use: `bmad:bmb:workflows:workflow` or `/workflow`
   - Spec: `workflows/new-microservice/new-microservice.spec.md`
-- [ ] new-feature
+- [x] new-feature
   - Use: `bmad:bmb:workflows:workflow` or `/workflow`
   - Spec: `workflows/new-feature/new-feature.spec.md`
-- [ ] lens-sync
+- [x] lens-sync
   - Use: `bmad:bmb:workflows:workflow` or `/workflow`
   - Spec: `workflows/lens-sync/lens-sync.spec.md`
-- [ ] service-registry
+- [x] service-registry
   - Use: `bmad:bmb:workflows:workflow` or `/workflow`
   - Spec: `workflows/service-registry/service-registry.spec.md`
-- [ ] onboarding
+- [x] onboarding
   - Use: `bmad:bmb:workflows:workflow` or `/workflow`
   - Spec: `workflows/onboarding/onboarding.spec.md`
 
 ---
 
+## Prompts & Tooling
+
+- [x] Audit prompts/ for coverage of all workflows and agent commands
+- [x] Add #think guidance to prompts where deep reasoning is required
+- [x] Add `runSubagent` usage guidance for multi-agent reviews (Party Mode, adversarial)
+- [x] Add `manage_todo_list` usage guidance for workflow task tracking outputs
+
+---
+
+## Configuration & State
+
+- [x] Validate `module-config.yaml` defaults and document override rules
+- [x] Define `.lens/lens-session.yaml` schema and add an example in docs/
+- [x] Document backward-compat/migration notes for session store changes
+
+---
+
+## Quality & Review
+
+- [x] Run Party Mode multi-agent review on specs, prompts, and docs
+- [x] Run adversarial review on README/docs/specs and address findings
+- [x] Add a spec-completeness checklist (inputs/outputs/edge cases)
+
+---
+
 ## Installation Testing
 
-- [ ] Test installation with `bmad install lens`
-- [ ] Verify module.yaml prompts work correctly
-- [ ] Test installer.js (if present)
-- [ ] Test IDE-specific handlers (if present)
+- [ ] Test installation with `bmad install lens` (blocked: bmad CLI unavailable)
+- [x] Verify module.yaml prompts work correctly
+- [ ] Test installer.js (if present) (blocked: missing `fs-extra` dependency)
+- [x] Test IDE-specific handlers (if present) (none found)
 
 ---
 
 ## Documentation
 
-- [ ] Complete README.md with usage examples
-- [ ] Enhance docs/ folder with more guides
-- [ ] Add troubleshooting section
-- [ ] Document configuration options
+- [x] Complete README.md with usage examples
+- [x] Enhance docs/ folder with more guides
+- [x] Add troubleshooting section
+- [x] Document configuration options
 
 ---
 
@@ -86,4 +111,4 @@ Development roadmap for lens module.
 
 ---
 
-_Last updated: 2026-01-30_
+_Last updated: 2026-01-31_

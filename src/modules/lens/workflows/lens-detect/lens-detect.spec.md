@@ -1,7 +1,7 @@
 # Workflow Specification: lens-detect
 
 **Module:** lens
-**Status:** Placeholder — To be created via create-workflow workflow
+**Status:** Implemented
 **Created:** 2026-01-30
 
 ---
@@ -86,7 +86,7 @@ None
 
 ## Implementation Notes
 
-**Use the create-workflow workflow to build this workflow.**
+Implemented in `workflow.md` and `steps-c/`.
 
 ---
 

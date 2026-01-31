@@ -31,11 +31,7 @@ This section provides practical examples for using LENS.
 
 ## Troubleshooting
 
-### Common Issues
-
-- **Lens not detected:** Ensure your branch matches a configured pattern.
-- **No services detected:** Verify `services/` or `apps/` folders exist, or configure paths.
-- **Context feels wrong:** Run `lens-configure` and adjust detection rules.
+For detailed troubleshooting steps, see [Troubleshooting](troubleshooting.md).
 
 ---
 

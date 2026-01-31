@@ -27,6 +27,16 @@ bmad install lens
 3. Use `switch lens` to change zoom levels.
 4. Use `context load` to pull deeper details for the current lens.
 
+---
+
+## Usage Examples
+
+- Detect your current lens: `navigator`
+- Switch lenses: `switch lens` → `service` or `feature`
+- Load deeper context: `context load`
+- Configure branch patterns: `lens-configure`
+- Restore your last session: `lens-restore`
+
 **For detailed documentation, see [docs/](docs/).**
 
 ---
@@ -94,6 +104,27 @@ For detailed user guides and documentation, see the **[docs/](docs/)** folder:
 - [Agents Reference](docs/agents.md)
 - [Workflows Reference](docs/workflows.md)
 - [Examples](docs/examples.md)
+- [Configuration](docs/configuration.md)
+- [Session Store](docs/session-store.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Migrations](docs/migrations.md)
+- [Spec Checklist](docs/spec-checklist.md)
+- [Installation Testing](docs/installation-testing.md)
+- [Review Log](docs/review-log.md)
+
+---
+
+## Configuration
+
+LENS uses module defaults with optional project overrides. See [Configuration](docs/configuration.md) for details.
+
+Session persistence is described in [Session Store](docs/session-store.md).
+
+---
+
+## Troubleshooting
+
+If detection or restore feels off, start with [Troubleshooting](docs/troubleshooting.md).
 
 ---
 

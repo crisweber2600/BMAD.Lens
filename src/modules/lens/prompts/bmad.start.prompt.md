@@ -10,3 +10,7 @@ Activate LENS Navigator agent and execute workflow-guide:
 4. Display navigation card with current lens position, phase, and available workflows
 
 This is a READ-ONLY analysis workflow that detects your architectural context (Domain/Service/Microservice/Feature) and suggests what to do next.
+
+Additional guidance:
+- If the user requests Party Mode or adversarial review, use `runSubagent` with multiple agents (pm, dev, tech-writer, ux-designer, architect) and synthesize findings.
+- For multi-step plans or execution, initialize and maintain a task list with `manage_todo_list`.

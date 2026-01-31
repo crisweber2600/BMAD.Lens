@@ -1,7 +1,7 @@
 # Agent Specification: Navigator
 
 **Module:** lens
-**Status:** Placeholder — To be created via create-agent workflow
+**Status:** Implemented
 **Created:** 2026-01-30
 
 ---
@@ -93,7 +93,7 @@ The Navigator is the GPS for your codebase — understanding architecture from s
 
 ## Implementation Notes
 
-**Use the create-agent workflow to build this agent.**
+Implemented in `agents/navigator.agent.yaml` with sidecar support.
 
 ---
 
