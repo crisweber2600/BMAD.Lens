@@ -106,6 +106,7 @@ For detailed user guides and documentation, see the **[docs/](docs/)** folder:
 - [Getting Started](docs/getting-started.md)
 - [Agents Reference](docs/agents.md)
 - [Workflows Reference](docs/workflows.md)
+- [API Reference](docs/api-reference.md)
 - [Examples](docs/examples.md)
 
 ---

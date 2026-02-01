@@ -89,6 +89,16 @@ pr_api_enabled:
   default: false
   result: "{value}"
 
+compass_enabled:
+  prompt: "Enable Compass reviewer suggestions?"
+  default: true
+  result: "{value}"
+
+compass_roster_file:
+  prompt: "Compass roster file path (CSV or YAML)"
+  default: "{project-root}/_bmad/lens/extensions/git-lens/test-data/mock-compass.csv"
+  result: "{value}"
+
 state_folder:
   prompt: "State file location"
   default: "{output_folder}/git-lens"
