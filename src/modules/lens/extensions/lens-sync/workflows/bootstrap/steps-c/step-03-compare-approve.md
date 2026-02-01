@@ -43,32 +43,47 @@ comparison_matrix:
 ### 2. Classify Actions Required
 For each microservice entry, determine required action:
 
+**GUARDRAIL:** All clone operations MUST target paths within `TargetProjects/`. Verify each target path before adding to action list.
+
 | Target Status | Has git_repo in lens | Action |
 |--------------|---------------------|--------|
-| missing | yes | `clone_repo` (will create folder + clone) |
-| missing | no | `create_folder` (empty structure) |
+| missing | yes | `clone_repo` (will create folder + clone into TargetProjects) |
+| missing | no | `create_folder` (empty structure within TargetProjects) |
 | exists_no_repo | yes | `clone_into_existing` (git init + set remote) |
 | exists_no_repo | no | `none` (folder exists, no repo expected) |
 | exists_matches | yes/no | `none` (already synced) |
 | exists_different_remote | yes | `manual_review` (conflict) |
+| exists_wrong_branch | yes | `checkout_branch` (switch to correct branch) |
+
+**Branch enforcement:** For each repo with a `branch` defined in `service.yaml`, the sync plan must include branch checkout verification.
 
 ### 3. Build Sync Plan
 Aggregate actions into executable plan:
+
+**GUARDRAIL VERIFICATION:** Before finalizing plan, verify:
+- All `target_path` entries are under `{target_projects_path}/`
+- All repos have explicit `branch` values (no implicit defaults)
 
 ```yaml
 sync_plan:
   plan_id: "bootstrap-{timestamp}"
   generated_at: ISO8601
+  target_projects_path: string  # Root for all clone operations
   
   summary:
     folders_to_create: N
     repos_to_clone: N
+    branches_to_checkout: N
     manual_reviews: N
     already_synced: N
   
+  guardrails:
+    all_paths_under_target_projects: true  # MUST be true to proceed
+    all_branches_explicit: true             # MUST be true to proceed
+  
   actions:
     create_folders:
-      - path: string
+      - path: string                        # Must be under target_projects_path
         reason: "Domain folder for {domain}"
       - path: string
         reason: "Service folder for {service}"
@@ -76,27 +91,39 @@ sync_plan:
         reason: "Microservice folder for {microservice}"
     
     clone_repos:
-      - target_path: string
+      - target_path: string                 # Must be under target_projects_path
         git_repo: string
-        branch: string
-        depth: shallow|full        # shallow for large repos
+        branch: string                      # REQUIRED - no default branch fallback
+        depth: shallow|full                 # shallow for large repos
         reason: "Clone {microservice} from {repo}"
+        post_clone_verify:
+          - "git rev-parse --abbrev-ref HEAD == {branch}"
+          - "git remote get-url origin == {git_repo}"
+    
+    checkout_branches:
+      - target_path: string
+        expected_branch: string
+        current_branch: string              # detected during scan
+        reason: "Switch to {expected_branch} from {current_branch}"
     
     manual_reviews:
       - path: string
-        issue: "Remote mismatch"
+        issue: "Remote mismatch"|"Branch mismatch"
         lens_expects: string
         target_has: string
         options:
-          - "Update lens to match target remote"
-          - "Re-clone with lens remote (DESTRUCTIVE)"
+          - "Update lens to match target"
+          - "Re-clone with lens settings (DESTRUCTIVE)"
           - "Skip and resolve manually"
   
   execution_order:
-    1. Create domain folders (top-level)
-    2. Create service folders (within domains)
-    3. Clone microservice repos (within services)
-    4. Report manual review items
+    1. Validate all paths are within TargetProjects (ABORT if not)
+    2. Create domain folders (top-level)
+    3. Create service folders (within domains)
+    4. Clone microservice repos (within services)
+    5. Checkout correct branches for all cloned repos
+    6. Verify branch checkout success
+    7. Report manual review items
   
   estimated_time: "~N minutes"
   estimated_disk_space: "~N MB"
@@ -107,10 +134,12 @@ Identify situations requiring human judgment:
 
 **Conflict types:**
 - `remote_mismatch`: Existing repo has different origin URL
-- `branch_mismatch`: Existing repo on different branch than expected
+- `branch_mismatch`: Existing repo on different branch than expected (from `service.yaml`)
+- `branch_undefined`: `service.yaml` entry missing required `branch` field
 - `dirty_repo`: Existing repo has uncommitted changes
 - `path_collision`: Two lens entries resolve to same target path
 - `orphan_in_path`: Unlisted files exist where clone would occur
+- `path_outside_target_projects`: Target path escapes TargetProjects boundary (BLOCKING)
 
 **For each conflict:**
 ```yaml
@@ -151,9 +180,11 @@ FOLDERS TO CREATE:
   ✓ platform/auth/auth-api/            (Microservice)
   ...
 
-REPOS TO CLONE:
-  ⬇ platform/auth/auth-api/  ← git@github.com:org/auth-api.git (main)
-  ⬇ platform/auth/auth-ui/   ← git@github.com:org/auth-ui.git (main)
+REPOS TO CLONE (into TargetProjects/):
+  ⬇ platform/auth/auth-api/  ← git@github.com:org/auth-api.git
+    └─ Branch: main (will checkout after clone)
+  ⬇ platform/auth/auth-ui/   ← git@github.com:org/auth-ui.git
+    └─ Branch: develop (will checkout after clone)
   ...
 
 MANUAL REVIEW REQUIRED:
@@ -200,6 +231,8 @@ approval_record: {...}
 
 | Condition | Action |
 |-----------|--------|
+| Any path outside TargetProjects | BLOCK: "Cannot proceed. All clones must be within TargetProjects/" |
+| Missing branch in service.yaml | BLOCK: "Branch must be explicitly defined for {repo}. Add 'branch:' to service.yaml" |
 | >50 repos to clone | WARN: "Large clone operation. Consider batch mode." |
 | Network unavailable | FAIL: "Cannot verify repo connectivity. Check network." |
 | All items already synced | SUCCESS: "Bootstrap complete - no changes needed" |

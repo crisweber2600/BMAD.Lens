@@ -29,4 +29,4 @@ discovery_depth:
 docs_output_folder:
   prompt: "Where should generated docs be written?"
   default: "docs"
-  result: "{target_project_root}/{value}"
+  result: "{value}"

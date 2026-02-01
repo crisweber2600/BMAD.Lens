@@ -36,6 +36,36 @@ async function install(options) {
     try {
         logger.log('Installing LENS module assets...');
 
+        // Install agents
+        const agentsSource = path.join(__dirname, '..', 'agents');
+        const agentsDest = path.join(projectRoot, '.github', 'agents');
+
+        if (await pathExists(agentsSource)) {
+            await ensureDir(agentsDest);
+            const entries = await fs.readdir(agentsSource);
+
+            for (const entry of entries) {
+                const sourcePath = path.join(agentsSource, entry);
+                const destPath = path.join(agentsDest, entry);
+                const stat = await fs.stat(sourcePath);
+
+                if (!stat.isFile()) {
+                    continue;
+                }
+
+                if (await pathExists(destPath)) {
+                    logger.warn(`Agent already exists, skipping: .github/agents/${entry}`);
+                    continue;
+                }
+
+                await copyFile(sourcePath, destPath);
+                logger.log(`✓ Installed agent: .github/agents/${entry}`);
+            }
+        } else {
+            logger.warn('No agents directory found in module. Skipping agent installation.');
+        }
+
+        // Install prompts
         const promptsSource = path.join(__dirname, '..', 'prompts');
         const promptsDest = path.join(projectRoot, '.github', 'prompts');
 

@@ -550,3 +550,6 @@ generation_result:
   warnings: [list]
   errors: [list]
 ```
+
+## Next Step
+**Proceed to:** [./step-05-handoff-scout.md](./step-05-handoff-scout.md)

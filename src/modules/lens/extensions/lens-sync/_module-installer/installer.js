@@ -36,16 +36,12 @@ async function install(options) {
     try {
         logger.log('Installing LENS Sync & Discovery module assets...');
 
-        // Create docs output directory (from module.yaml)
-        if (config.docs_output_folder) {
-            const docsPath = path.isAbsolute(config.docs_output_folder)
-                ? config.docs_output_folder
-                : path.join(projectRoot, config.docs_output_folder);
-
-            if (!(await pathExists(docsPath))) {
-                logger.log(`Creating docs output folder: ${docsPath}`);
-                await ensureDir(docsPath);
-            }
+        // Create TargetProjects directory (required for bootstrap safety)
+        const targetProjectsPath = path.join(projectRoot, 'TargetProjects');
+        if (!(await pathExists(targetProjectsPath))) {
+            logger.log('Creating TargetProjects/ directory for bootstrap operations...');
+            await ensureDir(targetProjectsPath);
+            logger.log('✓ Created TargetProjects/');
         }
 
         // Install prompts

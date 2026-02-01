@@ -13,7 +13,7 @@ default_selected: false
 constitution_root:
   prompt: "Where should constitutions be stored?"
   default: "lens/constitutions"
-  result: "{target_project_root}/{value}"
+  result: "{value}"
 
 auto_compliance_check:
   prompt: "Run compliance check before workflow execution?"

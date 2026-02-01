@@ -2,6 +2,10 @@ services:
   - name: auth
     path: services/auth
     git_repo: https://example.invalid/fixtures/auth.git
+    branch: main                    # REQUIRED: explicit branch for bootstrap clone
+    default_branch: main            # Branch to checkout after clone
   - name: billing
     path: services/billing
     git_repo: https://example.invalid/fixtures/billing.git
+    branch: develop                 # REQUIRED: explicit branch for bootstrap clone
+    default_branch: develop         # Branch to checkout after clone
