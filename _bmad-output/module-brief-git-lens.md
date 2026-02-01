@@ -527,6 +527,8 @@ _bmad-output/git-lens/
 
 ### State Schema (state.yaml)
 
+Note: `current.status` reflects local workflow progress; `workflow_status.<phase>.<workflow>.status` reflects merge completion. When `blocked.is_blocked` is true, set `current.status: blocked`; when unblocked, return to `in_progress`.
+
 ```yaml
 version: 2  # Schema version for future migrations
 
@@ -556,12 +558,14 @@ fetch_cache:
   ttl: 60  # seconds
 
 workflow_status:
-  # Track merge status, NOT SHAs (handles rebase/squash)
-  discovery:
-    status: merged  # not_started | in_progress | merged
-    merged_at: 2026-02-01T20:00:00Z
-    merge_strategy: ancestry_check  # ancestry_check | pr_metadata | manual_override
-    pr_url: https://github.com/org/repo/pull/123
+  # Track merge status, NOT SHAs (handles rebase/squash); key by phase to avoid name collisions
+  p1:
+    discovery:
+      status: merged  # not_started | in_progress | merged
+      branch: lens/pmt-gateway-a3f2b9/small/p1/w/discovery
+      merged_at: 2026-02-01T20:00:00Z
+      merge_strategy: ancestry_check  # ancestry_check | pr_metadata | manual_override
+      pr_url: https://github.com/org/repo/pull/123
 
 phase_status:
   p1:
@@ -727,9 +731,10 @@ When a block is detected:
    - The blocking branch and target branch
    - PR URL if known (from state workflow_status)
    - Exact command to create PR if URL not known
-   - **Escape hatch:** "Run `@tracey OVERRIDE` to force-continue"
-3. **UPDATE STATE** — Set `blocked.is_blocked: true` with details
+   - **Escape hatch:** "Run `@tracey OVERRIDE` to force-continue" (defaults to current phase; use `@tracey OVERRIDE p1.discovery` to target a specific phase/workflow)
+3. **UPDATE STATE** — Set `blocked.is_blocked: true` with details and `current.status: blocked`
 4. **WAIT** — Do not automatically retry
+5. **UNBLOCK** — Clear `blocked.*` and set `current.status: in_progress`
 
 **Example block message:**
 ```
