@@ -28,6 +28,36 @@ async function copyFile(src, dest) {
 }
 
 /**
+ * Helper: Copy directory recursively
+ */
+async function copyDirRecursive(src, dest, { overwrite = false, logger, projectRoot, label }) {
+    await ensureDir(dest);
+    const entries = await fs.readdir(src, { withFileTypes: true });
+
+    for (const entry of entries) {
+        const sourcePath = path.join(src, entry.name);
+        const destPath = path.join(dest, entry.name);
+
+        if (entry.isDirectory()) {
+            await copyDirRecursive(sourcePath, destPath, { overwrite, logger, projectRoot, label });
+            continue;
+        }
+
+        if (await pathExists(destPath)) {
+            if (!overwrite) {
+                logger.warn(`${label} already exists, skipping: ${path.relative(projectRoot, destPath)}`);
+                continue;
+            }
+
+            logger.warn(`Overwriting ${label}: ${path.relative(projectRoot, destPath)}`);
+        }
+
+        await copyFile(sourcePath, destPath);
+        logger.log(`✓ Installed ${label}: ${path.relative(projectRoot, destPath)}`);
+    }
+}
+
+/**
  * LENS Module Installer
  */
 async function install(options) {
@@ -41,26 +71,12 @@ async function install(options) {
         const agentsDest = path.join(projectRoot, '.github', 'agents');
 
         if (await pathExists(agentsSource)) {
-            await ensureDir(agentsDest);
-            const entries = await fs.readdir(agentsSource);
-
-            for (const entry of entries) {
-                const sourcePath = path.join(agentsSource, entry);
-                const destPath = path.join(agentsDest, entry);
-                const stat = await fs.stat(sourcePath);
-
-                if (!stat.isFile()) {
-                    continue;
-                }
-
-                if (await pathExists(destPath)) {
-                    logger.warn(`Agent already exists, skipping: .github/agents/${entry}`);
-                    continue;
-                }
-
-                await copyFile(sourcePath, destPath);
-                logger.log(`✓ Installed agent: .github/agents/${entry}`);
-            }
+            await copyDirRecursive(agentsSource, agentsDest, {
+                overwrite: false,
+                logger,
+                projectRoot,
+                label: 'agent'
+            });
         } else {
             logger.warn('No agents directory found in module. Skipping agent installation.');
         }
@@ -70,29 +86,21 @@ async function install(options) {
         const promptsDest = path.join(projectRoot, '.github', 'prompts');
 
         if (await pathExists(promptsSource)) {
-            await ensureDir(promptsDest);
-            const entries = await fs.readdir(promptsSource);
-
-            for (const entry of entries) {
-                const sourcePath = path.join(promptsSource, entry);
-                const destPath = path.join(promptsDest, entry);
-                const stat = await fs.stat(sourcePath);
-
-                if (!stat.isFile()) {
-                    continue;
-                }
-
-                if (await pathExists(destPath)) {
-                    logger.warn(`Prompt already exists, skipping: .github/prompts/${entry}`);
-                    continue;
-                }
-
-                await copyFile(sourcePath, destPath);
-                logger.log(`✓ Installed prompt: .github/prompts/${entry}`);
-            }
+            await copyDirRecursive(promptsSource, promptsDest, {
+                overwrite: false,
+                logger,
+                projectRoot,
+                label: 'prompt'
+            });
         } else {
             logger.warn('No prompts directory found in module. Skipping prompt installation.');
         }
+
+        await installExtensions({
+            projectRoot,
+            logger,
+            extensions: ['lens-sync', 'lens-compass']
+        });
 
         if (installedIDEs && installedIDEs.length > 0) {
             for (const ide of installedIDEs) {
@@ -124,3 +132,44 @@ async function configureForIDE(ide, projectRoot, logger) {
 }
 
 module.exports = { install };
+
+async function installExtensions({ projectRoot, logger, extensions }) {
+    for (const extensionName of extensions) {
+        await installExtensionAssets({ projectRoot, logger, extensionName });
+    }
+}
+
+async function installExtensionAssets({ projectRoot, logger, extensionName }) {
+    const extensionRoot = path.join(__dirname, '..', 'extensions', extensionName);
+
+    if (!(await pathExists(extensionRoot))) {
+        logger.warn(`Extension not found, skipping: ${extensionName}`);
+        return;
+    }
+
+    logger.log(`Installing ${extensionName} extension assets...`);
+
+    const agentsSource = path.join(extensionRoot, 'agents');
+    const agentsDest = path.join(projectRoot, '.github', 'agents');
+    if (await pathExists(agentsSource)) {
+        await copyDirRecursive(agentsSource, agentsDest, {
+            overwrite: true,
+            logger,
+            projectRoot,
+            label: 'extension agent'
+        });
+    }
+
+    const promptsSource = path.join(extensionRoot, 'prompts');
+    const promptsDest = path.join(projectRoot, '.github', 'prompts');
+    if (await pathExists(promptsSource)) {
+        await copyDirRecursive(promptsSource, promptsDest, {
+            overwrite: true,
+            logger,
+            projectRoot,
+            label: 'extension prompt'
+        });
+    }
+
+    logger.log(`✓ ${extensionName} extension assets installed`);
+}
