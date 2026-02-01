@@ -99,7 +99,7 @@ async function install(options) {
         await installExtensions({
             projectRoot,
             logger,
-            extensions: ['lens-sync', 'lens-compass']
+            extensions: ['lens-sync', 'lens-compass', 'git-lens']
         });
 
         if (installedIDEs && installedIDEs.length > 0) {
