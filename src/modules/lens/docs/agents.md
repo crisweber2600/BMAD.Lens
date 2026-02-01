@@ -1,30 +1,74 @@
 # Agents Reference
 
-lens includes 1 specialized agent:
+LENS Sync & Discovery includes 3 specialized agents:
 
 ---
 
-## Navigator
+## Bridge — The Synchronizer
 
-**ID:** `_bmad/lens/agents/navigator.agent.yaml`
-**Icon:** 🧭
+**ID:** `_bmad/agents/bridge/bridge.md`
+**Icon:** 🧱
 
 **Role:**
-Architectural Context Navigator for multi-layered systems.
+Synchronize physical project structure with the lens domain map and bootstrap environments safely.
 
 **When to Use:**
-Use Navigator whenever you need to detect your current lens, switch between layers, or load context for a specific architectural scope.
+When you need to create or align folder structures, clone repositories, or identify drift between lens and reality.
 
 **Key Capabilities:**
-- Detect current lens and active scope
-- Switch between Domain, Service, Microservice, and Feature lenses
-- Load context summaries and details
-- Restore prior sessions
-- Configure detection rules
-- Provide workflow guidance
+- Bootstrap project structure from domain map
+- Detect and report drift
+- Reconcile conflicts between lens and filesystem
 
-**Menu Trigger(s):**
-- NAV, SW, CL, RS, CFG, GUIDE
-- MAP, IMP, NS, NM, NF (post-MVP1)
+**Menu Triggers:**
+- [BS] bootstrap
+- [SS] sync-status
+- [RC] reconcile
+
+---
+
+## Scout — Discovery Specialist
+
+**ID:** `_bmad/agents/scout/scout.md`
+**Icon:** 🔍
+
+**Role:**
+Analyze brownfield codebases to extract architecture, APIs, data models, and business context.
+
+**When to Use:**
+When you need to understand a legacy service or produce BMAD-ready documentation.
+
+**Key Capabilities:**
+- Full discovery pipeline
+- Deep technical analysis
+- Documentation generation from findings
+
+**Menu Triggers:**
+- [DS] discover
+- [AC] analyze-codebase
+- [GD] generate-docs
+
+---
+
+## Link — Lens Guardian
+
+**ID:** `_bmad/agents/link/link.md`
+**Icon:** 🔗
+
+**Role:**
+Maintain lens data integrity, propagate documentation, and manage sharding and rollback.
+
+**When to Use:**
+When documentation changes need to be rolled up or validated across the lens hierarchy.
+
+**Key Capabilities:**
+- Propagate documentation upward
+- Validate lens schemas
+- Rollback changes safely
+
+**Menu Triggers:**
+- [UL] update-lens
+- [VS] validate-schema
+- [RB] rollback
 
 ---

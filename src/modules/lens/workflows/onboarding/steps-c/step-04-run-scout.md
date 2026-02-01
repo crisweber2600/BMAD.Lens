@@ -12,22 +12,22 @@ Scan the codebase and build an index for LENS workflows.
 
 ## Instructions
 
-### 1. Check for lens-sync Extension
+### 1. Check for SCOUT Agent
 
-**IF lens-sync extension is NOT installed:**
+**IF SCOUT agent is NOT available:**
 
 Display:
 ```
 ℹ️ SCOUT Discovery (Optional)
 
-SCOUT is part of the lens-sync extension and provides:
+SCOUT agent provides:
 - Automated codebase scanning and indexing
 - Dependency discovery
 - Architecture analysis
 - Documentation generation
 
 To use SCOUT:
-1. Install lens-sync extension
+1. Ensure SCOUT agent is installed as part of lens module
 2. Run onboarding again or manually run discovery workflow
 
 Skipping SCOUT for now. LENS will work without it, but some workflows

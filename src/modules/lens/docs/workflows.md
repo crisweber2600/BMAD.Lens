@@ -1,101 +1,163 @@
 # Workflows Reference
 
-lens includes 14 workflows:
+LENS Sync & Discovery includes 9 workflows:
 
 ---
 
-## Core (MVP1)
+## bootstrap
 
-### lens-detect
-**Purpose:** Detect current architectural lens and load summary.
-**When to Use:** Anytime you need to know where you are architecturally.
-**Key Steps:** Collect signals → Resolve lens → Present summary.
-**Agent(s):** Navigator
+**Purpose:** Bootstrap target project structure from the lens domain map.
 
-### lens-switch
-**Purpose:** Switch to a target lens and reload context.
-**When to Use:** When you need to move between Domain, Service, Microservice, or Feature views.
-**Key Steps:** Validate target → Load context → Confirm switch.
-**Agent(s):** Navigator
+**When to Use:**
+When setting up a new environment or aligning folder structure to the domain map.
 
-### context-load
-**Purpose:** Load detailed context for the active lens.
-**When to Use:** When you need deeper details in the current lens.
-**Key Steps:** Gather context → Format output → Present details.
-**Agent(s):** Navigator
+**Key Steps:**
+- Load lens map
+- Scan folders
+- Compare and analyze gaps
+- Execute sync
+- Validate and report
+
+**Agent(s):** Bridge
 
 ---
 
-## Utility (MVP1)
+## sync-status
 
-### lens-restore
-**Purpose:** Restore a previous lens session.
-**When to Use:** When returning to work after a break.
-**Key Steps:** Load session → Validate state → Rehydrate context.
-**Agent(s):** Navigator
+**Purpose:** Detect drift between the lens model and physical project structure.
 
-### lens-configure
-**Purpose:** Configure detection rules and branch patterns.
-**When to Use:** When default detection needs adjustments.
-**Key Steps:** Gather settings → Validate config → Write config.
-**Agent(s):** Navigator
+**When to Use:**
+When you want a quick report of alignment and conflicts.
 
-### workflow-guide
-**Purpose:** Recommend next workflows based on current lens and phase.
-**When to Use:** When you want guidance on what to do next.
-**Key Steps:** Detect context → Map recommendations → Present guidance.
-**Agent(s):** Navigator
+**Key Steps:**
+- Load lens map
+- Scan folders
+- Compare structures
+- Write drift report
+- Recommend reconciliation
+
+**Agent(s):** Bridge
 
 ---
 
-## Post-MVP1
+## reconcile
 
-### domain-map
-**Purpose:** View and edit domain architecture map.
-**When to Use:** When mapping or updating domain structures.
-**Key Steps:** Load map → Edit map → Save map.
-**Agent(s):** Navigator
+**Purpose:** Resolve conflicts between lens data and physical project structure.
 
-### impact-analysis
-**Purpose:** Analyze cross-boundary impacts of changes.
-**When to Use:** When changes may affect multiple services.
-**Key Steps:** Capture scope → Compute impact → Present report.
-**Agent(s):** Navigator
+**When to Use:**
+After sync-status identifies conflicts.
 
-### new-service
-**Purpose:** Create a new logical service in the domain map.
-**When to Use:** When adding a new service to the architecture.
-**Key Steps:** Collect metadata → Update map → Scaffold.
-**Agent(s):** Navigator
+**Key Steps:**
+- Load conflicts
+- Present options
+- Apply resolution
+- Validate results
+- Report outcomes
 
-### new-microservice
-**Purpose:** Create a new microservice within a service.
-**When to Use:** When adding a new microservice.
-**Key Steps:** Collect metadata → Scaffold → Update map.
-**Agent(s):** Navigator
+**Agent(s):** Bridge
 
-### new-feature
-**Purpose:** Create a new feature branch with BMAD context.
-**When to Use:** When starting a new feature.
-**Key Steps:** Collect metadata → Create branch → Initialize context.
-**Agent(s):** Navigator
+---
 
-### lens-sync
-**Purpose:** Reconcile drift between discovered and documented architecture.
-**When to Use:** When the map and codebase diverge.
-**Key Steps:** Discover structure → Compare maps → Apply updates.
-**Agent(s):** Navigator
+## discover
 
-### service-registry
-**Purpose:** Manage service registry mappings.
-**When to Use:** When updating service identifiers and aliases.
-**Key Steps:** Load registry → Edit entries → Save registry.
-**Agent(s):** Navigator
+**Purpose:** Perform full brownfield discovery and generate BMAD-ready documentation.
 
-### onboarding
-**Purpose:** First-time onboarding and starter configuration.
-**When to Use:** When introducing LENS to a new project.
-**Key Steps:** Detect structure → Explain lenses → Create starter config.
-**Agent(s):** Navigator
+**When to Use:**
+When onboarding or documenting a legacy microservice.
+
+**Key Steps:**
+- Select target
+- Extract context
+- Analyze codebase
+- Generate docs
+- Update lens metadata
+
+**Agent(s):** Scout
+
+---
+
+## analyze-codebase
+
+**Purpose:** Deep technical analysis without full discovery.
+
+**When to Use:**
+When you need focused technical insight without generating the full doc set.
+
+**Key Steps:**
+- Select target
+- Inspect stack
+- Map surfaces
+- Summarize findings
+
+**Agent(s):** Scout
+
+---
+
+## generate-docs
+
+**Purpose:** Generate documentation from analysis findings.
+
+**When to Use:**
+After analyze-codebase to produce full documentation artifacts.
+
+**Key Steps:**
+- Load analysis
+- Map templates
+- Generate docs
+- Write outputs
+
+**Agent(s):** Scout
+
+---
+
+## update-lens
+
+**Purpose:** Propagate documentation changes up the lens hierarchy with auto-sharding.
+
+**When to Use:**
+After new docs are produced or updated.
+
+**Key Steps:**
+- Identify changes
+- Aggregate summaries
+- Shard large files
+- Propagate to domain
+- Report updates
+
+**Agent(s):** Link
+
+---
+
+## validate-schema
+
+**Purpose:** Validate lens data against schemas.
+
+**When to Use:**
+Before or after major updates to ensure integrity.
+
+**Key Steps:**
+- Load schemas
+- Validate data
+- Summarize issues
+- Report results
+
+**Agent(s):** Link
+
+---
+
+## rollback
+
+**Purpose:** Revert lens changes safely to a previous state.
+
+**When to Use:**
+When a change needs to be reversed or integrity issues are detected.
+
+**Key Steps:**
+- Select snapshot
+- Apply rollback
+- Verify integrity
+- Report outcomes
+
+**Agent(s):** Link
 
 ---

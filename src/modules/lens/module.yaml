@@ -1,6 +1,34 @@
 code: lens
 name: "LENS: Layered Enterprise Navigation System"
-header: "Git-aware architectural navigation for large interconnected projects"
-subheader: "Automatically detects and switches between Domain, Service, Microservice, and Feature lenses"
+header: "Git-aware architectural navigation with automated discovery and synchronization"
+subheader: "Detects and switches between architectural contexts, syncs with physical codebase, generates documentation"
 default_selected: false
 global: true
+
+# Discovery and Synchronization Configuration
+target_project_root:
+  prompt: "Where is the target project root to scan and sync?"
+  default: "{project-root}"
+  result: "{value}"
+
+enable_jira_integration:
+  prompt: "Enable JIRA integration during discovery?"
+  default: false
+  result: "{value}"
+
+discovery_depth:
+  prompt: "Default discovery depth?"
+  default: "standard"
+  result: "{value}"
+  single-select:
+    - value: "shallow"
+      label: "Shallow - faster, surface-level scan"
+    - value: "standard"
+      label: "Standard - balanced analysis"
+    - value: "deep"
+      label: "Deep - exhaustive analysis"
+
+docs_output_folder:
+  prompt: "Where should generated docs be written?"
+  default: "{project-root}/Docs"
+  result: "{value}"

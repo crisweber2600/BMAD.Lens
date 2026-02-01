@@ -48,7 +48,7 @@ SETUP CHECKLIST:
    - Configure service/microservice detection
 
 □ 5. Run discovery/scout to index the codebase
-   (If using lens-sync extension with scout/bridge agents)
+   (Optional - use scout/bridge agents for codebase analysis)
 
 Once complete, run this workflow again for lens-aware guidance.
 ```
@@ -90,7 +90,7 @@ Proceed with normal detection:
 
 **Check:** `_bmad/_memory/scout-sidecar/scout-discoveries.md`
 
-**IF missing AND lens-sync extension installed:**
+**IF missing:**
 ```
 💡 Tip: SCOUT Index Not Found
 

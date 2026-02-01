@@ -1,59 +1,74 @@
-# Getting Started with LENS: Layered Enterprise Navigation System
+# Getting Started with LENS Sync & Discovery
 
-Welcome to LENS! This guide will help you get up and running.
+Welcome to LENS Sync & Discovery. This guide helps you align architectural intent with real code and keep everything in sync.
 
 ---
 
 ## What This Module Does
 
-LENS is a git-aware architectural navigation system that detects your current context (Domain, Service, Microservice, Feature) and loads the right level of information automatically.
+- Bootstraps folder structures from the lens domain map
+- Discovers brownfield systems and generates documentation
+- Propagates documentation changes upward through the lens hierarchy
+
+---
+
+## Prerequisites
+
+Before running workflows, ensure the environment is ready:
+
+- Node.js 18+ and Git 2.30+
+- Lens root present at `_lens/` or `lens/`
+- Valid `domain-map.yaml` and `service.yaml` files
+
+Full checklist: see [Prerequisites](prerequisites.md).
 
 ---
 
 ## Installation
 
-If you haven't installed the module yet:
+Install the base LENS module, then enable the extension:
 
 ```bash
 bmad install lens
 ```
 
-Follow the prompts to configure the module for your needs.
+For local development or manual install:
+
+```bash
+node src/modules/lens/extensions/lens-sync/_module-installer/installer.js
+```
 
 ---
 
 ## First Steps
 
-1. Run `navigator` to detect your current lens.
-2. Use `guide` to get recommended next workflows.
-3. Use `switch lens` to move across layers.
-4. Use `context load` for deeper details.
+1. Run `Bridge, bootstrap` to align structure with the lens domain map.
+2. Run `Scout, discover` to analyze a brownfield service and generate docs.
+3. Run `Link, update-lens` to propagate documentation changes.
 
 ---
 
 ## Common Use Cases
 
-- Understand where you are in a multi-service architecture
-- Switch from a feature to its parent service context
-- Restore a previous working context after a session break
-- Configure branch patterns for consistent lens detection
+- **New team member onboarding** — bootstrap and discover to generate a full context pack.
+- **Legacy service documentation** — run discover to create a BMAD-ready doc set.
+- **Documentation propagation** — use update-lens after changes to keep hierarchy aligned.
 
 ---
 
-## What's Next?
+## What’s Next
 
-- Check out the [Agents Reference](agents.md) to meet your team
-- Browse the [Workflows Reference](workflows.md) to see what you can do
-- See [Examples](examples.md) for real-world usage
-- Review [Configuration](configuration.md) to customize detection
-- Read [Session Store](session-store.md) to understand persistence
-- Use [Troubleshooting](troubleshooting.md) if something feels off
+- Meet the agents in the [Agents Reference](agents.md)
+- Browse the [Workflows Reference](workflows.md)
+- Review examples in [Examples](examples.md)
+- Review testing guidance in [Testing](testing.md)
+- Review operations guidance in [Operations](operations.md)
 
 ---
 
 ## Need Help?
 
 If you run into issues:
-1. Check [Troubleshooting](troubleshooting.md)
-2. Review your module configuration
-3. Consult the broader BMAD documentation
+1. Ensure `domain-map.yaml` is present and valid.
+2. Verify git access for repository cloning.
+3. Check your module configuration in module.yaml.

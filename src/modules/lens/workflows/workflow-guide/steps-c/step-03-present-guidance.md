@@ -31,7 +31,7 @@ SETUP CHECKLIST:
 RECOMMENDED NEXT ACTIONS:
 • Review onboarding workflow for guided setup
 • Check lens-configure workflow for detection rules
-• See lens-sync extension for brownfield discovery
+• Use discover/bootstrap workflows for brownfield discovery
 
 Run this guide again after completing setup.
 ```
