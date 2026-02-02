@@ -11,7 +11,7 @@ personal_profiles_folder:
 
 roster_file:
   prompt: "Where should the project roster be stored?"
-  default: "{project-root}/.bmad-roster.yaml"
+  default: "{output_folder}/.bmad-roster.yaml"
   result: "{value}"
 
 use_git_identity:

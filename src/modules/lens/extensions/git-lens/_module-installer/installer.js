@@ -1,8 +1,15 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const chalk = require('chalk');
 
-const supportedIDEs = new Set(['claude-code', 'windsurf', 'cursor']);
+const supportedIDEs = new Set(['claude-code', 'windsurf', 'cursor', 'github-copilot']);
+
+// Simple color output without external dependencies
+const colors = {
+    blue: (str) => `\x1b[34m${str}\x1b[0m`,
+    yellow: (str) => `\x1b[33m${str}\x1b[0m`,
+    green: (str) => `\x1b[32m${str}\x1b[0m`,
+    red: (str) => `\x1b[31m${str}\x1b[0m`
+};
 
 async function pathExists(filePath) {
     try {
@@ -40,20 +47,20 @@ async function install(options) {
     const { projectRoot, config, installedIDEs, logger } = options;
 
     try {
-        logger.log(chalk.blue('Installing Git-Lens extension assets...'));
+        logger.log(colors.blue('Installing Git-Lens extension assets...'));
 
         const stateFolder = resolvePath(projectRoot, config.state_folder, config.output_folder);
         if (stateFolder) {
             if (!(await pathExists(stateFolder))) {
                 await ensureDir(stateFolder);
-                logger.log(chalk.yellow(`✓ Created state folder: ${stateFolder}`));
+                logger.log(colors.yellow(`✓ Created state folder: ${stateFolder}`));
             }
         }
 
         const testDataFolder = path.join(projectRoot, '_bmad', 'lens', 'extensions', 'git-lens', 'test-data');
         if (!(await pathExists(testDataFolder))) {
             await ensureDir(testDataFolder);
-            logger.log(chalk.yellow('✓ Created git-lens test-data folder'));
+            logger.log(colors.yellow('✓ Created git-lens test-data folder'));
         }
 
         if (installedIDEs && installedIDEs.length > 0) {
@@ -62,22 +69,22 @@ async function install(options) {
             }
         }
 
-        logger.log(chalk.green('✓ Git-Lens extension installation complete'));
+        logger.log(colors.green('✓ Git-Lens extension installation complete'));
         return true;
     } catch (error) {
-        logger.error(chalk.red(`Error installing Git-Lens extension: ${error.message}`));
+        logger.error(colors.red(`Error installing Git-Lens extension: ${error.message}`));
         return false;
     }
 }
 
 async function configureForIDE(ide, projectRoot, config, logger) {
     if (!ide || typeof ide !== 'string') {
-        logger.warn(chalk.yellow('Warning: Invalid IDE identifier. Skipping.'));
+        logger.warn(colors.yellow('Warning: Invalid IDE identifier. Skipping.'));
         return;
     }
 
     if (!supportedIDEs.has(ide)) {
-        logger.warn(chalk.yellow(`Warning: Unknown platform '${ide}'. Skipping.`));
+        logger.warn(colors.yellow(`Warning: Unknown platform '${ide}'. Skipping.`));
         return;
     }
 
@@ -91,7 +98,7 @@ async function configureForIDE(ide, projectRoot, config, logger) {
             }
         }
     } catch (error) {
-        logger.warn(chalk.yellow(`Warning: Could not configure ${ide}: ${error.message}`));
+        logger.warn(colors.yellow(`Warning: Could not configure ${ide}: ${error.message}`));
     }
 }
 
