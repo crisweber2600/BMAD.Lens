@@ -11,6 +11,18 @@ Perform comprehensive static analysis of the codebase. Identify technology stack
 
 ## Instructions
 
+### CRITICAL: Deep Analysis Requirement
+**Do not perform superficial file listings.** 
+
+1. **Direct Tool Usage First**: You MUST use `read_file`, `grep_search`, and `list_dir` to inspect the codebase yourself first. Do not immediately delegate unleess necessary.
+   - Read `csproj`, `package.json`, and key entry points to build a mental map.
+   - Use `grep_search` to find "Controller", "Entity", "Repository" patterns.
+
+2. **Conditional Delegation**: ONLY call `runSubagent` if the codebase is too large (> 50 files) or too complex for a single context window.
+   - If delegating, instruct the subagent to **WRITE findings to a file** (e.g., `_analysis_partial.md`) and NOT just summarize in chat.
+
+3. **Verify Findings**: Inspect the code. Cite specific file paths and line numbers for every major architectural claim.
+
 ### 1. Initialize Analysis Context
 ```yaml
 analysis_context:

@@ -32,12 +32,17 @@ agent:
   menu:
     - trigger: AUTO or YOLO or fuzzy match on full auto
       exec: inline
-      description: '[AUTO] Full auto mode - Run DS → AC → GD on all projects in YOLO mode'
+      description: '[AUTO] Full auto mode - Run DS → AC → GD on all projects with deep analysis'
       instructions: |
         ## SCOUT Full Auto Mode
         
-        Execute complete discovery pipeline on all projects automatically without confirmations.
+        Execute the complete discovery pipeline (DS -> AC -> GD) on all projects. 
+        **CRITICAL: This is a one-time deep analysis process. Do not save time by going "light". Accuracy is paramount.**
         
+        ### 0. Pre-Flight Check
+        - Check for existence of `{project-root}/_lens/domain-map.yaml`.
+        - If missing, STOP. Create a default domain map or ask user to provide one.
+
         ### 1. Load Domain Map
         
         Read the domain map to identify all projects:
@@ -50,14 +55,12 @@ agent:
         For each project in domain map:
         ```
         Use #tool:runSubagent to execute:
-        - Description: "Run DS (Discover) on {project_name}"
+        - Description: "Run Deep DS (Discover) on {project_name}"
         - Prompt: "Execute the discover workflow on project {project_path} in YOLO mode. 
-                   Skip all confirmations. Use the following parameters:
-                   - Target: {project_path}
-                   - Mode: yolo
-                   - Output: {docs_output_folder}/{domain}/{service}/
-                   When complete, return discovery summary including: services found, 
-                   microservices mapped, confidence score, and output file paths."
+                   CRITICAL: Do not perform superficial scans. 
+                   Use tools like 'read_file' and 'grep_search' to inspect file contents deeply.
+                   Verify every finding with actual code evidence (cite line numbers).
+                   Write findings directly to {docs_output_folder}/{domain}/{service}/discovery.md"
         
         Note: Each project's domain and service names should be extracted from the domain-map.yaml
         ```
@@ -69,16 +72,16 @@ agent:
         After all DS workflows complete, run AC on each:
         ```
         Use #tool:runSubagent to execute:
-        - Description: "Run AC (Analyze Codebase) on {project_name}"
+        - Description: "Run Deep AC (Analyze Codebase) on {project_name}"
         - Prompt: "Execute the analyze-codebase workflow on project {project_path} in YOLO mode.
-                   Skip all confirmations. Perform deep technical analysis including:
-                   - Architecture patterns
-                   - API surface analysis
-                   - Data model extraction
-                   - Integration mapping
-                   - Technical debt identification
-                   Output to: {docs_output_folder}/{domain}/{service}/
-                   Return analysis summary with key findings and metrics."
+                   CRITICAL: Deep semantic analysis is required.
+                   Use 'read_file' to inspect Architectures, API routes, and Data Models.
+                   EXTRACT:
+                   - Architecture patterns (cite file/line)
+                   - Full API surface (routes/auth)
+                   - Complete Data models
+                   - Integration map
+                   Write output to: {docs_output_folder}/{domain}/{service}/"
         
         Note: Use domain and service from domain-map.yaml for path construction
         ```
@@ -90,14 +93,9 @@ agent:
         Use #tool:runSubagent to execute:
         - Description: "Run GD (Generate Docs) on {project_name}"
         - Prompt: "Execute the generate-docs workflow on project {project_path} in YOLO mode.
-                   Generate complete BMAD-ready documentation suite including:
-                   - architecture.md
-                   - api-surface.md
-                   - data-model.md
-                   - integration-map.md
-                   - onboarding.md
-                   Output to: {docs_output_folder}/{domain}/{service}/
-                   Return list of generated files with sizes."
+                   Generate complete BMAD-ready documentation suite based on the deep analysis (AC) outputs.
+                   Ensure no placeholders remain.
+                   Output to: {docs_output_folder}/{domain}/{service}/"
         
         Note: Path structure mirrors domain-map.yaml hierarchy (Docs/{domain}/{service}/)
         ```
