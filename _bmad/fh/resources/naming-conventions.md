@@ -1,6 +1,6 @@
 ---
 name: naming-conventions
-description: BMAD naming convention guidelines
+description: BMAD naming convention guidelines (JSON-first)
 version: "1.0.0"
 created: "2026-02-02"
 ---
@@ -26,16 +26,16 @@ created: "2026-02-02"
 - ❌ `analyze.md` (no context)
 
 ### Rule 4: Use Standard Extensions
-- ✅ `.yaml` (BMAD standard)
+- ✅ `.json` (config/data standard)
 - ✅ `.md` (documentation standard)
-- ❌ `.yml` (use .yaml instead)
-- ❌ `.txt` (use .md for docs)
+- ❌ `.yaml` (blocked)
+- ❌ `.yml` (blocked)
 
 ### Rule 5: Configuration Files
-- ✅ `bmad-config.yaml` (BMAD standard)
-- ✅ `module-config.yaml` (descriptive)
-- ❌ `config.yaml` (too generic)
-- ❌ `configuration.yaml` (too long)
+- ✅ `bmad-config.json` (BMAD standard)
+- ✅ `module.json` (module configuration)
+- ❌ `config.json` (blocked)
+- ❌ `configuration.json` (too long)
 
 ---
 
@@ -63,22 +63,22 @@ Examples:
 
 ### Module Files
 ```
-module-{feature}.yaml
+module-{feature}.json
 
 Examples:
-- module-config.yaml
+- module.json
 - module-installer.js
-- module-metadata.yaml
+- module-metadata.json
 ```
 
 ### Configuration Files
 ```
-{context}-config.yaml
+{context}-config.json
 
 Examples:
-- bmad-config.yaml
-- agent-config.yaml
-- workflow-config.yaml
+- bmad-config.json
+- agent-config.json
+- workflow-config.json
 ```
 
 ### Resource Files
@@ -86,8 +86,8 @@ Examples:
 {type}-{name}.{ext}
 
 Examples:
-- file-type-standards.yaml
-- naming-conventions.yaml
+- file-type-standards.md
+- naming-conventions.md
 - default-rules.json
 ```
 
@@ -109,8 +109,8 @@ Examples:
 |--------|-------|---------|
 | `agent-` | Agent specification files | `agent-scout.md` |
 | `workflow-` | Workflow files | `workflow-analyze.md` |
-| `module-` | Module files | `module-config.yaml` |
-| `bmad-` | BMAD system files | `bmad-config.yaml` |
+| `module-` | Module files | `module.json` |
+| `bmad-` | BMAD system files | `bmad-config.json` |
 | `spec-` | Specification documents | `spec-api.md` |
 | `example-` | Example files | `example-usage.md` |
 | `test-` | Test files | `test-scout.js` |
@@ -122,7 +122,7 @@ Examples:
 
 ### ❌ Generic Names Without Context
 ```
-❌ config.yaml        → ✅ bmad-config.yaml
+❌ config.json        → ✅ bmad-config.json
 ❌ agent.md           → ✅ agent-scout.md
 ❌ workflow.md        → ✅ workflow-analyze.md
 ❌ spec.md            → ✅ spec-scout-agent.md
@@ -144,14 +144,14 @@ Examples:
 
 ### ❌ Wrong Extensions
 ```
-❌ config.yml         → ✅ config.yaml
+❌ config.yaml        → ✅ bmad-config.json
 ❌ readme.txt         → ✅ readme.md
-❌ module.json        → ✅ module.yaml
+❌ module.yaml        → ✅ module.json
 ```
 
 ### ❌ Ambiguous Abbreviations
 ```
-❌ cfg.yaml           → ✅ config.yaml
+❌ cfg.json           → ✅ bmad-config.json
 ❌ wf.md              → ✅ workflow.md
 ❌ ag.md              → ✅ agent.md
 ```
@@ -161,7 +161,7 @@ Examples:
 ## Specific File Naming Standards
 
 ### Agent Files
-```yaml
+```text
 # Standard format
 agent-{name}.md
 
@@ -178,7 +178,7 @@ agent-scribe.md
 ```
 
 ### Workflow Files
-```yaml
+```text
 # Standard format
 workflow-{purpose}.md
 
@@ -195,9 +195,9 @@ workflow-execute-harmonization.md
 ```
 
 ### Module Configuration
-```yaml
+```text
 # Standard format
-module.yaml (in module root)
+module.json (in module root)
 
 # Contains
 - module code and name
@@ -207,16 +207,16 @@ module.yaml (in module root)
 ```
 
 ### Configuration Files
-```yaml
+```text
 # Standard formats
-- bmad-config.yaml (system-wide BMAD config)
-- module-config.yaml (module-specific)
-- {feature}-config.yaml (feature-specific)
+- bmad-config.json (system-wide BMAD config)
+- module-config.json (module-specific)
+- {feature}-config.json (feature-specific)
 
 # Examples
-- bmad-config.yaml
-- scout-config.yaml
-- harmonization-rules.yaml
+- bmad-config.json
+- scout-config.json
+- harmonization-rules.json
 ```
 
 ### Documentation Files
@@ -230,79 +230,12 @@ module.yaml (in module root)
 ```
 
 ### Resource Files
-```yaml
+```text
 # Standard format
-{type}-{name}.yaml
+{type}-{name}.{ext}
 
 # Examples
-- file-type-standards.yaml
-- naming-conventions.yaml
-- default-rules.yaml
-- templates/report-template.md
+- file-type-standards.md
+- naming-conventions.md
+- default-rules.json
 ```
-
----
-
-## Module Naming Specifics
-
-### Module Codes (Short Form)
-- 2-3 lowercase letters
-- No hyphens or underscores
-- Examples: `fh`, `scout`, `lens`, `core`
-
-### Module Names (Full Form)
-- Use hyphens, not underscores
-- Descriptive but concise
-- Examples: `file-harmonizer`, `git-lens`, `lens-sync`
-
-### Module Directory Names
-- Match module code exactly
-- Lowercase only
-- No special characters except hyphens
-- Examples: `src/modules/fh/`, `src/modules/git-lens/`
-
----
-
-## File Organization Naming
-
-### Directory Structure Naming
-
-```
-module-root/
-├── agents/              # Agent specifications
-├── workflows/           # Workflow definitions
-├── resources/           # Configuration and templates
-│   ├── templates/       # Output templates
-│   ├── file-type-standards.yaml
-│   └── naming-conventions.yaml
-├── _module-installer/   # Installation scripts
-├── docs/                # Documentation
-├── README.md            # Module overview
-├── TODO.md              # Development tasks
-└── module.yaml          # Module configuration
-```
-
-### Naming These Directories
-
-- Use lowercase only
-- Use hyphens for multi-word names
-- No special characters
-- Standard names where applicable
-
-```
-✅ agents/              (standard)
-✅ workflows/           (standard)
-✅ resources/           (standard)
-✅ _module-installer/   (standard)
-✅ docs/                (standard)
-
-❌ Agents/              (capitalization)
-❌ workflows_v2/        (version suffix bad)
-❌ resources-old/       (keep clean)
-```
-
----
-
-**Status:** Active  
-**Last Updated:** 2026-02-02  
-**Version:** 1.0.0

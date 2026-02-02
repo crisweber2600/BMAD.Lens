@@ -1,6 +1,6 @@
 ---
 name: file-type-standards
-description: BMAD standard file types and extension mappings
+description: BMAD standard file types and extension mappings (JSON-first)
 version: "1.0.0"
 created: "2026-02-02"
 ---
@@ -13,11 +13,11 @@ created: "2026-02-02"
 
 | Type | Standard Extension | Accepted Alternatives | Maps To |
 |------|-------------------|----------------------|---------|
-| BMAD Config | `.bmad-config.yaml` | `.bmad-config.yml` | `.bmad-config.yaml` |
-| Module Config | `.module.yaml` | `.module.yml` | `.module.yaml` |
-| Agent Config | `.agent.yaml` | `.agent.yml` | `.agent.yaml` |
-| Workflow Config | `.workflow.yaml` | `.workflow.yml` | `.workflow.yaml` |
-| Generic Config | `.config.yaml` | `.config.yml`, `.config.json` | `.bmad-config.yaml` |
+| BMAD Config | `.bmad-config.json` | `.bmad-config.yaml`, `.bmad-config.yml` | `.bmad-config.json` |
+| Module Config | `.module.json` | `.module.yaml`, `.module.yml` | `.module.json` |
+| Agent Config | `.agent.json` | `.agent.yaml`, `.agent.yml` | `.agent.json` |
+| Workflow Config | `.workflow.json` | `.workflow.yaml`, `.workflow.yml` | `.workflow.json` |
+| Generic Config | `.bmad-config.json` | `.config.json`, `.config.yaml`, `.config.yml` | `.bmad-config.json` |
 
 ### Documentation Files
 
@@ -25,7 +25,6 @@ created: "2026-02-02"
 |------|-------------------|----------------------|---------|
 | Markdown | `.md` | `.markdown` | `.md` |
 | Plain Text | `.txt` | `.text` | `.txt` |
-| YAML Docs | `.yaml` | `.yml` | `.yaml` |
 
 ### Code Files
 
@@ -35,7 +34,6 @@ created: "2026-02-02"
 | TypeScript | `.ts` | None | `.ts` |
 | Python | `.py` | None | `.py` |
 | Shell | `.sh` | `.bash` | `.sh` |
-| YAML | `.yaml` | `.yml` | `.yaml` |
 
 ### Data Files
 
@@ -59,6 +57,8 @@ created: "2026-02-02"
 
 These extensions are typically NOT readable by standard file tools and should be converted or renamed:
 
+- `.yaml` — Blocked for this module
+- `.yml` — Blocked for this module
 - `.exe` — Binary executables
 - `.bin` — Binary data
 - `.dll` — Dynamic libraries
@@ -76,7 +76,7 @@ These extensions are typically NOT readable by standard file tools and should be
 
 | Current Pattern | Standard Form | Example |
 |-----------------|---------------|---------|
-| `config` | `bmad-config` | `config.yaml` → `bmad-config.yaml` |
+| `config` | `bmad-config` | `config.json` → `bmad-config.json` |
 | `module` | `{context}-module` | `module.md` → `agent-module.md` |
 | `test` | `{context}-test` | `test.js` → `agent-test.js` |
 | `spec` | `{context}-spec` | `spec.md` → `workflow-spec.md` |
@@ -98,13 +98,13 @@ Standard prefixes for organized naming:
 
 ```
 Good:
-✅ bmad-config.yaml
+✅ bmad-config.json
 ✅ agent-scout.md
 ✅ workflow-analysis.md
 ✅ module-installer.js
 
 Avoid:
-❌ config.yaml
+❌ config.json
 ❌ agent.md
 ❌ workflow.md
 ❌ installer.js
@@ -117,7 +117,7 @@ Avoid:
 Files are categorized as follows for inventory:
 
 ### Configuration (Config)
-- `.yaml`, `.yml`, `.json` files in `_config/` directories
+- `.json` files in `_config/` directories
 - Module configuration files
 - System configuration files
 
@@ -127,7 +127,7 @@ Files are categorized as follows for inventory:
 - Agent implementation files
 
 ### Workflows (Workflows)
-- `.md`, `.yaml` files in `workflows/` directories
+- `.md` files in `workflows/` directories
 - Workflow specification files
 - Workflow implementation files
 
@@ -142,12 +142,12 @@ Files are categorized as follows for inventory:
 - Script files
 
 ### Resources (Resources)
-- `.yaml`, `.json`, `.csv` in `resources/` directories
+- `.md`, `.json`, `.csv` in `resources/` directories
 - Data files
 - Template files
 
 ### Build/System (System)
-- `.json`, `.yaml` in `_build/`, `_temp/` directories
+- `.json` in `_build/`, `_temp/` directories
 - Build configuration
 - System metadata
 
@@ -157,42 +157,52 @@ Files are categorized as follows for inventory:
 
 Use this to define harmonization rules:
 
-```yaml
-harmonizationRules:
-  extensionMappings:
-    - from: .config.yaml
-      to: .bmad-config.yaml
-      reason: "BMAD naming standard"
-    
-    - from: .config.yml
-      to: .bmad-config.yaml
-      reason: "BMAD naming standard + yaml extension"
-    
-    - from: .bin
-      to: .data
-      reason: "Binary files → generic data extension"
-  
-  nameMappings:
-    - from: config
-      to: bmad-config
-      reason: "BMAD naming convention"
-    
-    - from: module
-      to: "{{context}}-module"
-      reason: "Require context prefix"
-  
-  excludePatterns:
-    - node_modules/**
-    - .git/**
-    - dist/**
-    - build/**
-
-  verifyIntegrity: true
-  generateBackups: true
-  dryRunRequired: true
+```json
+{
+  "harmonizationRules": {
+    "extensionMappings": [
+      {
+        "from": ".config.json",
+        "to": ".bmad-config.json",
+        "reason": "BMAD naming standard"
+      },
+      {
+        "from": ".config.yaml",
+        "to": ".bmad-config.json",
+        "reason": "Blocked YAML extension"
+      },
+      {
+        "from": ".bin",
+        "to": ".data",
+        "reason": "Binary files → generic data extension"
+      }
+    ],
+    "nameMappings": [
+      {
+        "from": "config",
+        "to": "bmad-config",
+        "reason": "BMAD naming convention"
+      },
+      {
+        "from": "module",
+        "to": "{{context}}-module",
+        "reason": "Require context prefix"
+      }
+    ],
+    "excludePatterns": [
+      "node_modules/**",
+      ".git/**",
+      "dist/**",
+      "build/**"
+    ],
+    "verifyIntegrity": true,
+    "generateBackups": true,
+    "dryRunRequired": true
+  }
+}
 ```
 
 ---
 
-**Status:** Active  
+**Status:** Active  \
 **Last Updated:** 2026-02-02
