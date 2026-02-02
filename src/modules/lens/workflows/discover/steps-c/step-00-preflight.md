@@ -9,9 +9,20 @@ nextStepFile: './step-01-select-target.md'
 ## Goal
 Validate prerequisites and guardrails before discovery. This workflow analyzes code and generates documentation—requires read access to target and write access to output.
 
+**ALSO: Verify .gitignore protection is in place to prevent accidental commits of LENS system files.**
+
 ## Instructions
 
-### 1. Validate Target Project Root
+### 1. Validate .gitignore Protection
+- [ ] Check if `.gitignore` exists in project root
+- [ ] Verify it contains LENS system file patterns:
+  - `_bmad/_memory/` entries
+  - `_bmad/lens/lens-session.yaml`
+  - `_bmad-output/personal/`
+  - `_bmad-output/implementation-artifacts/`
+- [ ] If missing: Display warning and instructions to run `git add .gitignore && git commit`
+
+### 2. Validate Target Project Root
 ```
 target_path = resolve_absolute(config.target_project_root)
 ```
@@ -20,14 +31,14 @@ target_path = resolve_absolute(config.target_project_root)
 - **Check read access**: Must be able to read code files for analysis
 - **Symlink safety**: Resolve and verify contained within workspace
 
-### 2. Validate Lens Metadata
+### 3. Validate Lens Metadata
 **Required for target selection:**
 - `{lens_root}/domain-map.yaml` - list of domains
 - `service.yaml` files - list of services and microservices
 
 **Purpose:** Discovery can target any item in lens hierarchy. Load metadata to present selection options.
 
-### 3. Validate Preselected Target (if applicable)
+### 4. Validate Preselected Target (if applicable)
 If workflow was invoked with a specific target:
 ```yaml
 preselected_target:
@@ -40,7 +51,7 @@ preselected_target:
 - If microservice: verify it's a git repo with code
 - If domain/service: verify at least one child exists
 
-### 4. Resolve Output Folder
+### 5. Resolve Output Folder
 ```
 docs_path = resolve_absolute(config.docs_output_folder)
 ```
@@ -54,14 +65,14 @@ docs_path = resolve_absolute(config.docs_output_folder)
 mkdir -p \"{docs_path}/\"
 ```
 
-### 5. Git Environment Validation
+### 6. Git Environment Validation
 ```bash
 git --version
 ```
 - **Required:** Git is used to extract commit history and JIRA references
 - **Working tree status:** Informational only (discovery doesn't modify repos)
 
-### 6. JIRA Integration Check (Conditional)
+### 7. JIRA Integration Check (Conditional)
 **If `enable_jira_integration == true`:**
 - Validate JIRA credentials
 - Test connectivity
@@ -72,7 +83,7 @@ git --version
 - Skip JIRA checks
 - Note in output
 
-### 7. Load Scout Sidecar State
+### 8. Load Scout Sidecar State
 Read `_memory/scout-sidecar/scout-discoveries.md`:
 ```yaml
 discovered_targets: [list of previously discovered items]
@@ -84,7 +95,7 @@ Check for previous discovery of same target:
 - If exists and recent (<7 days): Offer to refresh or skip
 - If exists but stale: Recommend refresh
 
-### 8. Resource Estimation
+### 9. Resource Estimation
 Based on target type, estimate resources:
 
 | Target Type | Estimated Time | Output Files |
@@ -107,7 +118,7 @@ Previous Discovery: {date|never}
 Proceed? [y/N]
 ```
 
-### 9. Confirm Overwrite Policy
+### 10. Confirm Overwrite Policy
 If docs already exist for target:
 ```
 ⚠️  Documentation already exists for {target}.

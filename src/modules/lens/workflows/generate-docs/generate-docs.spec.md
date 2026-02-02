@@ -67,13 +67,31 @@ installed_path: '{project-root}/_bmad/lens/workflows/generate-docs'
 - [x] Document-producing
 - [ ] Non-document
 
+### Output Structure
+
+**IMPORTANT:** Documentation follows the same domain/service folder structure as TargetProjects.
+
+```
+docs/                              # Project root /docs folder
+├── {Domain}/
+│   └── {Service}/
+│       ├── architecture.md
+│       ├── api-surface.md
+│       ├── data-model.md
+│       ├── integration-map.md
+│       └── onboarding.md
+└── README.md                      # Index of all generated docs
+```
+
+**NOT** `_bmad-output/docs` - documentation goes in the project's `/docs` folder.
+
 ### Output Files
 
-- `{docs_output_folder}/{domain}/{service}/architecture.md`
-- `{docs_output_folder}/{domain}/{service}/api-surface.md`
-- `{docs_output_folder}/{domain}/{service}/data-model.md`
-- `{docs_output_folder}/{domain}/{service}/integration-map.md`
-- `{docs_output_folder}/{domain}/{service}/onboarding.md`
+- `docs/{domain}/{service}/architecture.md`
+- `docs/{domain}/{service}/api-surface.md`
+- `docs/{domain}/{service}/data-model.md`
+- `docs/{domain}/{service}/integration-map.md`
+- `docs/{domain}/{service}/onboarding.md`
 
 ---
 

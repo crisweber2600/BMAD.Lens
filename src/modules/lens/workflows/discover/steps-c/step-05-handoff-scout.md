@@ -274,6 +274,27 @@ Or continue with Navigator for other workflows.
 
 ## Completion
 
+**IMPORTANT: Verify .gitignore is protecting LENS system files before proceeding**
+
+Before completing the discovery workflow, remind user:
+```
+🔒 REMINDER: Verify LENS system file protection
+
+Run these commands to ensure .gitignore is updated and committed:
+
+  git status                # Verify no _bmad/_memory/ files are staging
+  git add .gitignore        # Stage any .gitignore updates
+  git commit -m "chore: protect LENS system files from accidental commits"
+
+This prevents accidental commits of:
+- Session state (_bmad/lens/lens-session.yaml)
+- Sidecar memories (_bmad/_memory/**)
+- Personal profiles (_bmad-output/personal/)
+- Generated artifacts (_bmad-output/implementation-artifacts/)
+```
+
+---
+
 **IF user selected [DEEP] and SCOUT activated in AUTO mode:**
 - SCOUT agent now controls workflow
 - Executes DS → AC → GD on ALL projects in domain map sequentially
@@ -286,6 +307,7 @@ Or continue with Navigator for other workflows.
 - Return to Navigator menu with initial discovery available
 - Can trigger [DEEP] command anytime to start full pipeline
 - Initial reports available for reference
+
 
 **IF SCOUT not available:**
 - Discovery complete with basic reports

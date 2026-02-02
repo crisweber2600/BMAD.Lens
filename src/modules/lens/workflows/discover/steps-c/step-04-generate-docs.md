@@ -2,11 +2,11 @@
 name: 'step-04-generate-docs'
 description: 'Generate docs and update lens metadata'
 outputFiles:
-  - '{docs_output_folder}/{domain}/{service}/architecture.md'
-  - '{docs_output_folder}/{domain}/{service}/api-surface.md'
-  - '{docs_output_folder}/{domain}/{service}/data-model.md'
-  - '{docs_output_folder}/{domain}/{service}/integration-map.md'
-  - '{docs_output_folder}/{domain}/{service}/onboarding.md'
+  - 'docs/{domain}/{service}/architecture.md'
+  - 'docs/{domain}/{service}/api-surface.md'
+  - 'docs/{domain}/{service}/data-model.md'
+  - 'docs/{domain}/{service}/integration-map.md'
+  - 'docs/{domain}/{service}/onboarding.md'
 ---
 
 # Step 4: Generate Docs
@@ -14,12 +14,44 @@ outputFiles:
 ## Goal
 Generate BMAD-ready documentation artifacts from analysis results and update lens metadata to track discovery status.
 
+## Output Structure
+
+**IMPORTANT:** Documentation follows the same domain/service structure as TargetProjects:
+
+```
+docs/                              # NOT _bmad-output/docs
+├── {Domain}/
+│   └── {Service}/
+│       ├── architecture.md
+│       ├── api-surface.md
+│       ├── data-model.md
+│       ├── integration-map.md
+│       └── onboarding.md
+└── README.md                      # Index of all generated docs
+```
+
+**Example for NorthStarET:**
+```
+docs/
+├── NextGen/
+│   ├── NorthStarET/
+│   │   ├── architecture.md
+│   │   ├── api-surface.md
+│   │   └── ...
+│   └── NorthStarET.Student/
+│       └── ...
+├── OldNorthStar/
+│   └── OldNorthStar/
+│       └── ...
+└── README.md
+```
+
 ## Instructions
 
 ### 1. Prepare Output Directory
 ```bash
-# Structure: Docs/{domain}/{service}/
-output_dir = "{docs_output_folder}/{domain}/{service}/"
+# Structure: docs/{domain}/{service}/
+output_dir = "docs/{domain}/{service}/"
 mkdir -p "{output_dir}"
 
 # Backup existing docs if overwrite policy is "backup"

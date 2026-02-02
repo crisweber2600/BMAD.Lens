@@ -241,17 +241,76 @@ If `NEEDS_BOOTSTRAP` status was detected in Phase 3:
   - Ensure `/_bmad-output/personal/` is ignored (personal profiles)
   - Ensure `/TargetProjects/` is present if not already (to sync structure but not content)
   - Add any domain-specific ignore patterns from domain-map.yaml if specified
-- Commit bootstrap setup:
+- **Commit bootstrap and .gitignore update:**
   ```bash
-  git add _bmad/lens/domain-map.yaml _bmad/**/service.yaml .gitignore
-  git commit -m "chore: bootstrap initial lens domain and service configuration"
+  git add _bmad/lens/domain-map.yaml _bmad/**/*.yaml .gitignore
+  git commit -m "chore: initialize LENS domain map, service config, and system file protection"
   ```
   
 - If successful: Show "✅ Repository structure bootstrapped from lens domain map"
-- If failed: Show warning with rollback instructions
+- If commit fails: Show warning with instructions to manually commit
 - Update Phase 3.1 status to `READY` after successful bootstrap
 
-### 5.6 Display Final Status
+### 5.6 Update .gitignore and Commit LENS Configuration
+
+**CRITICAL: Protect LENS system files from accidental commits**
+
+Before completing initialization, ensure .gitignore is properly configured and committed:
+
+#### Step 1: Create/Update .gitignore
+
+Use the LENS .gitignore template: `_bmad/lens/.gitignore.template`
+
+If `.gitignore` doesn't exist in project root:
+```bash
+cp _bmad/lens/.gitignore.template .gitignore
+```
+
+If `.gitignore` already exists:
+- Merge the patterns from `.gitignore.template` into `.gitignore`
+- Ensure these patterns are present:
+
+```gitignore
+# LENS System Files - Never commit these
+_bmad/_memory/**/*.md
+_bmad/_memory/**/*.jsonl
+_bmad/_memory/**/*.json
+_bmad/lens/lens-session.yaml
+_bmad-output/personal/
+_bmad-output/implementation-artifacts/
+```
+
+#### Step 2: Verify Git Status
+```bash
+# Check what would be committed
+cd {project-root}
+git status
+```
+
+**Ensure NO files from `_bmad/_memory/` or `.gitignore`-listed paths appear in staging area.**
+
+#### Step 3: Commit .gitignore Update
+```bash
+cd {project-root}
+git add .gitignore
+git commit -m "chore: add LENS system file protection to gitignore"
+```
+
+**Display:**
+```
+🔒 Protecting LENS system files from accidental commits...
+✅ .gitignore updated and committed
+```
+
+#### Step 4: Verify Clean Working Directory
+After commit, verify no LENS system files are untracked or staged:
+```bash
+git status
+```
+
+**Expected result:** Only project files should be untracked, not LENS system files.
+
+### 5.7 Display Final Status
 After all auto-remediation:
 ```
 ╭──────────────────────────────────────────────────────────────╮
