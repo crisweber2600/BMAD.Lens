@@ -30,5 +30,15 @@ discovery_depth:
 
 docs_output_folder:
   prompt: "Where should generated docs be written?"
-  default: "{project-root}/Docs"
+  default: "{project-root}/docs"
+  result: "{value}"
+
+lens_data_folder:
+  prompt: "Where should lens data be stored?"
+  default: "{project-root}/_bmad/lens"
+  result: "{value}"
+
+metadata_output_folder:
+  prompt: "Where should BMAD metadata be stored?"
+  default: "{project-root}/_bmad-output"
   result: "{value}"

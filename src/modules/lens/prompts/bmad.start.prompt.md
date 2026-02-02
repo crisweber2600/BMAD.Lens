@@ -6,14 +6,14 @@ description: Run LENS system preflight check and activate Navigator - validates 
 
 Execute a comprehensive preflight check of all LENS systems, automatically initialize any installed extensions on first run, then activate Navigator for workflow guidance.
 
-**First Run Behavior:** If no session exists (`.lens/lens-session.yaml` missing), this workflow will automatically bring all installed extensions to OPERATIONAL status by running initialization routines.
+**First Run Behavior:** If no session exists (`_bmad/lens/lens-session.yaml` missing), this workflow will automatically bring all installed extensions to OPERATIONAL status by running initialization routines.
 
 ## Phase 1: Core System Preflight Check
 
 ### 1.1 LENS Core Module
 - [ ] Check for module config: `_bmad/lens/module-config.yaml`
 - [ ] Check for Navigator agent: `_bmad/lens/agents/navigator.agent.yaml`
-- [ ] Check for session store path in config (`.lens/lens-session.yaml`)
+- [ ] Check for session store path in config (`_bmad/lens/lens-session.yaml`)
 - [ ] Validate branch patterns are defined (domain, service, microservice, feature)
 
 ### 1.2 Sidecar Memory System
@@ -58,7 +58,7 @@ Verify essential workflows are present:
 - [ ] Verify `_bmad/lens-compass/` directory exists (installation target)
 
 **Operational Readiness:**
-- [ ] Roster initialized: `.bmad-roster.yaml` exists at project root
+- [ ] Roster initialized: `_bmad/lens-compass/roster.yaml` exists
 - [ ] Personal profiles folder exists: Check configured path or default `_bmad-output/personal/`
 - [ ] Git identity configured: Verify `use_git_identity` setting in installed module config
 - [ ] At least one profile exists: Check for user profile files
@@ -87,7 +87,7 @@ Verify essential workflows are present:
 
 **Operational Readiness:**
 - [ ] Constitution root configured: Verify path in installed module config
-- [ ] At least one constitution exists: Check `lens/constitutions/` for `.md` files
+- [ ] At least one constitution exists: Check `_bmad/lens/constitutions/` for `.md` files
 - [ ] Scribe agent operational: `_bmad/_memory/scribe-sidecar/scribe-state.md` exists
 - [ ] Compliance check setting: Verify `auto_compliance_check` configuration
 
@@ -95,14 +95,26 @@ Verify essential workflows are present:
 
 ## Phase 3: Environment & Setup Status
 
-### 3.1 Target Project Structure
+### 3.1 Target Project Structure & Bootstrap Detection
 - [ ] Check if `TargetProjects/` directory exists
-- [ ] If exists: Ready for normal operation
-- [ ] If missing: Check for `_lens/domain-map.yaml` (bootstrap data)
-- [ ] Report setup state: `READY` | `NEEDS_BOOTSTRAP` | `NEEDS_SETUP`
+- [ ] If exists with content: **Verify git repository status**
+  - [ ] For each expected repository (from `domain-map.yaml`):
+    - [ ] Check if directory exists
+    - [ ] Check if `.git/` folder exists (is it a valid git repository?)
+    - [ ] If git repo: Verify branch matches expected branch from `service.yaml`
+  - [ ] If all repos cloned with correct branches: Report state as `READY`
+  - [ ] If some repos missing or not git repos: Report state as `NEEDS_BOOTSTRAP` (partial setup)
+- [ ] If missing or empty: Check for bootstrap configuration:
+  - [ ] Look for `_bmad/lens/domain-map.yaml`
+  - [ ] If found: Validate YAML structure (must have `domains` key)
+  - [ ] For each domain: Verify `service.yaml` exists and is valid
+  - [ ] Collect all `git_repo` URLs for connectivity pre-check
+  - [ ] Report: `NEEDS_BOOTSTRAP` (bootstrap data found and valid)
+- [ ] If no bootstrap data found: Report `NEEDS_SETUP` (manual configuration required)
+- [ ] Final states: `READY` | `NEEDS_BOOTSTRAP` | `NEEDS_SETUP`
 
 ### 3.2 Session State
-- [ ] Check for existing session: `.lens/lens-session.yaml`
+- [ ] Check for existing session: `_bmad/lens/lens-session.yaml`
 - [ ] If exists: Report last lens position and timestamp → **Skip Phase 5 (already initialized)**
 - [ ] If missing: Fresh start detected → **Proceed to Phase 5 (auto-remediation)**
 
@@ -139,9 +151,25 @@ Display a status card summarizing all checks:
 │     └─ Auto-compliance....... [✅ Enabled | ⚠️ Disabled]                  │
 ├──────────────────────────────────────────────────────────────┤
 │  SETUP STATUS                                                │
-│  ├─ TargetProjects............ [READY | NEEDS_BOOTSTRAP | NONE]          │
+│  ├─ TargetProjects............ [READY | NEEDS_BOOTSTRAP | NEEDS_SETUP]   │
+│  │  └─ Bootstrap Config...... [✅ Valid | ⚠️ Partial | ❌ Invalid | N/A] │
+│  │     ├─ Domain Map......... [✅ domains.yaml found | ❌ Missing]        │
+│  │     └─ Service Definitions [✅ N services | ⚠️ Some missing | ❌ None] │
 │  ├─ Session State............. [ACTIVE | FRESH]                          │
 │  └─ Discovery Index........... [INDEXED | NOT_RUN]                       │
+├──────────────────────────────────────────────────────────────┤
+│  BOOTSTRAP STATUS                                            │
+│  [✅ CONFIGURED | ⚠️ STARTER_TEMPLATE]                       │
+│                                                              │
+│  If domain-map.yaml NOT FOUND:                               │
+│  → Phase 5.5 will auto-create starter domain-map.yaml       │
+│  → You can then define domains, services, and repositories  │
+│  → Run Phase 5.5 again to bootstrap from your config        │
+│                                                              │
+│  If domain-map.yaml FOUND:                                   │
+│  ✅ Bootstrap ready to configure repository structure       │
+│  → Phase 5.5 will clone all defined repositories            │
+│  → Review and approve the sync plan before cloning          │
 ├──────────────────────────────────────────────────────────────┤
 │  OVERALL STATUS: [✅ ALL SYSTEMS OPERATIONAL | ⚠️ SOME NEED SETUP | ❌ CRITICAL ISSUES]  │
 │  [Action Required: Run module installers for extensions marked NOT_INSTALLED]  │
@@ -162,11 +190,24 @@ If status is `INSTALLED_NOT_RUN`:
 
 ### 5.2 lens-compass Auto-Initialize  
 If status is `INSTALLED_NOT_CONFIGURED`:
-- Create roster file: Generate `.bmad-roster.yaml` with current git user
+- Create roster file: Generate `_bmad/lens-compass/roster.yaml` with current git user
 - Create profiles folder: `_bmad-output/personal/` or configured path
-- Create initial profile: Use git identity to create first user profile
+- Execute onboarding workflow: `_bmad/lens-compass/workflows/onboarding/workflow.md`
+  - Step 1: Detect git identity and confirm user
+  - Step 2: **Explain available roles and collect selection:**
+    
+    **Available Roles:**
+    - **Product Owner (PO)**: Strategic decision-maker who defines features, priorities, and domain architecture. Uses workflows like new-service, new-domain, and lens-switch to shape the system.
+    - **Architect/Lead Dev**: Technical leader who designs solutions, reviews code, and coordinates implementation. Uses workflows like solutioning, architecture review, and sprint planning.
+    - **Developer**: Implementation specialist who builds features, fixes bugs, and maintains code quality. Uses workflows like dev-story, code-review, and feature implementation.
+    - **Power User**: Multi-role contributor who can operate across different contexts. Commonly architects who also write code, or POs with technical depth.
+    
+    Present these roles and ask the user to select their primary role(s). Power Users can select multiple roles.
+    
+  - Step 3: Persist user profile with selected role(s) and preferences
+- Update `.gitignore`: Add `/_bmad-output/personal/` to exclude personal profiles from repo
 - Display: "👤 Configuring role-based navigation..."
-- Show: "✅ lens-compass operational"
+- Show: "✅ lens-compass operational - Profile created with role: {selected_roles}"
 
 ### 5.3 git-lens Auto-Initialize
 If status is `INSTALLED_NOT_INITIALIZED`:
@@ -178,13 +219,39 @@ If status is `INSTALLED_NOT_INITIALIZED`:
 
 ### 5.4 spec Auto-Initialize
 If status is `INSTALLED_NO_CONSTITUTIONS`:
-- Create constitution root: Ensure `lens/constitutions/` directory exists
+- Create constitution root: Ensure `_bmad/lens/constitutions/` directory exists
 - Generate default constitution: Create basic `default-constitution.md` with standard governance rules
 - Initialize Scribe state: Create `_bmad/_memory/scribe-sidecar/scribe-state.md`
 - Display: "📜 Creating default constitution..."
 - Show: "✅ spec operational"
 
-### 5.5 Display Final Status
+### 5.5 Bootstrap Repository Structure (If Needed)
+If `NEEDS_BOOTSTRAP` status was detected in Phase 3:
+- Display: "🔄 Setting up target project structure from bootstrap configuration..."
+- Execute bootstrap workflow: `{project-root}/_bmad/lens/workflows/bootstrap/workflow.md`
+  - Step 0: Preflight validation (TargetProjects guardrails, YAML parsing, git environment)
+  - Step 1: Load lens domain map and service definitions
+  - Step 2: Scan current target project structure
+  - Step 3: Present comparison and get user approval for repository clones
+  - Step 4: Execute sync (create folders, clone git repositories)
+- Wait for completion
+
+**After Bootstrap Completion:**
+- Update `.gitignore` to ensure proper ignore patterns:
+  - Ensure `/_bmad-output/personal/` is ignored (personal profiles)
+  - Ensure `/TargetProjects/` is present if not already (to sync structure but not content)
+  - Add any domain-specific ignore patterns from domain-map.yaml if specified
+- Commit bootstrap setup:
+  ```bash
+  git add _bmad/lens/domain-map.yaml _bmad/**/service.yaml .gitignore
+  git commit -m "chore: bootstrap initial lens domain and service configuration"
+  ```
+  
+- If successful: Show "✅ Repository structure bootstrapped from lens domain map"
+- If failed: Show warning with rollback instructions
+- Update Phase 3.1 status to `READY` after successful bootstrap
+
+### 5.6 Display Final Status
 After all auto-remediation:
 ```
 ╭──────────────────────────────────────────────────────────────╮
@@ -195,6 +262,7 @@ After all auto-remediation:
 │  • lens-compass: User profile created                        │
 │  • git-lens: Branch tracking active                          │
 │  • spec: Default constitution created                        │
+│  • bootstrap: N domains, M repositories cloned, X GB data    │
 ╰──────────────────────────────────────────────────────────────╯
 ```
 
@@ -204,7 +272,102 @@ After preflight and auto-remediation complete:
 1. Load agent: `_bmad/lens/agents/navigator.agent.yaml`
 2. Execute Navigator's activation_sequence (which includes its own preflight)
 3. Display navigation card with current lens and available workflows
-4. Auto-run GUIDE workflow for contextual recommendations
+4. Proceed to Phase 7 for postflight verification
+
+## Phase 7: Postflight Verification & Recommendations
+
+After Navigator activation, perform a final verification to ensure all systems are operational:
+
+### 7.1 System Health Verification
+
+Re-check critical systems to confirm operational status:
+- [ ] Verify all extension sidecars have initialized state files
+- [ ] Confirm session file created: `_bmad/lens/lens-session.yaml`
+- [ ] Check SCOUT discovery completed (if lens-sync initialized)
+- [ ] Verify user profile exists (if lens-compass initialized)
+- [ ] Confirm git-lens tracking is active (if git-lens initialized)
+- [ ] Verify constitution exists (if spec initialized)
+
+### 7.2 Generate Postflight Report
+
+Display a concise summary of operational status:
+
+```
+╭──────────────────────────────────────────────────────────────╮
+│  ✅ POSTFLIGHT CHECK - ALL SYSTEMS OPERATIONAL                │
+├──────────────────────────────────────────────────────────────┤
+│  System Health:                                              │
+│  ├─ Core LENS................ ✅ Operational                 │
+│  ├─ lens-sync................ ✅ Operational                 │
+│  ├─ lens-compass............. ✅ Operational                 │
+│  ├─ git-lens................. ✅ Operational                 │
+│  ├─ spec..................... ✅ Operational                 │
+│  └─ Navigator................ ✅ Active                      │
+├──────────────────────────────────────────────────────────────┤
+│  📊 Discovery Status:                                         │
+│  • Indexed files: N files across M repositories             │
+│  • Tracked repositories: X git repos in TargetProjects      │
+│  • User profile: {name} ({role})                             │
+╰──────────────────────────────────────────────────────────────╯
+```
+
+### 7.3 First Recommendations
+
+Present immediate next steps based on system state:
+
+**🎯 Recommended First Action: Run SCOUT Discovery**
+
+Since this is your first run, it's recommended to perform a comprehensive SCOUT discovery to index your entire codebase:
+
+```
+╭──────────────────────────────────────────────────────────────╮
+│  🔍 RECOMMENDED: Run SCOUT Discovery                          │
+├──────────────────────────────────────────────────────────────┤
+│  Why: SCOUT builds a comprehensive index of your architecture │
+│  enabling faster navigation, better context awareness, and   │
+│  intelligent workflow recommendations.                       │
+│                                                              │
+│  What it does:                                               │
+│  • Indexes all source files, configs, and documentation      │
+│  • Maps service dependencies and boundaries                  │
+│  • Identifies architectural patterns and anti-patterns       │
+│  • Enables semantic search across your codebase             │
+│                                                              │
+│  Command: [DISC] or say "Run SCOUT discovery"               │
+│  Time: ~2-5 minutes for typical projects                    │
+╰──────────────────────────────────────────────────────────────╯
+```
+
+**Other Available Actions:**
+1. **[GUIDE]** - Get workflow recommendations based on current lens
+2. **[NAV]** - Detect and display current architectural lens
+3. **[SW]** - Switch to a different lens level
+4. **[BOOT]** - Configure domain map and bootstrap structure (if needed)
+
+### 7.4 Display Welcome Message
+
+Show personalized welcome with system capabilities:
+
+```
+╭──────────────────────────────────────────────────────────────╮
+│  🎉 Welcome to LENS - Layered Enterprise Navigation System   │
+├──────────────────────────────────────────────────────────────┤
+│  Hello {user_name} ({role})!                                 │
+│                                                              │
+│  Your architectural navigation system is ready. LENS helps  │
+│  you work efficiently across {N} repositories by providing: │
+│                                                              │
+│  ✨ Smart lens detection (Domain/Service/Microservice)      │
+│  🔍 SCOUT-powered discovery and semantic search              │
+│  🧭 Role-aware workflow recommendations                      │
+│  🌳 Git workflow orchestration with Tracey                   │
+│  📜 Constitutional governance with SPEC                      │
+│  🔗 Cross-repository link management                         │
+│                                                              │
+│  Type [DISC] to index your codebase, or [GUIDE] for next   │
+│  steps based on your current context!                       │
+╰──────────────────────────────────────────────────────────────╯
+```
 
 ## Error Handling
 
@@ -263,6 +426,7 @@ At any point, user can:
     [Phase 1-3: Preflight Checks]
     • Core systems health
     • Extension installation status
+    • Environment & bootstrap detection
     • Session state detection
            ↓
     ┌─────────────────────┐
@@ -276,6 +440,7 @@ At any point, user can:
            ↓         • lens-compass → Create roster/profiles
            ↓         • git-lens → Initialize Tracey
            ↓         • spec → Create default constitution
+           ↓         • bootstrap → Clone repos (if configured)
            ↓              ↓
            ↓         Display: ✅ All systems operational
            ↓              ↓
@@ -284,9 +449,57 @@ At any point, user can:
            [Phase 6: Activate Navigator]
            • Load agent
            • Display navigation card
-           • Run GUIDE workflow
                   ↓
-           Ready for use!
+           [Phase 7: Postflight Verification]
+           • Re-verify all systems operational
+           • Display postflight report (green status)
+           • Recommend SCOUT discovery as first action
+           • Show welcome message with capabilities
+                  ↓
+           🎉 Ready for use!
+           First suggestion: [DISC] Run SCOUT Discovery
 ```
 
-**Key Principle:** First run should leave the system fully operational. Subsequent runs skip initialization and proceed directly to Navigator activation.
+**Key Principle:** First run should leave the system fully operational, including repository bootstrap if bootstrap data is present. Subsequent runs skip initialization and proceed directly to Navigator activation. All runs complete with postflight verification and actionable recommendations.
+
+---
+
+## Postflight Success Criteria
+
+The system is considered fully operational when:
+- ✅ All installed extensions report OPERATIONAL status
+- ✅ Session state file exists with current lens position
+- ✅ SCOUT discovery has indexed at least basic file structure
+- ✅ User profile exists with role(s) selected
+- ✅ Navigator responds to commands
+
+If any criteria fail, the postflight report shows warnings with remediation steps.
+```
+
+**Key Principle:** First run should leave the system fully operational, including repository bootstrap if bootstrap data is present. Subsequent runs skip initialization and proceed directly to Navigator activation.
+
+## Bootstrap Integration Details
+
+### When Bootstrap Executes
+- **Trigger**: Detected in Phase 3.1 when `domain-map.yaml` exists but `TargetProjects/` is empty
+- **Timing**: Phase 5.5, after all extension initialization (extensions are configured before repos are cloned)
+- **User Control**: User is shown approval prompts in bootstrap Step 3 (compare & approve) before any clones occur
+
+### Prerequisites for Bootstrap
+- ✅ `_bmad/lens/domain-map.yaml` must exist and be valid YAML
+- ✅ Each referenced `service.yaml` must exist in `_bmad/{domain}/service.yaml`
+- ✅ Git must be available in PATH
+- ✅ SSH keys or credentials configured for private repos (if any)
+
+### Bootstrap Output
+- Creates `docs/bootstrap/bootstrap-report.md` with detailed status
+- Clones repositories into `TargetProjects/{domain}/{service}/{microservice}/` hierarchy
+- Initializes git workflow state for each cloned repo
+- Updates Scout discovery to index newly cloned repositories
+
+### Rollback on Failure
+If bootstrap fails:
+- Partial clones are left in place (user can inspect)
+- Bootstrap report indicates which steps failed
+- User options: Retry, Manual fix, or Skip to Navigator (operate without bootstrap)
+- No automatic cleanup to preserve partial state for diagnostics

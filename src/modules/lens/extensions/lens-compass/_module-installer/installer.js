@@ -1,7 +1,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
-const supportedIDEs = new Set(['claude-code', 'windsurf', 'cursor']);
+const supportedIDEs = new Set(['claude-code', 'windsurf', 'cursor', 'github-copilot']);
 
 async function pathExists(filePath) {
     try {

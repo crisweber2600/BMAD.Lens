@@ -1,7 +1,2 @@
-# BMAD personal profiles and session metadata
+# BMAD personal profiles
 _bmad-output/personal/
-
-# Bootstrap temporary files and generated reports
-# (bootstrap-report.md goes to docs/bootstrap/ which is tracked)
-_bmad/lens/.bootstrap-*
-_bmad/lens/*.lock

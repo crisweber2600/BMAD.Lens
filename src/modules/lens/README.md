@@ -24,6 +24,11 @@ bmad install lens
 
 ## Quick Start
 
+**First Run (Automatic Setup):**
+1. Run `bmad.start` to activate LENS with automatic first-run initialization
+2. If `domain-map.yaml` exists, bootstrap will clone repositories automatically (with approval)
+3. Navigator activates with full context after initialization completes
+
 **Navigation & Context:**
 1. Run `navigator` to detect your current lens.
 2. Use `guide` to get lens-aware workflow recommendations.

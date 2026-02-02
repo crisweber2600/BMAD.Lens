@@ -1,8 +1,9 @@
 # Workflow Specification: bootstrap
 
 **Module:** lens
-**Status:** Placeholder — To be created via create-workflow workflow
+**Status:** Active — Integrated with LENS startup workflow
 **Created:** 2026-01-31
+**Updated:** 2026-02-02
 
 ---
 
@@ -38,13 +39,13 @@ installed_path: '{project-root}/_bmad/lens/workflows/bootstrap'
 
 ## Planned Steps
 
-| Step | Name | Goal |
-|------|------|------|
-| 1 | Load lens domain map | Load domain-map.yaml and service definitions |
-| 2 | Scan target project | Inventory current folder structure |
-| 3 | Compare and analyze gaps | Identify missing repos and mismatches |
-| 4 | Execute sync | Create folders and clone repositories with approval |
-| 5 | Validate and report | Confirm sync completion and write report |
+| Step | Name | Goal | Status |
+|------|------|------|--------|
+| 0 | Preflight checks | Validate TargetProjects guardrails and dependencies | ✅ Implemented |
+| 1 | Load lens domain map | Load domain-map.yaml and service definitions | ✅ Implemented |
+| 2 | Scan target project | Inventory current folder structure | ✅ Implemented |
+| 3 | Compare and approve | Identify gaps and get user approval | ✅ Implemented |
+| 4 | Execute sync & report | Create folders, clone repositories, generate report | ✅ Implemented |
 
 ---
 
@@ -90,7 +91,25 @@ Link (integrity checks)
 
 ## Implementation Notes
 
-**Use the create-workflow workflow to build this workflow.**
+**Integrated with LENS Startup:** This workflow is automatically triggered during first-run setup (Phase 5.5 of bmad.start.prompt.md) when bootstrap configuration is detected but TargetProjects/ is empty or missing.
+
+**Integration Points:**
+- **Trigger**: Detected in Phase 3.1 of startup when `domain-map.yaml` exists but `TargetProjects/` needs population
+- **Timing**: Executes after extension initialization (Phase 5.1-5.4) to ensure Scout can immediately index cloned repositories
+- **User Control**: Approval prompts in Step 3 prevent accidental massive clones
+- **Output**: Creates `_bmad-output/bootstrap-report.md` with detailed status and updates Scout discovery index
+
+**Key Features:**
+- ✅ Create-only mode (never deletes existing repositories)
+- ✅ TargetProjects/ guardrails prevent cloning outside safe zones
+- ✅ Explicit branch checkout enforcement (no implicit defaults)
+- ✅ Partial clone preservation on failure for diagnostics
+- ✅ Network pre-checks before bulk cloning
+- ✅ Progress tracking with rollback capability
+
+**See Also:**
+- [bmad.start.prompt.md](../../prompts/bmad.start.prompt.md) - Startup workflow integration
+- [Bootstrap Integration Guide](./docs/bootstrap-integration.md) - Detailed integration documentation
 
 ---
 

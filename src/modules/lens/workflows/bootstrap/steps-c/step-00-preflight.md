@@ -56,24 +56,6 @@ Locate lens root at `{target_path}/_lens/` or `{target_path}/lens/` (check both,
 
 **Note:** The lens configuration files define where repositories will be cloned within the TargetProjects structure.
 
-**Auto-Create domain-map.yaml if Missing:**
-```
-domain_map_path = "{lens_root}/domain-map.yaml"
-
-if NOT exists(domain_map_path):
-  # Copy starter template
-  starter_template = "{lens_workspace_root}/workflows/bootstrap/templates/domain-map.starter.yaml"
-  copy_file(starter_template, domain_map_path)
-  
-  # Notify user
-  WARN: "domain-map.yaml not found. Created starter template at {domain_map_path}"
-  WARN: "Please edit domain-map.yaml to define your domains and services."
-  WARN: "Then re-run LENS startup to proceed with repository bootstrap."
-  
-  # Stop here - let user configure
-  nextStepFile: './step-00-preflight.md' (same step, will pass on next run)
-```
-
 **Required files:**
 | File | Purpose | Validation |
 |------|---------|------------|

@@ -67,6 +67,21 @@ All services must maintain up-to-date README, API documentation, and runbook.
 
 ---
 
+### Article VI: Documentation Discipline
+
+Agents must NOT create markdown documents, summaries, or reports unless they are:
+1. Explicitly requested by the user, OR
+2. Required as an output artifact by a BMAD workflow, OR
+3. Part of the standard BMAD process documentation (PRDs, architecture docs, etc.)
+
+**Rationale:** Unsolicited documentation creates noise, clutters repositories, and dilutes the value of essential documentation. Every document must serve a clear purpose within the BMAD process.
+
+**Evidence Required:** All created markdown files must be traceable to user request or workflow specification.
+
+**Violations:** Creating summary documents, implementation reports, or "for your reference" documentation without explicit instruction.
+
+---
+
 ## Governance
 
 ### Amendment Process
