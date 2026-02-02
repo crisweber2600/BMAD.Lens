@@ -38,38 +38,47 @@ Discovery reports generated:
 
 ### 3. Deep Scan Prompt
 
+**CRITICAL: You MUST display this prompt and wait for user response before proceeding.**
+
 **Display:**
 ```
-🔍 Initial Discovery Complete!
-
-Discovery Summary:
-- Targets scanned: {target_count}
-- Services identified: {service_count}
-- Microservices detected: {microservice_count}
-
-Reports generated at:
-{project-root}/_bmad-output/implementation-artifacts/scout-discovery/
-
----
-
-🧭 Would you like to run a deep scan next?
-
-SCOUT can run the complete discovery pipeline (DS → AC → GD) for comprehensive 
-technical analysis and documentation generation.
-
-This will:
-• Perform deep brownfield codebase analysis
-• Extract all APIs, data models, and business logic
-• Generate comprehensive BMAD-ready documentation
-• Map architectural patterns and anti-patterns
-• Analyze cross-service dependencies
-
-Estimated time: 15-30 minutes per project
-
-Options:
-[DEEP]  Run full deep scan pipeline (recommended for first run)
-[SKIP]  Continue to Navigator (you can run deep scan anytime)
+╭──────────────────────────────────────────────────────────────╮
+│  🔍 Initial Discovery Complete!                              │
+├──────────────────────────────────────────────────────────────┤
+│  Discovery Summary:                                          │
+│  • Targets scanned: {target_count}                           │
+│  • Services identified: {service_count}                      │
+│  • Microservices detected: {microservice_count}              │
+│                                                              │
+│  Reports generated at:                                       │
+│  {project-root}/_bmad-output/implementation-artifacts/       │
+├──────────────────────────────────────────────────────────────┤
+│  🧭 Would you like to run a deep scan next?                  │
+│                                                              │
+│  SCOUT can run the complete discovery pipeline for           │
+│  comprehensive technical analysis and documentation:         │
+│                                                              │
+│  Pipeline Steps:                                             │
+│  1. [DS] Deep Discover ⭐ RECOMMENDED - Deep brownfield scan │
+│  2. [AC] Analyze Codebase - Technical analysis               │
+│  3. [GD] Generate Docs - Comprehensive documentation         │
+│                                                              │
+│  This will:                                                  │
+│  • Perform deep brownfield codebase analysis                │
+│  • Extract all APIs, data models, and business logic        │
+│  • Generate comprehensive BMAD-ready documentation          │
+│  • Map architectural patterns and anti-patterns             │
+│  • Analyze cross-service dependencies                       │
+│                                                              │
+│  Estimated time: 15-30 minutes per project                   │
+├──────────────────────────────────────────────────────────────┤
+│  Options:                                                    │
+│  [DEEP]  Run full deep scan pipeline (recommended)           │
+│  [SKIP]  Continue to Navigator (you can run [DEEP] anytime)  │
+╰──────────────────────────────────────────────────────────────╯
 ```
+
+**WAIT for user to respond with [DEEP] or [SKIP] before proceeding.**
 
 ### 4. User Decision Branch
 

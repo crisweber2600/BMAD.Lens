@@ -553,4 +553,9 @@ generation_result:
 ```
 
 ## Next Step
+
+**CRITICAL:** After completing document generation, you MUST proceed to step-05 to present the deep scan prompt to the user.
+
 **Proceed to:** [./step-05-handoff-scout.md](./step-05-handoff-scout.md)
+
+**DO NOT skip step-05.** The user must be asked whether they want to run a deep scan.

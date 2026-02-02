@@ -416,6 +416,69 @@ At any point, user can:
 
 ---
 
+## DISC Command: Discovery Workflow
+
+**When user types [DISC] or requests SCOUT discovery:**
+
+1. Execute the discover workflow: `_bmad/lens/workflows/discover/workflow.md`
+2. Complete steps 00-04 (preflight, target selection, context extraction, analysis, doc generation)
+3. **CRITICAL: Execute step-05-handoff-scout.md** which MUST:
+
+### Deep Scan Prompt (Required)
+
+After initial discovery completes, you **MUST** present this prompt to the user:
+
+```
+╭──────────────────────────────────────────────────────────────╮
+│  🔍 Initial Discovery Complete!                              │
+├──────────────────────────────────────────────────────────────┤
+│  Discovery Summary:                                          │
+│  • Targets scanned: {count}                                  │
+│  • Services identified: {count}                              │
+│  • Files indexed: {count}                                    │
+├──────────────────────────────────────────────────────────────┤
+│  🧭 Would you like to run a deep scan next?                  │
+│                                                              │
+│  SCOUT can run the complete discovery pipeline for           │
+│  comprehensive technical analysis and documentation:         │
+│                                                              │
+│  • [DS] Deep Discover ⭐ RECOMMENDED                         │
+│  • [AC] Analyze Codebase                                     │
+│  • [GD] Generate Docs                                        │
+│                                                              │
+│  Estimated time: 15-30 minutes per project                   │
+├──────────────────────────────────────────────────────────────┤
+│  Options:                                                    │
+│  [DEEP]  Run full deep scan pipeline (recommended)           │
+│  [SKIP]  Continue to Navigator (run later with [DEEP])       │
+╰──────────────────────────────────────────────────────────────╯
+```
+
+**DO NOT skip this prompt.** The user must choose whether to run the deep scan.
+
+---
+
+## MAP Command: Domain Map Workflow
+
+**When user types [MAP] or requests domain map:**
+
+1. Execute the domain-map workflow: `_bmad/lens/workflows/domain-map/workflow.md`
+2. **CRITICAL: Detect git remote URLs** for each repository:
+
+### Git Remote URL Detection (Required)
+
+For each repository in TargetProjects, run:
+```bash
+cd {repo_path} && git remote get-url origin 2>/dev/null
+```
+
+- If remote exists: Use the URL in the `git_repo` field
+- If no remote: Show `(local repository - no remote configured)`
+
+**DO NOT show "(local repository)" if a remote URL exists.** Always check with git commands.
+
+---
+
 ## Workflow Summary
 
 ```
