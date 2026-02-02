@@ -120,37 +120,7 @@ Discovery and synchronization can be customized with:
 - `target_project_root` — Project to scan and sync (default: project root)
 - `enable_jira_integration` — JIRA integration during discovery (default: false)
 - `discovery_depth` — Analysis depth: shallow, standard, or deep (default: standard)
-- `docs_output_folder` — Where to write generated docs (default: `docs/`)
-
-### Documentation Output Structure
-
-Generated documentation follows the same domain/service folder structure as TargetProjects:
-
-```
-docs/                              # Project root /docs folder (NOT _bmad-output/docs)
-├── {Domain}/
-│   └── {Service}/
-│       ├── architecture.md
-│       ├── api-surface.md
-│       ├── data-model.md
-│       ├── integration-map.md
-│       └── onboarding.md
-└── README.md                      # Index of all generated docs
-```
-
-**Example:**
-```
-docs/
-├── NextGen/
-│   ├── NorthStarET/
-│   │   ├── architecture.md
-│   │   └── ...
-│   └── NorthStarET.Student/
-│       └── ...
-└── OldNorthStar/
-    └── OldNorthStar/
-        └── ...
-```
+- `docs_output_folder` — Where to write generated docs (default: {project-root}/Docs)
 
 ---
 

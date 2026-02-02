@@ -59,27 +59,13 @@ target_projects_check:
   path: "{workspace_root}/TargetProjects"
   
   if exists_with_content:
-    # Smart validation: Check git repository status
-    git_validation:
-      - Load domain-map.yaml and service.yaml files
-      - For each microservice with git_repo defined:
-        check:
-          - Directory exists at expected path
-          - .git/ folder exists (is valid git repository)
-          - Current branch matches expected branch from service.yaml
-      
-      if all_repos_cloned_and_correct_branch:
-        status: READY
-        action: Skip bootstrap (fully populated with valid git repos)
-      
-      if some_repos_missing_or_invalid:
-        status: NEEDS_BOOTSTRAP
-        action: Partial setup detected, proceed to Phase 5.5 to complete
-        details: List which repos are missing or need branch checkout
+    status: READY
+    action: Skip bootstrap (already populated)
   
   if missing_or_empty:
     check_bootstrap_config:
-      - path: "_bmad/lens/domain-map.yaml"
+      - primary: "_bmad/lens/domain-map.yaml"
+      - fallback: "lens/domain-map.yaml"
       
     if config_found:
       validate:
@@ -96,12 +82,7 @@ target_projects_check:
         action: Show validation errors, guide user to fix config
     else:
       status: NEEDS_SETUP
-      action: Phase 5.5 will auto-create starter domain-map.yaml
-      workflow: |
-        Step 1: Auto-create _bmad/lens/domain-map.yaml (empty template)
-        Step 2: Prompt user to define domains, services, and repositories
-        Step 3: After user updates config, re-run LENS startup
-        Step 4: Phase 5.5 will then proceed with repository bootstrap
+      action: Manual configuration required
 ```
 
 ### Bootstrap Configuration Validation
@@ -119,23 +100,12 @@ target_projects_check:
 6. ✅ `git_repo` URLs are syntactically valid (if present)
 7. ✅ Git executable is available in PATH
 
-**Git Repository Validation (if TargetProjects exists):**
-8. ✅ Each expected repository directory exists
-9. ✅ Each directory contains `.git/` folder (is valid git repository)
-10. ✅ Current branch matches expected branch from `service.yaml`
-11. ✅ Git remote matches expected `git_repo` URL
-
 **Validation Output:**
 ```yaml
 bootstrap_config_status:
   valid: true|false
   errors: [list of validation errors]
   warnings: [list of warnings]
-  git_status:
-    repos_expected: N
-    repos_cloned: N
-    repos_missing: [list]
-    repos_wrong_branch: [list]
   summary:
     total_domains: N
     total_services: N
@@ -156,34 +126,15 @@ bootstrap_config_status:
 │  ├─ TargetProjects............ NEEDS_BOOTSTRAP               │
 │  │  └─ Bootstrap Config...... ✅ Valid                      │
 │  │     ├─ Domain Map......... ✅ domain-map.yaml found      │
-│  │     ├─ Service Definitions ✅ 3 domains, 8 services      │
-│  │     └─ Git Status......... ⚠️ 10/15 repos cloned         │
-│  │        ├─ Missing......... 5 repos need cloning          │
-│  │        └─ Wrong Branch.... 0 repos need checkout         │
+│  │     └─ Service Definitions ✅ 3 domains, 8 services      │
+│  │        └─ Repositories.... 15 repos ready to clone       │
 ╰──────────────────────────────────────────────────────────────╯
 ```
 
-**When TargetProjects Exists:**
-The system performs deep validation:
-- Checks each expected repository directory
-- Verifies `.git/` folders exist (valid git repos)
-- Compares current branch with expected branch
-- Reports: `READY` (all valid) or `NEEDS_BOOTSTRAP` (partial/incomplete)
-
 **Status Meanings:**
-- `READY` - TargetProjects/ fully populated with valid git repos on correct branches
-- `NEEDS_BOOTSTRAP` - One of:
-  - TargetProjects/ empty/missing with valid bootstrap config
-  - TargetProjects/ partially populated (some repos missing or not cloned)
-  - Git repos exist but on wrong branches
+- `READY` - TargetProjects/ populated, bootstrap not needed
+- `NEEDS_BOOTSTRAP` - Configuration valid, ready to auto-clone
 - `NEEDS_SETUP` - No valid bootstrap config, manual setup required
-
-**Partial Setup Recovery:**
-Bootstrap is smart about existing content:
-- ✅ Skips repositories that are already cloned with correct branch
-- ✅ Clones missing repositories
-- ✅ Checks out correct branch if repository exists but on wrong branch
-- ✅ Safe to re-run after partial failures
 
 ---
 
@@ -300,7 +251,7 @@ Proceed with bootstrap? [y/N]: _
 │  • bootstrap: 3 domains, 15 repositories cloned, 2.3 GB data │
 │                                                              │
 │  📄 Reports generated:                                       │
-│  • docs/bootstrap/bootstrap-report.md                        │
+│  • _bmad-output/bootstrap-report.md                          │
 ╰──────────────────────────────────────────────────────────────╯
 ```
 

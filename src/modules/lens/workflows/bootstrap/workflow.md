@@ -14,15 +14,12 @@ installed_path: '{project-root}/_bmad/lens/workflows/bootstrap'
 
 ## Quick Start
 
-1. Run LENS startup workflow (bmad.start) or execute this workflow manually
-2. If `_bmad/lens/domain-map.yaml` does not exist:
-   - Phase 5.5 will auto-create a starter template
-   - Define your domains, services, and repositories
-   - Run LENS startup again to bootstrap
-3. If `_bmad/lens/domain-map.yaml` exists, validate service.yaml files
+1. Ensure `_bmad/lens/domain-map.yaml` exists and is valid
+2. Ensure each domain has a `service.yaml` file
+3. Run LENS startup workflow (bmad.start) or execute this workflow manually
 4. Review and approve sync plan when prompted
 5. Wait for clones to complete
-6. Review bootstrap report in `docs/bootstrap/bootstrap-report.md`
+6. Review bootstrap report in `_bmad-output/bootstrap-report.md`
 
 ## Workflow Steps
 

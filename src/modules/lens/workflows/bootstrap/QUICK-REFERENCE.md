@@ -23,17 +23,12 @@ LENS Startup → Phase 3.1 Detection → Phase 5.5 Bootstrap → Phase 6 Navigat
 ✅ **Automatically triggers when:**
 - First run (no session exists)
 - `_bmad/lens/domain-map.yaml` exists
-- `TargetProjects/` is empty, missing, OR has incomplete git repositories
+- `TargetProjects/` is empty or missing
 - Configuration is valid
 
-**Smart Detection:** Even if `TargetProjects/` exists, bootstrap will run if:
-- Expected repository directories are missing
-- Directories exist but don't have `.git/` folders (not cloned)
-- Git repositories exist but on wrong branch
-
 ❌ **Does NOT run when:**
-- Session exists (not first run) AND all repos are valid
-- `TargetProjects/` fully populated with correct git repos and branches
+- Session exists (not first run)
+- `TargetProjects/` already populated
 - No domain-map.yaml found
 - Configuration validation fails
 
@@ -108,7 +103,7 @@ Proceed with bootstrap? [y/N]: _
 
 ## Output
 
-**Report:** `docs/bootstrap/bootstrap-report.md`
+**Report:** `_bmad-output/bootstrap-report.md`
 
 **Structure Created:**
 ```
