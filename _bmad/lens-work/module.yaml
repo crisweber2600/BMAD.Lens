@@ -1,0 +1,171 @@
+# LENS Workbench Module Configuration
+# Generated: 2026-02-03 via BMAD Module workflow
+
+code: lens-work
+name: "LENS Workbench"
+header: "Guided lifecycle router with git-orchestrated discipline"
+subheader: "Phase-aware orchestration for BMAD workflows with automated branch topology"
+default_selected: false
+
+# Module Type
+type: standalone
+global: false
+
+# Dependencies
+dependencies:
+  - bmm      # Core workflow execution
+  - core     # BMAD core infrastructure
+
+optional_dependencies:
+  - cis      # Creative Innovation Suite (brainstorming/research)
+  - tea      # Test Engineering Academy (test planning)
+
+# Installation Questions
+install_questions:
+  target_projects_path:
+    prompt: "Path to TargetProjects folder (where repos are cloned)"
+    default: "../TargetProjects"
+    result: "{answer}"
+  
+  docs_output_path:
+    prompt: "Path for canonical documentation output"
+    default: "Docs"
+    result: "{answer}"
+  
+  enable_telemetry:
+    prompt: "Enable lifecycle telemetry dashboards?"
+    type: boolean
+    default: true
+    result: "{answer}"
+  
+  default_git_remote:
+    prompt: "Default git remote type"
+    type: single-select
+    options:
+      - github
+      - gitlab
+      - azure-devops
+    default: github
+    result: "{answer}"
+
+# Agent Roster
+agents:
+  - id: compass
+    file: agents/compass.agent.yaml
+    name: Compass
+    role: Phase-aware lifecycle router
+  
+  - id: casey
+    file: agents/casey.agent.yaml
+    name: Casey
+    role: Git branch orchestrator
+  
+  - id: tracey
+    file: agents/tracey.agent.yaml
+    name: Tracey
+    role: State & recovery specialist
+  
+  - id: scout
+    file: agents/scout.agent.yaml
+    name: Scout
+    role: Bootstrap & discovery manager
+
+# Workflow Categories
+workflow_categories:
+  core:
+    description: "Auto-triggered lifecycle operations"
+    workflows:
+      - init-initiative
+      - start-workflow
+      - finish-workflow
+      - detect-layer
+      - phase-transition
+      - start-phase
+      - finish-phase
+      - open-lead-review
+      - open-final-pbr
+  
+  router:
+    description: "Phase router commands (user-facing)"
+    workflows:
+      - pre-plan
+      - spec
+      - plan
+      - review
+      - dev
+  
+  discovery:
+    description: "Repo discovery and documentation"
+    workflows:
+      - repo-discover
+      - repo-document
+      - repo-reconcile
+      - repo-status
+  
+  utility:
+    description: "Manual/support workflows"
+    workflows:
+      - status
+      - resume
+      - sync
+      - fix-state
+      - override
+      - archive
+      - bootstrap
+      - onboarding
+      - setup-rollback
+      - fix-story
+
+# Prompts (entry point commands)
+prompts:
+  directory: "prompts/"
+  files:
+    # System
+    - lens-work.start.prompt.md
+    - lens-work.compass.prompt.md
+    # Phase Router (Compass)
+    - lens-work.pre-plan.prompt.md
+    - lens-work.spec.prompt.md
+    - lens-work.plan.prompt.md
+    - lens-work.review.prompt.md
+    - lens-work.dev.prompt.md
+    # Initiative Commands (Compass)
+    - lens-work.new-domain.prompt.md
+    - lens-work.new-service.prompt.md
+    - lens-work.new-feature.prompt.md
+    - lens-work.fix-story.prompt.md
+    # State & Recovery (Tracey)
+    - lens-work.status.prompt.md
+    - lens-work.resume.prompt.md
+    - lens-work.sync.prompt.md
+    - lens-work.fix.prompt.md
+    - lens-work.override.prompt.md
+    - lens-work.archive.prompt.md
+    # Bootstrap & Discovery (Scout)
+    - lens-work.onboard.prompt.md
+    - lens-work.bootstrap.prompt.md
+    - lens-work.discover.prompt.md
+    - lens-work.document.prompt.md
+    - lens-work.reconcile.prompt.md
+    - lens-work.repo-status.prompt.md
+    - lens-work.rollback.prompt.md
+
+# Output Paths
+outputs:
+  state_file: "_bmad-output/lens-work/state.yaml"
+  event_log: "_bmad-output/lens-work/event-log.jsonl"
+  repo_inventory: "_bmad-output/lens-work/repo-inventory.yaml"
+  bootstrap_report: "_bmad-output/lens-work/bootstrap-report.md"
+  document_log: "_bmad-output/lens-work/repo-document-log.md"
+  dashboards: "_bmad-output/lens-work/dashboards/"
+
+# Git Configuration
+git:
+  fetch_strategy: background
+  fetch_ttl: 60
+  branch_patterns:
+    base: "lens/{initiative_id}/base"
+    small_lane: "lens/{initiative_id}/small"
+    lead_lane: "lens/{initiative_id}/lead"
+    phase: "lens/{initiative_id}/{lane}/p{phase_number}"
+    workflow: "lens/{initiative_id}/{lane}/p{phase_number}/w/{workflow_name}"

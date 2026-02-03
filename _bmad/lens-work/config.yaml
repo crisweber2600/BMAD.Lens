@@ -1,0 +1,25 @@
+# LENS Workbench Configuration
+# Generated during installation
+# Date: 2026-02-03T18:21:27.115Z
+
+# TargetProjects path (where repos are cloned)
+target_projects_path: "../TargetProjects"
+
+# Docs output path
+docs_output_path: "Docs"
+
+# Telemetry settings
+telemetry:
+  enabled: true
+  dashboard_format: json  # json, html
+
+# Git settings
+git:
+  default_remote: github
+  fetch_strategy: background
+  fetch_ttl: 60
+
+# Role gating (advisory by default)
+role_gating:
+  enabled: true
+  mode: advisory  # advisory, enforced

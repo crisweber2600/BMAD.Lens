@@ -45,6 +45,14 @@ modules:
     source: external
     npmPackage: bmad-method-test-architecture-enterprise
     repoUrl: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+  - name: lens-work
+    version: 0.1.0
+    installDate: 2026-02-03T18:30:00.000Z
+    lastUpdated: 2026-02-03T18:30:00.000Z
+    source: local
+    npmPackage: null
+    repoUrl: null
+    description: "LENS Workbench - Guided lifecycle router with git-orchestrated discipline"
 ides:
   - codex
   - github-copilot
