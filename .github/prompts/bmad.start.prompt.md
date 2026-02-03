@@ -41,8 +41,8 @@ Verify essential workflows are present:
 ### 2.1 LENS-Sync Extension (Discovery & Synchronization)
 
 **Installation Check:**
-- [ ] Check if `_bmad/_config/manifest.yaml` lists `lens-sync` as installed module
-- [ ] Verify `_bmad/lens-sync/` directory exists (installation target, not source)
+- [ ] Check if `_bmad/_config/manifest.yaml` lists `lens` as installed module (extensions are part of lens)
+- [ ] Verify `_bmad/lens/extensions/lens-sync/` directory exists (extensions install under lens module)
 
 **Operational Readiness:**
 - [ ] Bridge agent operational: `_bmad/_memory/bridge-sidecar/bridge-state.md` exists with state data
@@ -54,11 +54,11 @@ Verify essential workflows are present:
 ### 2.2 LENS-Compass Extension (Role-Based Navigation)
 
 **Installation Check:**
-- [ ] Check if `_bmad/_config/manifest.yaml` lists `lens-compass` as installed module
-- [ ] Verify `_bmad/lens-compass/` directory exists (installation target)
+- [ ] Check if `_bmad/_config/manifest.yaml` lists `lens` as installed module (extensions are part of lens)
+- [ ] Verify `_bmad/lens/extensions/lens-compass/` directory exists (extensions install under lens module)
 
 **Operational Readiness:**
-- [ ] Roster initialized: `_bmad/lens-compass/roster.yaml` exists
+- [ ] Roster initialized: `_bmad/lens/extensions/lens-compass/roster.yaml` exists
 - [ ] Personal profiles folder exists: Check configured path or default `_bmad-output/personal/`
 - [ ] Git identity configured: Verify `use_git_identity` setting in installed module config
 - [ ] At least one profile exists: Check for user profile files
@@ -68,22 +68,22 @@ Verify essential workflows are present:
 ### 2.3 Git-Lens Extension (Git Workflow Orchestration)
 
 **Installation Check:**
-- [ ] Check if `_bmad/_config/manifest.yaml` lists `git-lens` as installed module
-- [ ] Verify `_bmad/git-lens/` directory exists (installation target)
+- [ ] Check if `_bmad/_config/manifest.yaml` lists `lens` as installed module (extensions are part of lens)
+- [ ] Verify `_bmad/lens/extensions/git-lens/` directory exists (extensions install under lens module)
 
 **Operational Readiness:**
 - [ ] Tracey state initialized: `_bmad/_memory/tracey-sidecar/memories.md` exists
 - [ ] Event log present: Check for `event-log.jsonl` in tracey-sidecar
 - [ ] Base branch configured: Verify `base_ref` in installed module config
-- [ ] Git hooks registered: Check if hook files exist in `_bmad/git-lens/hooks/`
+- [ ] Git hooks registered: Check if hook files exist in `_bmad/lens/extensions/git-lens/hooks/`
 
 **Status:** `OPERATIONAL` | `INSTALLED_NOT_INITIALIZED` | `NOT_INSTALLED`
 
 ### 2.4 SPEC Extension (Constitutional Governance)
 
 **Installation Check:**
-- [ ] Check if `_bmad/_config/manifest.yaml` lists `spec` as installed module
-- [ ] Verify `_bmad/spec/` directory exists (installation target)
+- [ ] Check if `_bmad/_config/manifest.yaml` lists `lens` as installed module (extensions are part of lens)
+- [ ] Verify `_bmad/lens/extensions/spec/` directory exists (extensions install under lens module)
 
 **Operational Readiness:**
 - [ ] Constitution root configured: Verify path in installed module config
@@ -183,16 +183,16 @@ Display a status card summarizing all checks:
 ### 5.1 lens-sync Auto-Initialize
 If status is `INSTALLED_NOT_RUN`:
 - Create Bridge state: Initialize `_bmad/_memory/bridge-sidecar/bridge-state.md` with empty state
-- Run Scout discovery: Execute `_bmad/lens-sync/workflows/discover/workflow.md` to index codebase
+- Run Scout discovery: Execute `_bmad/lens/extensions/lens-sync/workflows/discover/workflow.md` to index codebase
 - Create Link state: Initialize `_bmad/_memory/link-sidecar/link-state.md`
 - Display: "🔍 Running initial SCOUT discovery..."
 - Wait for completion, then show: "✅ lens-sync operational"
 
 ### 5.2 lens-compass Auto-Initialize  
 If status is `INSTALLED_NOT_CONFIGURED`:
-- Create roster file: Generate `_bmad/lens-compass/roster.yaml` with current git user
+- Create roster file: Generate `_bmad/lens/extensions/lens-compass/roster.yaml` with current git user
 - Create profiles folder: `_bmad-output/personal/` or configured path
-- Execute onboarding workflow: `_bmad/lens-compass/workflows/onboarding/workflow.md`
+- Execute onboarding workflow: `_bmad/lens/extensions/lens-compass/workflows/onboarding/workflow.md`
   - Step 1: Detect git identity and confirm user
   - Step 2: **Explain available roles and collect selection:**
     
@@ -452,8 +452,8 @@ If extensions have issues but core is healthy:
 **Extension Not Installed:**
 - Status: ⚠️ WARNING (not blocking)
 - Auto-skip in Phase 5 (can't initialize what's not installed)
-- Offer: `[I] Install {name}` → Run module installer after activation
-- Guide: "Run the local extension installer, e.g. `node _bmad/lens/extensions/{name}/_module-installer/installer.js install` (installed project) or `node src/modules/lens/extensions/{name}/_module-installer/installer.js install` (source repo). If you are using the standard BMAD package without local sources, run: `npx bmad-method@alpha install`"
+- Offer: `[I] Install LENS module` → Reinstall lens module to get extensions
+- Guide: "Extensions are installed as part of the LENS module. To reinstall extensions, run `npx bmad-method@alpha install` and select the LENS module. If using source repo, check `src/modules/lens/extensions/` for extension sources. Extensions install to `_bmad/lens/extensions/{name}/`."
 
 **Extension Partially Configured:**
 - Status: ⚠️ NEEDS INITIALIZATION (will be fixed in Phase 5)

@@ -1,7 +1,12 @@
 # Bridge State
 
-Tracks sync status, recent drift reports, and reconciliation decisions.
+## Current State
+- **Status**: Initialized
+- **Last Updated**: 2026-02-03
+- **Sync State**: Ready
 
-- last_sync:
-- last_drift_report:
-- pending_conflicts:
+## Active Links
+No active links yet. Links will appear here after running discovery.
+
+## Sync History
+- 2026-02-03: Bridge sidecar initialized
