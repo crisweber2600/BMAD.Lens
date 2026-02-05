@@ -76,45 +76,45 @@ agent:
 
   menu:
     # Bootstrap Commands
-    - trigger: onboard or fuzzy match on onboarding or getting started
+    - trigger: "onboard or fuzzy match on onboarding or getting started"
       workflow: "{project-root}/_bmad/lens-work/workflows/utility/onboarding/workflow.md"
       description: "[onboard] Create profile + run bootstrap"
     
-    - trigger: bootstrap or fuzzy match on setup or init
+    - trigger: "bootstrap or fuzzy match on setup or init"
       workflow: "{project-root}/_bmad/lens-work/workflows/utility/bootstrap/workflow.md"
       description: "[bootstrap] Setup TargetProjects from service map"
     
-    - trigger: rollback or fuzzy match on undo or revert setup
+    - trigger: "rollback or fuzzy match on undo or revert setup"
       workflow: "{project-root}/_bmad/lens-work/workflows/utility/setup-rollback/workflow.md"
       description: "[rollback] Revert bootstrap to snapshot"
     
     # Discovery Commands
-    - trigger: discover or fuzzy match on inventory or scan
+    - trigger: "discover or fuzzy match on inventory or scan"
       workflow: "{project-root}/_bmad/lens-work/workflows/discovery/repo-discover/workflow.md"
       description: "[discover] Inventory TargetProjects vs service map (no mutation)"
     
-    - trigger: document or fuzzy match on docs or generate docs
+    - trigger: "document or fuzzy match on docs or generate docs"
       workflow: "{project-root}/_bmad/lens-work/workflows/discovery/repo-document/workflow.md"
       description: "[document] Run document-project + quick-spec per repo"
     
-    - trigger: reconcile or fuzzy match on clone or fix repos
+    - trigger: "reconcile or fuzzy match on clone or fix repos"
       workflow: "{project-root}/_bmad/lens-work/workflows/discovery/repo-reconcile/workflow.md"
       description: "[reconcile] Clone/fix/checkout with snapshot support"
     
-    - trigger: repo-status or fuzzy match on health check
+    - trigger: "repo-status or fuzzy match on health check"
       workflow: "{project-root}/_bmad/lens-work/workflows/discovery/repo-status/workflow.md"
       description: "[repo-status] Fast health check for confidence scoring"
     
     # Utility Commands
-    - trigger: H or fuzzy match on help or menu
+    - trigger: "H or fuzzy match on help or menu"
       action: "display_menu"
       description: "[H] Display Scout's menu"
     
-    - trigger: CH or fuzzy match on chat
+    - trigger: "CH or fuzzy match on chat"
       action: "chat_mode"
       description: "[CH] Chat with Scout about repos and setup"
     
-    - trigger: DA or fuzzy match on dismiss or exit
+    - trigger: "DA or fuzzy match on dismiss or exit"
       action: "exit"
       description: "[DA] Dismiss Scout agent"
 

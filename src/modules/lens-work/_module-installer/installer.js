@@ -1,6 +1,19 @@
-const fs = require('fs-extra');
+const fs = require('node:fs');
+const fsp = require('node:fs/promises');
 const path = require('node:path');
-const chalk = require('chalk');
+let chalk = null;
+try {
+    chalk = require('chalk');
+} catch {
+    // Optional dependency in some installer contexts
+    chalk = {
+        blue: (s) => s,
+        yellow: (s) => s,
+        green: (s) => s,
+        gray: (s) => s,
+        red: (s) => s,
+    };
+}
 
 /**
  * LENS Workbench Module Installer
@@ -13,23 +26,34 @@ const chalk = require('chalk');
  */
 async function install(options) {
     const { projectRoot, config, installedIDEs, logger } = options;
+    const pathExists = async (p) => {
+        try {
+            await fsp.access(p);
+            return true;
+        } catch {
+            return false;
+        }
+    };
+    const ensureDir = async (p) => {
+        await fsp.mkdir(p, { recursive: true });
+    };
 
     try {
         logger.log(chalk.blue('Installing LENS Workbench (lens-work)...'));
 
         // Create lens-work output directory
         const outputDir = path.join(projectRoot, '_bmad-output', 'lens-work');
-        if (!(await fs.pathExists(outputDir))) {
+        if (!(await pathExists(outputDir))) {
             logger.log(chalk.yellow(`Creating output directory: _bmad-output/lens-work/`));
-            await fs.ensureDir(outputDir);
+            await ensureDir(outputDir);
         }
 
         // Create subdirectories
         const subdirs = ['dashboards', 'archive', 'snapshots'];
         for (const subdir of subdirs) {
             const subdirPath = path.join(outputDir, subdir);
-            if (!(await fs.pathExists(subdirPath))) {
-                await fs.ensureDir(subdirPath);
+            if (!(await pathExists(subdirPath))) {
+                await ensureDir(subdirPath);
             }
         }
 
@@ -37,20 +61,20 @@ async function install(options) {
         if (config['docs_output_path']) {
             const docsPath = config['docs_output_path'].replace('{project-root}/', '');
             const docsDir = path.join(projectRoot, docsPath);
-            if (!(await fs.pathExists(docsDir))) {
+            if (!(await pathExists(docsDir))) {
                 logger.log(chalk.yellow(`Creating docs directory: ${docsPath}/`));
-                await fs.ensureDir(docsDir);
+                await ensureDir(docsDir);
             }
         }
 
         // Create lens-work config file
         const configDir = path.join(projectRoot, '_bmad', 'lens-work');
-        if (!(await fs.pathExists(configDir))) {
-            await fs.ensureDir(configDir);
+        if (!(await pathExists(configDir))) {
+            await ensureDir(configDir);
         }
 
         const configFile = path.join(configDir, 'config.yaml');
-        if (!(await fs.pathExists(configFile))) {
+        if (!(await pathExists(configFile))) {
             const configContent = `# LENS Workbench Configuration
 # Generated during installation
 
@@ -77,19 +101,19 @@ role_gating:
   mode: advisory  # advisory, enforced
 `;
             logger.log(chalk.yellow('Creating lens-work config file'));
-            await fs.writeFile(configFile, configContent);
+            await fsp.writeFile(configFile, configContent);
         }
 
         // Initialize empty state file
         const stateFile = path.join(outputDir, 'state.yaml');
-        if (!(await fs.pathExists(stateFile))) {
+        if (!(await pathExists(stateFile))) {
             const stateContent = `# LENS Workbench State
 # Auto-managed by lens-work - do not edit manually
 
 version: 1
 active_initiative: null
 `;
-            await fs.writeFile(stateFile, stateContent);
+            await fsp.writeFile(stateFile, stateContent);
         }
 
         // IDE-specific configuration
@@ -112,7 +136,7 @@ async function configureForIDE(ide, projectRoot, config, logger) {
     const platformSpecificPath = path.join(__dirname, 'platform-specifics', `${ide}.js`);
 
     try {
-        if (await fs.pathExists(platformSpecificPath)) {
+        if (await pathExists(platformSpecificPath)) {
             const platformHandler = require(platformSpecificPath);
             if (typeof platformHandler.install === 'function') {
                 await platformHandler.install({ projectRoot, config, logger });

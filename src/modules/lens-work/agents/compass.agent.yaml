@@ -60,62 +60,62 @@ agent:
 
   menu:
     # Phase Router Commands
-    - trigger: /pre-plan or fuzzy match on preplan or analysis
+    - trigger: "/pre-plan or fuzzy match on preplan or analysis"
       workflow: "{project-root}/_bmad/lens-work/workflows/router/pre-plan/workflow.md"
       description: "[/pre-plan] Launch Analysis phase (brainstorm/research/product brief)"
     
-    - trigger: /spec or fuzzy match on specification or planning
+    - trigger: "/spec or fuzzy match on specification or planning"
       workflow: "{project-root}/_bmad/lens-work/workflows/router/spec/workflow.md"
       description: "[/spec] Launch Planning phase (PRD/UX/Architecture)"
     
-    - trigger: /plan or fuzzy match on solutioning or stories
+    - trigger: "/plan or fuzzy match on solutioning or stories"
       workflow: "{project-root}/_bmad/lens-work/workflows/router/plan/workflow.md"
       description: "[/plan] Complete Solutioning (Epics/Stories/Readiness)"
     
-    - trigger: /review or fuzzy match on review or gate
+    - trigger: "/review or fuzzy match on review or gate"
       workflow: "{project-root}/_bmad/lens-work/workflows/router/review/workflow.md"
       description: "[/review] Implementation gate (readiness/sprint planning)"
     
-    - trigger: /dev or fuzzy match on development or implement
+    - trigger: "/dev or fuzzy match on development or implement"
       workflow: "{project-root}/_bmad/lens-work/workflows/router/dev/workflow.md"
       description: "[/dev] Implementation loop (dev-story/code-review/retro)"
     
     # Initiative Commands
-    - trigger: "#new-domain" or fuzzy match on new domain
+    - trigger: "#new-domain or fuzzy match on new domain"
       workflow: "{project-root}/_bmad/lens-work/workflows/core/init-initiative/workflow.md"
       description: "[#new-domain] Create domain-level initiative"
       params:
         layer: domain
     
-    - trigger: "#new-service" or fuzzy match on new service
+    - trigger: "#new-service or fuzzy match on new service"
       workflow: "{project-root}/_bmad/lens-work/workflows/core/init-initiative/workflow.md"
       description: "[#new-service] Create service-level initiative"
       params:
         layer: service
     
-    - trigger: "#new-feature" or fuzzy match on new feature
+    - trigger: "#new-feature or fuzzy match on new feature"
       workflow: "{project-root}/_bmad/lens-work/workflows/core/init-initiative/workflow.md"
       description: "[#new-feature] Create feature-level initiative"
       params:
         layer: feature
     
-    - trigger: "#fix-story" or fuzzy match on fix story or correction
+    - trigger: "#fix-story or fuzzy match on fix story or correction"
       workflow: "{project-root}/_bmad/lens-work/workflows/utility/fix-story/workflow.md"
       description: "[#fix-story] Correction loop (Quick-Spec → Review → Quick-Dev)"
     
     # Utility Commands
-    - trigger: H or fuzzy match on help or menu
+    - trigger: "H or fuzzy match on help or menu"
       action: "display_menu"
       description: "[H] Display menu and guidance"
     
-    - trigger: "?" or fuzzy match on status or where
+    - trigger: "? or fuzzy match on status or where"
       action: '@tracey ST'
       description: "[?] Quick status check (delegates to Tracey)"
     
-    - trigger: CH or fuzzy match on chat
+    - trigger: "CH or fuzzy match on chat"
       action: "chat_mode"
       description: "[CH] Chat with Compass about lifecycle navigation"
     
-    - trigger: DA or fuzzy match on dismiss or exit
+    - trigger: "DA or fuzzy match on dismiss or exit"
       action: "exit"
       description: "[DA] Dismiss Compass agent"
