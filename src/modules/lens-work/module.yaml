@@ -32,6 +32,32 @@ install_questions:
     default: "Docs"
     result: "{answer}"
   
+  discovery_depth:
+    prompt: "Default discovery depth?"
+    type: single-select
+    options:
+      - shallow
+      - standard
+      - deep
+    default: standard
+    result: "{answer}"
+  
+  enable_jira_integration:
+    prompt: "Enable JIRA integration during discovery?"
+    type: boolean
+    default: false
+    result: "{answer}"
+  
+  lens_data_folder:
+    prompt: "Path for lens data storage"
+    default: "{project-root}/_bmad/lens-work"
+    result: "{answer}"
+  
+  metadata_output_folder:
+    prompt: "Path for BMAD metadata storage"
+    default: "{project-root}/_bmad-output"
+    result: "{answer}"
+  
   enable_telemetry:
     prompt: "Enable lifecycle telemetry dashboards?"
     type: boolean
@@ -101,6 +127,10 @@ workflow_categories:
       - repo-document
       - repo-reconcile
       - repo-status
+      - discover
+      - analyze-codebase
+      - generate-docs
+      - lens-sync
   
   utility:
     description: "Manual/support workflows"
@@ -146,6 +176,7 @@ prompts:
     - lens-work.bootstrap.prompt.md
     - lens-work.discover.prompt.md
     - lens-work.document.prompt.md
+    - lens-work.lens-sync.prompt.md
     - lens-work.reconcile.prompt.md
     - lens-work.repo-status.prompt.md
     - lens-work.rollback.prompt.md

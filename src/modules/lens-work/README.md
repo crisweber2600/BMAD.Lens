@@ -48,6 +48,20 @@ During installation, you'll be prompted for:
 | **Tracey** | Diagnostics | State management and recovery |
 | **Scout** | Pathfinder | Repo discovery, documentation, and bootstrap |
 
+### Discovery (Deep)
+
+The lens-work module now embeds the LENS discovery stack:
+
+- **discover** (preflight → select target → extract context → analyze-codebase → generate-docs → deep-scan handoff)
+- **analyze-codebase** (static analysis: stack, API surface, data models, integrations, architecture patterns, security signals)
+- **generate-docs** (writes architecture/api/data-model/integration/onboarding docs to `{docs_output_path}/{domain}/{service}/`)
+- **lens-sync** (discovers structure, compares to `.lens/domain-map.yaml`, applies approved updates)
+
+Config knobs (set at install):
+- `discovery_depth` (`shallow|standard|deep`)
+- `enable_jira_integration` (bool)
+- `lens_data_folder`, `metadata_output_folder`, `docs_output_path`
+
 ### Phase Router Commands
 
 | Command | Phase | Owner |

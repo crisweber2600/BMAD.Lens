@@ -1,28 +1,30 @@
 ```prompt
 ---
-description: Generate canonical documentation for in-scope repos using document-project and quick-spec
+description: Regenerate docs from existing analysis results (generate-docs workflow)
 ---
 
-Activate Scout agent and execute document:
+Activate Scout agent and execute generate-docs:
 
 1. Load agent: `_bmad/lens-work/agents/scout.agent.yaml`
-2. Execute `document` command to generate docs
-3. Run document-project + quick-spec per repo
-4. Write to canonical path with frontmatter
+2. Execute workflow `generate-docs`
+3. Use prior analysis (`_memory/scout-sidecar/analysis/*.yaml`) as input
+4. Render docs to canonical path with frontmatter
 
 **Prerequisites:**
-- `discover` must run first (needs repo-inventory.yaml)
+- `discover` (deep) should have produced analysis results
+- If analysis missing, rerun discover
 
 **Output Path:**
-`Docs/{domain}/{service}/{repo}/`
-- `project-context.md` — From document-project
-- `current-state.tech-spec.md` — From quick-spec
+`{docs_output_path}/{domain}/{service}/`
+- `architecture.md`
+- `api-surface.md`
+- `data-model.md`
+- `integration-map.md`
+- `onboarding.md`
 
 **Decision Logic:**
-- `skip`: No changes since last documentation
-- `incremental`: Minor changes—update quick-spec only
-- `full`: Major changes—regenerate both docs
-
-**Frontmatter:** All docs include standardized machine-readable frontmatter.
+- If docs exist: follow overwrite/merge/abort policy from preflight
+- If analysis stale (>7 days): warn and suggest re-analyze
+- If no API/model signals: write placeholders with "Not detected"
 
 ```
