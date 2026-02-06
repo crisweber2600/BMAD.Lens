@@ -75,7 +75,7 @@ if state == null:
     No lens-work state exists yet.
     
     To get started:
-    └── Run #new-domain, #new-service, or #new-feature to create an initiative
+    └── Run /new-domain, /new-service, or /new-feature to create an initiative
   exit: 0
 
 # Load active initiative config (two-file architecture)
@@ -94,15 +94,16 @@ else:
     📍 No active initiative in state.
     
     To start:
-    └── Run #new-domain, #new-service, or #new-feature
+    └── Run /new-domain, /new-service, or /new-feature
   exit: 0
 
 # Capture current position
 current_branch = exec("git branch --show-current")
 current_phase = state.current.phase or "unknown"
 current_phase_name = state.current.phase_name or "Unknown"
-current_lane = state.current.lane or "unknown"
+current_lane = initiative.lane or "unknown"       # Lane from shared initiative config
 current_layer = initiative.layer or "unknown"
+domain_prefix = initiative.domain_prefix or "lens"
 
 # Display current position summary
 output: |
@@ -169,7 +170,7 @@ initiative_dir = "_bmad-output/lens-work/initiatives/"
 if not dir_exists(initiative_dir):
   output: |
     ❌ No initiatives directory found.
-    └── Run #new-domain, #new-service, or #new-feature to create your first initiative.
+    └── Run /new-domain, /new-service, or /new-feature to create your first initiative.
   exit: 1
 
 initiative_files = list_files(initiative_dir, "*.yaml")
@@ -177,7 +178,7 @@ initiative_files = list_files(initiative_dir, "*.yaml")
 if initiative_files.length == 0:
   output: |
     ❌ No initiative configs found in ${initiative_dir}
-    └── Run #new-domain, #new-service, or #new-feature to create an initiative.
+    └── Run /new-domain, /new-service, or /new-feature to create an initiative.
   exit: 1
 
 if initiative_files.length == 1 AND initiative_files[0].id == initiative.id:
@@ -247,7 +248,7 @@ else
   else
     error "Branch '${target_branch}' not found locally or on remote."
     echo "Available branches for this initiative:"
-    git branch -a | grep "lens/${selected.id}/"
+    git branch -a | grep "${selected.id}/"
     exit 1
   fi
 fi
@@ -257,9 +258,10 @@ fi
 # Update state.yaml with new active initiative
 state.active_initiative = selected.id
 state.current.phase = selected.phase
-state.current.lane = extract_lane(selected.active_branch)
 state.current.workflow = null
 state.current.workflow_status = null
+
+# Note: lane is read from initiative config, NOT stored in personal state
 
 # Continue to Step 7 for state sync
 goto: Step 7
@@ -307,7 +309,7 @@ if new_layer == current_layer:
 if new_layer == "domain" AND initiative.target_repos.length <= 1:
   output: |
     ⚠️  Cannot switch to domain lens — initiative has only one target repo.
-    └── Domain lens requires multiple repos. Consider creating a #new-domain initiative.
+    └── Domain lens requires multiple repos. Consider creating a /new-domain initiative.
   exit: 1
 
 # Prompt for scope specifics based on new layer
@@ -383,8 +385,8 @@ if phase_choice == current_phase_num:
   exit: 0
 
 # Determine target branch for selected phase
-# Branch pattern: lens/{initiative_id}/{lane}/p{N}
-target_branch = "lens/${initiative.id}/${current_lane}/${selected_phase.code}"
+# New branch pattern: {Domain}/{InitiativeId}/{lane}-{phaseNumber}
+target_branch = "${domain_prefix}/${initiative.id}/${current_lane}-${phase_choice}"
 
 output: "🔀 Switching to phase P${phase_choice} (${selected_phase.name})..."
 ```
@@ -408,7 +410,7 @@ else
   # Branch doesn't exist — create it from current lane branch
   echo "Branch '${target_branch}' does not exist. Creating..."
   
-  lane_branch="lens/${initiative_id}/${current_lane}"
+  lane_branch="${domain_prefix}/${initiative_id}/${current_lane}"
   
   # Ensure lane branch exists
   if git show-ref --verify --quiet "refs/heads/${lane_branch}"; then
@@ -452,7 +454,7 @@ goto: Step 7
 lane_map = {
   "1": { code: "small",  description: "Small team — planning & development lane" },
   "2": { code: "medium", description: "Medium team — multi-track coordination" },
-  "3": { code: "large",  description: "Large team — lead review & governance" }
+  "3": { code: "large",  description: "Large team — review & governance" }
 }
 
 output: |
@@ -485,13 +487,13 @@ if selected_lane.code == current_lane:
   exit: 0
 
 # Determine target branch for selected lane
-# Branch pattern: lens/{initiative_id}/{lane}
-lane_branch = "lens/${initiative.id}/${selected_lane.code}"
+# New branch pattern: {Domain}/{InitiativeId}/{lane}
+lane_branch = "${domain_prefix}/${initiative.id}/${selected_lane.code}"
 
 # If currently on a phase branch, also create the phase branch under the new lane
 current_phase_num = extract_phase_number(current_phase)
 if current_phase_num != null:
-  phase_branch = "${lane_branch}/p${current_phase_num}"
+  phase_branch = "${domain_prefix}/${initiative.id}/${selected_lane.code}-${current_phase_num}"
   target_branch = phase_branch
 else:
   target_branch = lane_branch
@@ -514,7 +516,7 @@ elif git show-ref --verify --quiet "refs/remotes/origin/${lane_branch}"; then
   git checkout -  # go back, we'll checkout target below
 else
   # Create lane branch from base
-  base_branch="lens/${initiative_id}/base"
+  base_branch="${domain_prefix}/${initiative_id}/base"
   if git show-ref --verify --quiet "refs/heads/${base_branch}"; then
     git checkout "${base_branch}"
   elif git show-ref --verify --quiet "refs/remotes/origin/${base_branch}"; then
@@ -550,8 +552,8 @@ fi
 ```
 
 ```yaml
-# Update state with new lane
-state.current.lane = selected_lane.code
+# Update lane in initiative config (stored in shared config, not personal state)
+initiative.lane = selected_lane.code
 
 # Update initiative config
 initiative.branches.active = target_branch
@@ -580,7 +582,7 @@ state.last_switch = {
   to: {
     initiative: state.active_initiative or initiative.id,
     phase: state.current.phase,
-    lane: state.current.lane,
+      lane: initiative.lane,
     branch: exec("git branch --show-current")
   }
 }
@@ -650,7 +652,7 @@ output: |
   ├── Initiative: ${initiative.name} (${initiative.id})
   ├── Lens: ${initiative.layer}
   ├── Phase: ${state.current.phase} (${state.current.phase_name})
-  ├── Lane: ${state.current.lane}
+  ├── Lane: ${initiative.lane}
   ├── Branch: ${new_branch}
   └── Ready for: ${next_command}
   

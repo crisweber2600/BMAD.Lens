@@ -41,8 +41,13 @@ invoke: casey.verify-clean-state
 state = load("_bmad-output/lens-work/state.yaml")
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 
+# Read lane from initiative config (shared, canonical)
+lane = initiative.lane
+domain_prefix = initiative.domain_prefix
+
 # Validate we're on the correct branch (or can switch)
-expected_branch: "lens/${initiative.id}/${initiative.lane}/p3"
+# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
+expected_branch: "${domain_prefix}/${initiative.id}/${lane}-3"
 current_branch = casey.get-current-branch()
 
 if current_branch != expected_branch:
@@ -58,8 +63,9 @@ if current_branch != expected_branch:
 
 ```yaml
 # Gate check — verify P2 (Spec/Planning) is complete
-p2_branch = "lens/${initiative.id}/${initiative.lane}/p2"
-lane_branch = "lens/${initiative.id}/${initiative.lane}"
+# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
+p2_branch = "${domain_prefix}/${initiative.id}/${lane}-2"
+lane_branch = "${domain_prefix}/${initiative.id}/${lane}"
 
 # Ancestry check: P2 must be merged into lane
 result = casey.exec("git merge-base --is-ancestor origin/${p2_branch} origin/${lane_branch}")
@@ -67,9 +73,9 @@ result = casey.exec("git merge-base --is-ancestor origin/${p2_branch} origin/${l
 if result.exit_code != 0:
   error: "Phase 2 (Planning) not complete. Run /spec first or merge pending PRs."
 
-# Verify lead review is merged (if applicable)
-if not lead_review_merged():
-  warning: "Lead review PR not merged. Proceeding but architecture may change."
+# Verify large review is merged (if applicable)
+if not large_review_merged():
+  warning: "Large review PR not merged. Proceeding but architecture may change."
 
 # Verify P2 artifacts exist
 required_artifacts:
@@ -85,21 +91,23 @@ for artifact in required_artifacts:
 
 ```yaml
 # Casey creates P3 branch if it doesn't exist
-if not branch_exists("lens/${initiative.id}/${initiative.lane}/p3"):
+# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
+if not branch_exists("${domain_prefix}/${initiative.id}/${lane}-3"):
   invoke: casey.start-phase
   params:
     phase_number: 3
     phase_name: "Solutioning"
     initiative_id: ${initiative.id}
-    lane: ${initiative.lane}
-  # Casey creates: lens/{initiative_id}/{lane}/p3
+    lane: ${lane}
+    domain_prefix: ${domain_prefix}
+  # Casey creates: ${domain_prefix}/{initiative_id}/{lane}-3 and pushes to remote
 
   invoke: casey.pull-latest
 else:
   # Branch exists, ensure we're on it
   invoke: casey.checkout-branch
   params:
-    branch: "lens/${initiative.id}/${initiative.lane}/p3"
+    branch: "${domain_prefix}/${initiative.id}/${lane}-3"
   invoke: casey.pull-latest
 ```
 
@@ -161,12 +169,12 @@ invoke: casey.finish-workflow
 ```yaml
 if all_workflows_complete("p3"):
   invoke: casey.finish-phase
-  invoke: casey.open-final-pbr  # PR: lead → base
+  invoke: casey.open-final-pbr  # PR: large → base
   
   output: |
     ✅ /plan complete
     ├── Phase 3 (Solutioning) finished
-    ├── Final PBR PR opened
+    ├── Final PBR PR opened (large → base)
     ├── Stories ready for sprint planning
     └── Next: Run /review for implementation gate
 ```
@@ -189,7 +197,7 @@ params:
       p2_complete:
         status: "passed"
         verified_at: "${ISO_TIMESTAMP}"
-      lead_review:
+      large_review:
         status: "passed"
         verified_at: "${ISO_TIMESTAMP}"
 
@@ -199,7 +207,7 @@ params:
   updates:
     current_phase: "p3"
     current_phase_name: "Solutioning"
-    active_branch: "lens/${initiative.id}/${initiative.lane}/p3"
+    active_branch: "${domain_prefix}/${initiative.id}/${lane}-3"
 ```
 
 ### 6. Commit State Changes
@@ -214,7 +222,7 @@ params:
     - "_bmad-output/lens-work/event-log.jsonl"
     - "_bmad-output/planning-artifacts/"
   message: "[lens-work] /plan: Phase 3 Solutioning — ${initiative.id}"
-  branch: "lens/${initiative.id}/${initiative.lane}/p3"
+  branch: "${domain_prefix}/${initiative.id}/${lane}-3"
 ```
 
 ### 7. Log Event

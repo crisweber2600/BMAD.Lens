@@ -47,17 +47,22 @@ invoke: casey.verify-clean-state
 state = load("_bmad-output/lens-work/state.yaml")
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 
+# Read lane from initiative config (shared, canonical)
+lane = initiative.lane
+domain_prefix = initiative.domain_prefix
+
 # Lane validation — verify current lane allows dev phase
 # Dev (P4) must be on small lane
-if initiative.lane != "small":
+if lane != "small":
   error: |
     ❌ Lane validation failed
-    ├── Current lane: ${initiative.lane}
+    ├── Current lane: ${lane}
     ├── Required: small
     └── Dev phase (P4) only runs on the small lane.
 
 # Validate we're on the correct branch (or can switch)
-expected_branch: "lens/${initiative.id}/${initiative.lane}/p4"
+# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
+expected_branch: "${domain_prefix}/${initiative.id}/${lane}-4"
 current_branch = casey.get-current-branch()
 
 if current_branch != expected_branch:
@@ -73,8 +78,9 @@ if current_branch != expected_branch:
 
 ```yaml
 # Merge gate checking — verify P3 (Solutioning) is complete before allowing dev
-p3_branch = "lens/${initiative.id}/${initiative.lane}/p3"
-lane_branch = "lens/${initiative.id}/${initiative.lane}"
+# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
+p3_branch = "${domain_prefix}/${initiative.id}/${lane}-3"
+lane_branch = "${domain_prefix}/${initiative.id}/${lane}"
 
 # Ancestry check: P3 must be merged into lane (or base)
 result = casey.exec("git merge-base --is-ancestor origin/${p3_branch} origin/${lane_branch}")
@@ -95,20 +101,22 @@ if initiative.gates.implementation_gate.status not in ["passed", "passed_with_wa
 
 ```yaml
 # Casey creates P4 branch if it doesn't exist
-if not branch_exists("lens/${initiative.id}/${initiative.lane}/p4"):
+# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
+if not branch_exists("${domain_prefix}/${initiative.id}/${lane}-4"):
   invoke: casey.start-phase
   params:
     phase_number: 4
     phase_name: "Implementation"
     initiative_id: ${initiative.id}
-    lane: ${initiative.lane}
-  # Casey creates: lens/{initiative_id}/{lane}/p4
+    lane: ${lane}
+    domain_prefix: ${domain_prefix}
+  # Casey creates: ${domain_prefix}/{initiative_id}/{lane}-4 and pushes to remote
 
   invoke: casey.pull-latest
 else:
   invoke: casey.checkout-branch
   params:
-    branch: "lens/${initiative.id}/${initiative.lane}/p4"
+    branch: "${domain_prefix}/${initiative.id}/${lane}-4"
   invoke: casey.pull-latest
 ```
 
@@ -127,7 +135,7 @@ output: |
   **Technical Notes:**
   ${dev_story.technical_notes}
   
-  **Branch:** lens/${initiative.id}/${initiative.lane}/p4
+  **Branch:** ${domain_prefix}/${initiative.id}/${lane}-4
 ```
 
 ### 3. Checkout Target Repo

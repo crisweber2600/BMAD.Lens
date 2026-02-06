@@ -94,22 +94,22 @@ agent:
       workflow: "{project-root}/_bmad/lens-work/workflows/router/dev/workflow.md"
       description: "[/dev] Implementation loop (dev-story/code-review/retro)"
     
-    # Initiative Commands
-    - trigger: "#new-domain" or fuzzy match on new domain
-      workflow: "{project-root}/_bmad/lens-work/workflows/core/init-initiative/workflow.md"
-      description: "[#new-domain] Create domain-level initiative"
+    # Initiative Commands (canonical — routed to router init-initiative)
+    - trigger: "/new-domain" or "#new-domain" or fuzzy match on new domain
+      workflow: "{project-root}/_bmad/lens-work/workflows/router/init-initiative/workflow.md"
+      description: "[/new-domain] Create domain-level initiative"
       params:
         layer: domain
     
-    - trigger: "#new-service" or fuzzy match on new service
-      workflow: "{project-root}/_bmad/lens-work/workflows/core/init-initiative/workflow.md"
-      description: "[#new-service] Create service-level initiative"
+    - trigger: "/new-service" or "#new-service" or fuzzy match on new service
+      workflow: "{project-root}/_bmad/lens-work/workflows/router/init-initiative/workflow.md"
+      description: "[/new-service] Create service-level initiative"
       params:
         layer: service
     
-    - trigger: "#new-feature" or fuzzy match on new feature
-      workflow: "{project-root}/_bmad/lens-work/workflows/core/init-initiative/workflow.md"
-      description: "[#new-feature] Create feature-level initiative"
+    - trigger: "/new-feature" or "#new-feature" or fuzzy match on new feature
+      workflow: "{project-root}/_bmad/lens-work/workflows/router/init-initiative/workflow.md"
+      description: "[/new-feature] Create feature-level initiative"
       params:
         layer: feature
     

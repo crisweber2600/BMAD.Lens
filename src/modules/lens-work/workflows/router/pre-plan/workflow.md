@@ -47,8 +47,13 @@ invoke: casey.verify-clean-state
 state = load("_bmad-output/lens-work/state.yaml")
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 
+# Read lane from initiative config (shared, canonical)
+lane = initiative.lane
+domain_prefix = initiative.domain_prefix
+
 # Validate we're on the correct branch (or can switch)
-expected_branch: "lens/${initiative.id}/${initiative.lane}/p1"
+# New branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
+expected_branch: "${domain_prefix}/${initiative.id}/${lane}-1"
 current_branch = casey.get-current-branch()
 
 if current_branch != expected_branch:
@@ -95,15 +100,17 @@ for repo in initiative.target_repos:
 ### 2. Start Phase (if needed)
 
 ```yaml
-# Invoke Casey if p1 branch doesn't exist — auto-branch creation
-if not branch_exists("lens/${initiative.id}/${initiative.lane}/p1"):
+# Invoke Casey if small-1 branch doesn't exist — auto-branch creation
+# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
+if not branch_exists("${domain_prefix}/${initiative.id}/${lane}-1"):
   invoke: casey.start-phase
   params:
     phase_number: 1
     phase_name: "Analysis"
     initiative_id: ${initiative.id}
-    lane: ${initiative.lane}
-  # Casey creates: lens/{initiative_id}/{lane}/p1
+    lane: ${lane}
+    domain_prefix: ${domain_prefix}
+  # Casey creates: ${domain_prefix}/{initiative_id}/{lane}-1 and pushes to remote
 
   # Pull latest after branch creation
   invoke: casey.pull-latest

@@ -32,8 +32,8 @@ current:
   workflow_status: in_progress
   lane: small
 branches:
-  base: "lens/my-init-abc123/base"
-  active: "lens/my-init-abc123/small/p2"
+  base: "{Domain}/my-init-abc123/base"
+  active: "{Domain}/my-init-abc123/small-2"
 gates: [...]
 blocks: [...]
 ```
@@ -104,6 +104,9 @@ migration_data:
   # Domain/service may not exist in old format
   domain: ${old_state.initiative.domain || null}
   service: ${old_state.initiative.service || null}
+
+  # Lane now lives in shared initiative config
+  lane: ${old_state.current.lane || old_state.initiative.lane || "small"}
   
   # Gates and blocks from old state
   gates: ${old_state.gates || []}
@@ -120,7 +123,6 @@ migration_data:
     phase_name: "${old_state.current.phase_name}"
     workflow: ${old_state.current.workflow}
     workflow_status: ${old_state.current.workflow_status}
-    lane: ${old_state.current.lane}
 ```
 
 ### 3. Create Initiatives Directory
@@ -139,6 +141,7 @@ name: "${migration_data.name}"
 layer: ${migration_data.layer}
 domain: ${migration_data.domain}
 service: ${migration_data.service}
+lane: ${migration_data.lane}
 created_at: "${migration_data.created_at}"
 created_by: ${migration_data.created_by}
 target_repos:
@@ -181,7 +184,6 @@ current:
   phase_name: "${migration_data.current.phase_name}"
   workflow: ${migration_data.current.workflow}
   workflow_status: ${migration_data.current.workflow_status}
-  lane: ${migration_data.current.lane}
 ```
 
 ### 7. Log Migration Event

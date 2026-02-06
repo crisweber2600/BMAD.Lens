@@ -38,15 +38,22 @@ agent:
       content: |
         Branch topology pattern for initiatives:
         
-        lens/{initiative_id}/base                    # Initiative root
-        ├── lens/{initiative_id}/small              # Small team lane (planning)
-        │   ├── lens/{initiative_id}/small/p1       # Phase 1 (Analysis)
-        │   │   └── lens/{initiative_id}/small/p1/w/{workflow}  # Workflow branches
-        │   ├── lens/{initiative_id}/small/p2       # Phase 2 (Planning)
-        │   └── lens/{initiative_id}/small/p3       # Phase 3 (Solutioning)
-        └── lens/{initiative_id}/lead               # Lead review lane
+        {Domain}/{initiative_id}/base                    # Initiative root
+        ├── {Domain}/{initiative_id}/small              # Small team lane
+        │   ├── {Domain}/{initiative_id}/small-1         # Phase 1 (Analysis)
+        │   │   └── {Domain}/{initiative_id}/small-1-{workflow}  # Workflow branches
+        │   ├── {Domain}/{initiative_id}/small-2         # Phase 2 (Planning)
+        │   └── {Domain}/{initiative_id}/small-3         # Phase 3 (Solutioning)
+        └── {Domain}/{initiative_id}/large              # Large review lane
+        
+        Branch naming convention: {Domain}/{InitiativeId}/{size}-{phaseNumber}-{workflow}
+        - Phase-only: {Domain}/{id}/small-1
+        - With workflow: {Domain}/{id}/small-1-brainstorm
+        - Lane-only: {Domain}/{id}/small (no dash suffix)
+        - Base: {Domain}/{id}/base
         
         All branches created in BMAD control repo, not TargetProjects.
+        All branches pushed to remote immediately on creation.
     
     - id: merge-gate-check
       content: |
@@ -92,6 +99,9 @@ agent:
         2. If exists: `git checkout {branch_name}`
         3. If not exists: `git checkout -b {branch_name} && git push -u origin {branch_name}`
         4. Log result to event-log.jsonl
+        
+        All branches MUST be pushed to remote immediately on creation.
+        This ensures remote backup exists even if IDE crashes mid-workflow.
 
   # Casey has no user-facing menu—all operations are hook-triggered
   # These are internal hooks invoked by Compass or Tracey
@@ -117,12 +127,12 @@ agent:
       description: "Push phase branch, print PR link to lane"
     
     - event: p2-architecture-merged
-      action: open-lead-review
-      description: "Print PR link for small → lead"
+      action: open-large-review
+      description: "Print PR link for small → large"
     
-    - event: lead-review-merged
+    - event: large-review-merged
       action: open-final-pbr
-      description: "Print PR link for lead → base"
+      description: "Print PR link for large → base"
     
     - event: sync-requested
       action: git-fetch

@@ -8,11 +8,11 @@ lens-work's branch topology maps naturally to CI/CD pipelines. Each branch level
 
 | Branch Level | CI Scope | Trigger |
 |---|---|---|
-| `lens/*/small/p*/w/*` | Fast checks: lint, unit tests, format | Push |
-| `lens/*/small/p*` | Full validation: integration tests, artifact checks | PR merge from workflow |
-| `lens/*/small` | Lane validation: cross-phase consistency | PR merge from phase |
-| `lens/*/lead` | Lead review: full regression, security scan | PR merge from small |
-| `lens/*/base` | Release candidate: E2E, deploy preview | PR merge from lead |
+| `{Domain}/*/small-*-*` | Fast checks: lint, unit tests, format | Push |
+| `{Domain}/*/small-*` | Full validation: integration tests, artifact checks | PR merge from workflow |
+| `{Domain}/*/small` | Lane validation: cross-phase consistency | PR merge from phase |
+| `{Domain}/*/large` | Large review: full regression, security scan | PR merge from small |
+| `{Domain}/*/base` | Release candidate: E2E, deploy preview | PR merge from large |
 
 ## GitHub Actions Example
 
@@ -23,12 +23,12 @@ name: lens-work CI
 on:
   push:
     branches:
-      - 'lens/*/small/p*/w/**'
+      - '{Domain}/*/small-*-*'
   pull_request:
     branches:
-      - 'lens/*/small/p*'
-      - 'lens/*/small'
-      - 'lens/*/lead'
+      - '{Domain}/*/small-*'
+      - '{Domain}/*/small'
+      - '{Domain}/*/large'
 
 jobs:
   fast-checks:
@@ -59,7 +59,7 @@ jobs:
   artifact-validation:
     if: >
       github.event_name == 'pull_request' &&
-      contains(github.base_ref, '/small/')
+      contains(github.base_ref, '/small-')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -69,10 +69,10 @@ jobs:
           PHASE=$(echo "${{ github.base_ref }}" | grep -oP 'p\d+')
           ./.github/scripts/validate-artifacts.sh "$PHASE"
 
-  lead-review:
+  large-review:
     if: >
       github.event_name == 'pull_request' &&
-      endsWith(github.base_ref, '/lead')
+      endsWith(github.base_ref, '/large')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -126,8 +126,9 @@ CI can automatically update lens-work gates when workflows complete:
 - name: Update Gate
   if: github.event.pull_request.merged == true
   run: |
-    WORKFLOW=$(echo "${{ github.head_ref }}" | grep -oP 'w/\K.*')
-    PHASE=$(echo "${{ github.base_ref }}" | grep -oP 'p\d+')
+    WORKFLOW=$(echo "${{ github.head_ref }}" | sed -E 's|.*/[^/]+-[0-9]+-||')
+    PHASE_NUM=$(echo "${{ github.base_ref }}" | sed -E 's|.*/[^/]+-([0-9]+)$|\1|')
+    PHASE="p${PHASE_NUM}"
     echo "{\"ts\":\"$(date -u +%FT%TZ)\",\"event\":\"gate-passed\",\"workflow\":\"$WORKFLOW\",\"phase\":\"$PHASE\"}" \
       >> _bmad-output/lens-work/event-log.jsonl
 ```
@@ -139,14 +140,14 @@ CI can automatically update lens-work gates when workflows complete:
 trigger:
   branches:
     include:
-      - 'lens/*/small/p*/w/*'
+      - '{Domain}/*/small-*-*'
 
 pr:
   branches:
     include:
-      - 'lens/*/small/p*'
-      - 'lens/*/small'
-      - 'lens/*/lead'
+      - '{Domain}/*/small-*'
+      - '{Domain}/*/small'
+      - '{Domain}/*/large'
 
 stages:
   - stage: Validate

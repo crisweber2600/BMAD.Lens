@@ -6,23 +6,25 @@ type: include
 
 # Lane Topology Reference
 
-This document defines the 4-level branch hierarchy used by lens-work to manage initiative lifecycle branches. All branch operations are orchestrated by Casey and triggered through Compass phase commands.
+This document defines the branch hierarchy used by lens-work to manage initiative lifecycle branches. All branch operations are orchestrated by Casey and triggered through Compass phase commands.
+
+**Branch naming convention:** `{Domain}/{InitiativeId}/{size}-{phaseNumber}-{workflow}`
 
 ---
 
 ## Branch Hierarchy (4 Levels)
 
 ```
-Level 1: Initiative Base
-└── Level 2: Lanes
-    └── Level 3: Phases
-        └── Level 4: Workflows
+Level 1: Initiative Base     {Domain}/{id}/base
+Level 2: Lanes              {Domain}/{id}/small, {Domain}/{id}/large
+Level 3: Phases             {Domain}/{id}/{size}-{N}
+Level 4: Workflows          {Domain}/{id}/{size}-{N}-{workflow}
 ```
 
 ### Level 1: Initiative Base
 
 ```
-lens/{initiative_id}/base
+{Domain}/{initiative_id}/base
 ```
 
 Root branch for the initiative. Created at init via `init-initiative` workflow. All work merges here eventually through the lane → base PR flow. This branch represents the "done" state of the initiative.
@@ -32,18 +34,19 @@ Root branch for the initiative. Created at init via `init-initiative` workflow. 
 - Never worked on directly — only receives merges from lanes
 - Protected: requires PR review for final PBR merge
 - One base branch per initiative
+- Pushed to remote immediately on creation
 
 ---
 
 ### Level 2: Lanes
 
 ```
-lens/{initiative_id}/small     # Small team (planning + implementation)
-lens/{initiative_id}/medium    # Medium team (future)
-lens/{initiative_id}/lead      # Lead review (gate reviews)
+{Domain}/{initiative_id}/small     # Small team (planning + implementation)
+{Domain}/{initiative_id}/medium    # Medium team (future)
+{Domain}/{initiative_id}/large     # Large review (gate reviews)
 ```
 
-Lanes represent team-size-based workflow paths. Each lane has its own lifecycle and phase progression.
+Lanes represent team-size-based workflow paths. Each lane has its own lifecycle and phase progression. **Lane is stored in the shared initiative config** (`initiatives/{id}.yaml`) — never in personal state.
 
 #### Lane Definitions
 
@@ -51,7 +54,7 @@ Lanes represent team-size-based workflow paths. Each lane has its own lifecycle 
 |------|---------|-------------------|--------|------------|
 | `small` | Single developer or small team doing end-to-end work | 1–3 | P0–P4 | `init-initiative` |
 | `medium` | Medium team with parallel streams (reserved) | 4–8 | P0–P4 | Future |
-| `lead` | Lead/architect review lane for gate reviews | 1–2 | Review gates only | `init-initiative` |
+| `large` | Large review lane for gate reviews | 1–2 | Review gates only | `init-initiative` |
 
 #### Lane Behaviors
 
@@ -59,11 +62,11 @@ Lanes represent team-size-based workflow paths. Each lane has its own lifecycle 
 - Primary working lane for most initiatives
 - Phases P1–P4 branch from and merge back to this lane
 - All planning and implementation happens here
-- After P2 complete → opens PR to `lead` for review
+- After P2 complete → opens PR to `large` for review
 
-**lead lane:**
+**large lane:**
 - Receives PR from `small` after architecture review gate
-- Lead reviews and approves the planning artifacts
+- Large-lane reviewers approve the planning artifacts
 - After approval → opens PR to `base` for final PBR
 
 **medium lane (future):**
@@ -76,14 +79,14 @@ Lanes represent team-size-based workflow paths. Each lane has its own lifecycle 
 ### Level 3: Phases
 
 ```
-lens/{initiative_id}/{lane}/p0    # Pre-Plan (optional prep)
-lens/{initiative_id}/{lane}/p1    # Analysis
-lens/{initiative_id}/{lane}/p2    # Planning
-lens/{initiative_id}/{lane}/p3    # Solutioning
-lens/{initiative_id}/{lane}/p4    # Implementation
+{Domain}/{initiative_id}/{lane}-0    # Pre-Plan (optional prep)
+{Domain}/{initiative_id}/{lane}-1    # Analysis
+{Domain}/{initiative_id}/{lane}-2    # Planning
+{Domain}/{initiative_id}/{lane}-3    # Solutioning
+{Domain}/{initiative_id}/{lane}-4    # Implementation
 ```
 
-Phases are sequential workflow stages within a lane. Each phase branch is created from the lane branch when its first workflow begins.
+Phases are sequential workflow stages within a lane. Each phase branch is created from the lane branch when its first workflow begins. **All phase branches are pushed to remote immediately on creation.**
 
 #### Phase Definitions
 
@@ -102,41 +105,42 @@ Phases are sequential workflow stages within a lane. Each phase branch is create
 3. **Ancestry check:** `git merge-base --is-ancestor origin/{phase_branch} origin/{lane_branch}`
 4. **P1 auto-created:** `init-initiative` creates P1 branch automatically
 5. **P2–P4 lazy-created:** Created by router workflows on first access
+6. **Immediate push:** All phase branches pushed to remote on creation
 
 ---
 
 ### Level 4: Workflows
 
 ```
-lens/{initiative_id}/{lane}/p{N}/w/{workflow_name}
+{Domain}/{initiative_id}/{lane}-{N}-{workflow_name}
 ```
 
-Workflow branches represent individual units of work within a phase. They are created by `start-workflow` and merged back to the phase branch by `finish-workflow`.
+Workflow branches represent individual units of work within a phase. They are created by `start-workflow` and merged back to the phase branch by `finish-workflow`. **All workflow branches are pushed to remote immediately on creation.**
 
 #### Workflow Naming
 
 | Phase | Workflow Name | Full Branch |
 |-------|---------------|-------------|
-| P1 | `brainstorm` | `lens/{id}/small/p1/w/brainstorm` |
-| P1 | `research` | `lens/{id}/small/p1/w/research` |
-| P1 | `product-brief` | `lens/{id}/small/p1/w/product-brief` |
-| P2 | `prd` | `lens/{id}/small/p2/w/prd` |
-| P2 | `ux-design` | `lens/{id}/small/p2/w/ux-design` |
-| P2 | `architecture` | `lens/{id}/small/p2/w/architecture` |
-| P3 | `epics` | `lens/{id}/small/p3/w/epics` |
-| P3 | `stories` | `lens/{id}/small/p3/w/stories` |
-| P3 | `readiness-check` | `lens/{id}/small/p3/w/readiness-check` |
-| P4 | `dev-story` | `lens/{id}/small/p4/w/dev-story` |
-| P4 | `code-review` | `lens/{id}/small/p4/w/code-review` |
-| P4 | `retro` | `lens/{id}/small/p4/w/retro` |
+| P1 | `brainstorm` | `{Domain}/{id}/small-1-brainstorm` |
+| P1 | `research` | `{Domain}/{id}/small-1-research` |
+| P1 | `product-brief` | `{Domain}/{id}/small-1-product-brief` |
+| P2 | `prd` | `{Domain}/{id}/small-2-prd` |
+| P2 | `ux-design` | `{Domain}/{id}/small-2-ux-design` |
+| P2 | `architecture` | `{Domain}/{id}/small-2-architecture` |
+| P3 | `epics` | `{Domain}/{id}/small-3-epics` |
+| P3 | `stories` | `{Domain}/{id}/small-3-stories` |
+| P3 | `readiness-check` | `{Domain}/{id}/small-3-readiness-check` |
+| P4 | `dev-story` | `{Domain}/{id}/small-4-dev-story` |
+| P4 | `code-review` | `{Domain}/{id}/small-4-code-review` |
+| P4 | `retro` | `{Domain}/{id}/small-4-retro` |
 
 #### Workflow Rules
 
 - Created from phase branch via `start-workflow`
 - Only one active workflow per phase at a time
 - Previous workflow must be merged (ancestry check) before next starts
-- Committed and pushed via `finish-workflow`
-- PR opened: workflow branch → phase branch
+- Committed and pushed at creation via `start-workflow`
+- PR opened: workflow branch → phase branch on `finish-workflow`
 
 ---
 
@@ -146,17 +150,17 @@ Workflow branches represent individual units of work within a phase. They are cr
 
 ```
 Workflow ──squash──► Phase ──merge──► Lane ──PR──► Lane ──PR──► Base
-  (w/*)              (p{N})          (small)       (lead)       (base)
+ ({size}-{N}-{wf})  ({size}-{N})     (small)      (large)      (base)
 ```
 
 ### Detailed Merge Table
 
 | From → To | Branch Pattern | Strategy | Gate Required | Automation |
 |-----------|----------------|----------|---------------|------------|
-| workflow → phase | `p{N}/w/{name}` → `p{N}` | Squash merge | No (auto) | `finish-workflow` |
-| phase → lane | `p{N}` → `{lane}` | Merge commit | Phase gate | `finish-phase` PR |
-| small → lead | `small` → `lead` | PR merge | Review gate | `open-lead-review` |
-| lead → base | `lead` → `base` | PR merge | Final PBR | `open-final-pbr` |
+| workflow → phase | `{size}-{N}-{wf}` → `{size}-{N}` | Squash merge | No (auto) | `finish-workflow` |
+| phase → lane | `{size}-{N}` → `{lane}` | Merge commit | Phase gate | `finish-phase` PR |
+| small → large | `small` → `large` | PR merge | Review gate | `open-large-review` |
+| large → base | `large` → `base` | PR merge | Final PBR | `open-final-pbr` |
 
 ### Phase Transition Flow
 
@@ -166,13 +170,13 @@ Workflow ──squash──► Phase ──merge──► Lane ──PR──►
 │Analysis │  gate:p1    │Planning │  gate:p2    │Solution │  gate:p3    │  Impl   │
 └─────────┘             └─────────┘             └─────────┘             └─────────┘
                                                       │
-                                                      │ PR: small → lead
+                                                      │ PR: small → large
                                                       ▼
                                                 ┌─────────┐
-                                                │  Lead   │
+                                                │  Large  │
                                                 │ Review  │
                                                 └────┬────┘
-                                                     │ PR: lead → base
+                                                     │ PR: large → base
                                                      ▼
                                                 ┌─────────┐
                                                 │  Base   │
@@ -204,19 +208,27 @@ git merge --no-commit --no-ff ${source_branch} && git merge --abort
 Casey validates all branch names against this regex:
 
 ```regex
-^lens/[a-z0-9-]+/(base|small|medium|lead)(/p[0-4](/w/[a-z0-9-]+)?)?$
+^[A-Za-z0-9_-]+/[a-z0-9-]+/(base|small|medium|large|[a-z]+-[0-9]+(-[a-z0-9-]+)?)$
 ```
 
 ### Parsing Branch Components
 
 ```bash
 # Extract components from branch name
-branch="lens/rate-limit-x7k2m9/small/p2/w/prd"
+# Example: MyDomain/rate-limit-x7k2m9/small-2-prd
+branch="MyDomain/rate-limit-x7k2m9/small-2-prd"
 
-initiative_id=$(echo "$branch" | cut -d'/' -f2)   # rate-limit-x7k2m9
-lane=$(echo "$branch" | cut -d'/' -f3)             # small
-phase=$(echo "$branch" | cut -d'/' -f4)            # p2
-workflow=$(echo "$branch" | cut -d'/' -f6)          # prd
+domain_prefix=$(echo "$branch" | cut -d'/' -f1)    # MyDomain
+initiative_id=$(echo "$branch" | cut -d'/' -f2)     # rate-limit-x7k2m9
+branch_segment=$(echo "$branch" | cut -d'/' -f3)    # small-2-prd
+
+# Parse the branch segment
+size=$(echo "$branch_segment" | cut -d'-' -f1)      # small
+phase=$(echo "$branch_segment" | cut -d'-' -f2)     # 2
+workflow=$(echo "$branch_segment" | cut -d'-' -f3-)  # prd
+
+# For phase-only branches (e.g., "small-2"):
+# workflow will be empty
 ```
 
 ---

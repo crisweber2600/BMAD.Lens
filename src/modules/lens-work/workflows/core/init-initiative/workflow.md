@@ -1,15 +1,25 @@
 ---
 name: init-initiative
-description: Create full branch topology for a new initiative
+description: "DEPRECATED — Use router/init-initiative instead. Legacy branch topology creation."
 agent: casey
 trigger: "#new-domain, #new-service, #new-feature via Compass"
 category: core
 auto_triggered: true
+deprecated: true
+superseded_by: "router/init-initiative"
 ---
 
-# Init Initiative Workflow
+# Init Initiative Workflow (DEPRECATED)
 
-**Purpose:** Create the full branch topology for a new initiative in the BMAD control repo.
+> **WARNING:** This workflow is deprecated. Use the router version at `workflows/router/init-initiative/workflow.md` instead.
+> The router version supports:
+> - Two-file state architecture (personal state + shared initiative config)
+> - New branch naming: `{Domain}/{InitiativeId}/{size}-{phaseNumber}-{workflow}`
+> - Lane stored in shared initiative config
+> - `large` lane (replaces legacy `lead`)
+> - All branches pushed to remote immediately
+
+**Purpose:** _Legacy_ — Create the full branch topology for a new initiative in the BMAD control repo.
 
 ---
 

@@ -91,7 +91,7 @@ created: 2026-02-05
 |---|------|-----------------|
 | 2.1.1 | Lists all initiatives from `initiatives/*.yaml` | Menu shows all initiative files with name, ID, layer |
 | 2.1.2 | Updates `state.yaml` `active_initiative` | After switch, `active_initiative` matches selected ID |
-| 2.1.3 | Casey checks out correct branch | `git branch --show-current` matches `lens/{id}/...` pattern |
+| 2.1.3 | Casey checks out correct branch | `git branch --show-current` matches `{Domain}/{id}/...` pattern |
 | 2.1.4 | Handles non-existent initiative gracefully | Error: "Initiative '{id}' not found" with available options listed |
 | 2.1.5 | Switching to already-active initiative is a no-op | Message: "Already on initiative {id}" |
 
@@ -103,10 +103,10 @@ created: 2026-02-05
 
 | # | Test | Expected Result |
 |---|------|-----------------|
-| 2.2.1 | Creates phase branch via Casey if missing | New branch created matching `lens/{id}/{lane}/p{N}` |
+| 2.2.1 | Creates phase branch via Casey if missing | New branch created matching `{Domain}/{id}/{lane}-{N}` |
 | 2.2.2 | Validates phase ordering (can't skip phases) | Attempting to skip from p1 to p3 shows gate violation error |
 | 2.2.3 | Updates `state.yaml` `current.phase` | Phase field updated to target phase number |
-| 2.2.4 | Branch pattern matches `lens/{id}/{lane}/p{N}` | Regex validation passes for created branch name |
+| 2.2.4 | Branch pattern matches `{Domain}/{id}/{lane}-{N}` | Regex validation passes for created branch name |
 | 2.2.5 | Cannot switch to phase without passing previous gate | Gate check blocks advancement; shows required artifacts |
 | 2.2.6 | Switching to current phase is a no-op | Message: "Already on phase {N}" |
 
@@ -119,7 +119,7 @@ created: 2026-02-05
 | # | Test | Expected Result |
 |---|------|-----------------|
 | 2.3.1 | Creates lane branch if missing | New branch created for lane |
-| 2.3.2 | Updates `state.yaml` `current.lane` | Lane field updated to target lane |
+| 2.3.2 | Updates initiative config `lane` | `initiatives/{id}.yaml` lane updated to target lane |
 | 2.3.3 | Validates lane name against allowed values | Invalid lane names rejected with list of valid options |
 | 2.3.4 | Lane switch preserves phase context | Phase doesn't reset when switching lanes |
 
@@ -136,10 +136,10 @@ created: 2026-02-05
 | # | Test | Expected Result |
 |---|------|-----------------|
 | 3.1.1 | Generates valid initiative ID | Format: `{sanitized-name}-{6-random-chars}`, no spaces/special chars |
-| 3.1.2 | Creates base branch | `lens/{id}/base` branch exists |
-| 3.1.3 | Creates small branch | `lens/{id}/small` branch exists |
-| 3.1.4 | Creates lead branch | `lens/{id}/lead` branch exists |
-| 3.1.5 | Creates p1 branch | `lens/{id}/{lane}/p1` branch exists |
+| 3.1.2 | Creates base branch | `{Domain}/{id}/base` branch exists |
+| 3.1.3 | Creates small branch | `{Domain}/{id}/small` branch exists |
+| 3.1.4 | Creates large branch | `{Domain}/{id}/large` branch exists |
+| 3.1.5 | Creates p1 branch | `{Domain}/{id}/{lane}-1` branch exists |
 | 3.1.6 | Writes initiative config with required fields | `initiatives/{id}.yaml` contains: `id`, `name`, `layer`, `target_repos`, `gates`, `blocks` |
 | 3.1.7 | Logs init event to `event-log.jsonl` | Last entry has `event: init-initiative`, matching `initiative_id` |
 | 3.1.8 | Returns control to Compass | After init, Compass menu is displayed |
@@ -177,7 +177,7 @@ created: 2026-02-05
 |---|------|-----------------|
 | 4.1.1.1 | Loads two-file state | Both `state.yaml` and active initiative file read |
 | 4.1.1.2 | Gate check allows entry at p1 | Pre-plan available when on phase 1 |
-| 4.1.1.3 | Auto-creates phase branch if missing | Branch `lens/{id}/{lane}/p1` created if not present |
+| 4.1.1.3 | Auto-creates phase branch if missing | Branch `{Domain}/{id}/{lane}-1` created if not present |
 | 4.1.1.4 | State updates persist after execution | `state.yaml` updated with workflow progress |
 | 4.1.1.5 | Git discipline validates clean state | Dirty working directory blocks workflow start |
 
@@ -187,7 +187,7 @@ created: 2026-02-05
 |---|------|-----------------|
 | 4.1.2.1 | Loads two-file state | Both files read successfully |
 | 4.1.2.2 | Gate check requires p1 completion | Cannot enter spec without pre-plan artifacts |
-| 4.1.2.3 | Creates p2 branch via Casey | Branch `lens/{id}/{lane}/p2` created |
+| 4.1.2.3 | Creates p2 branch via Casey | Branch `{Domain}/{id}/{lane}-2` created |
 | 4.1.2.4 | State updates persist | Phase advanced to p2 in state |
 | 4.1.2.5 | Git discipline validates clean state | Blocks on dirty working directory |
 
@@ -197,7 +197,7 @@ created: 2026-02-05
 |---|------|-----------------|
 | 4.1.3.1 | Loads two-file state | Both files read successfully |
 | 4.1.3.2 | Gate check requires p2 completion | Cannot enter plan without spec artifacts |
-| 4.1.3.3 | Creates p3 branch via Casey | Branch `lens/{id}/{lane}/p3` created |
+| 4.1.3.3 | Creates p3 branch via Casey | Branch `{Domain}/{id}/{lane}-3` created |
 | 4.1.3.4 | State updates persist | Phase advanced to p3 in state |
 | 4.1.3.5 | Git discipline validates clean state | Blocks on dirty working directory |
 
@@ -217,7 +217,7 @@ created: 2026-02-05
 |---|------|-----------------|
 | 4.1.5.1 | Loads two-file state | Both files read successfully |
 | 4.1.5.2 | Gate check requires review completion | Cannot enter dev without review pass |
-| 4.1.5.3 | Creates p4 branch via Casey | Branch `lens/{id}/{lane}/p4` created |
+| 4.1.5.3 | Creates p4 branch via Casey | Branch `{Domain}/{id}/{lane}-4` created |
 | 4.1.5.4 | State updates persist | Phase advanced to p4 in state |
 | 4.1.5.5 | Git discipline validates clean state | Blocks on dirty working directory |
 
@@ -263,7 +263,7 @@ created: 2026-02-05
 | 5.1.8 | `/resume` delegates to resume workflow | Resume workflow restores previous context |
 | 5.1.9 | Unknown command shows help | Unrecognized input triggers help/menu display |
 | 5.1.10 | Phase commands route correctly | `/pre-plan`, `/spec`, `/plan`, `/review`, `/dev` each trigger correct router |
-| 5.1.11 | Initiative commands route correctly | `#new-domain`, `#new-service`, `#new-feature` trigger init with correct layer |
+| 5.1.11 | Initiative commands route correctly | `/new-domain`, `/new-service`, `/new-feature` trigger init with correct layer |
 | 5.1.12 | `/start` delegates to start workflow | Start workflow triggered for current context |
 
 ### 5.2 Casey Agent
@@ -279,7 +279,7 @@ created: 2026-02-05
 | 5.2.3 | `create-branch-if-missing` sets upstream | New branch tracks remote after creation |
 | 5.2.4 | `fetch-and-checkout` fetches then checks out | Remote fetched first, then local checkout |
 | 5.2.5 | `show-branch` displays tracking info | Branch name, remote tracking, commit info shown |
-| 5.2.6 | Branch naming follows convention | All created branches match `lens/{id}/...` pattern |
+| 5.2.6 | Branch naming follows convention | All created branches match `{Domain}/{id}/...` pattern |
 | 5.2.7 | Handles detached HEAD state | Clear error with recovery instructions |
 | 5.2.8 | Handles merge conflicts | Conflict detected, user prompted for resolution |
 
@@ -389,7 +389,7 @@ created: 2026-02-05
 | 7.5 | Final step creates targeted commit | init-initiative, finish-workflow | Commit message includes initiative_id, phase, and workflow context |
 | 7.6 | Final step pushes to remote | init-initiative, finish-workflow | `git push` executed after commit |
 | 7.7 | Commit message format consistent | All committing workflows | Format: `lens-work: {workflow} [{initiative_id}] {description}` |
-| 7.8 | Branch name parsed correctly | finish-workflow | Initiative ID, lane, phase extracted from `lens/{id}/{lane}/p{N}` |
+| 7.8 | Branch name parsed correctly | finish-workflow | Initiative ID, lane, phase extracted from `{Domain}/{id}/{lane}-{N}-{workflow}` |
 | 7.9 | Non-mutating workflows skip commit | repo-discover, repo-document, repo-status | No git commits created by read-only workflows |
 | 7.10 | Utility workflows commit state changes | bootstrap, reconcile | State file changes committed with context |
 

@@ -6,7 +6,7 @@ Many lens-work initiatives span multiple repositories — especially at the `dom
 
 ## target_repos in Initiative Config
 
-When an initiative is created via `#new-domain` or `#new-service`, the `target_repos` array specifies which repositories participate:
+When an initiative is created via `/new-domain` or `/new-service`, the `target_repos` array specifies which repositories participate:
 
 ```yaml
 # initiatives/bmad-9d7732.yaml
@@ -41,13 +41,13 @@ repos:
 
 ### Control Repo is the Source of Truth
 
-The BMAD control repo manages all `lens/` branches. Target repos are _consumers_ — they receive work but don't drive lifecycle state.
+The BMAD control repo manages all `{Domain}/` branches. Target repos are _consumers_ — they receive work but don't drive lifecycle state.
 
 ```
 NorthStarET.BMAD (control repo)
-├── lens/bmad-9d7732/base          ← lifecycle branches live HERE
-├── lens/bmad-9d7732/small/p1
-└── lens/bmad-9d7732/small/p1/w/brainstorm
+├── {Domain}/bmad-9d7732/base          ← lifecycle branches live HERE
+├── {Domain}/bmad-9d7732/small-1
+└── {Domain}/bmad-9d7732/small-1-brainstorm
 
 Target repos (e.g., bmad-chat)
 └── (no lens/ branches — work happens via PRs or feature branches)
@@ -60,8 +60,8 @@ For implementation phase (p4) work that touches target repo code directly:
 ```bash
 # Casey creates matching feature branches in target repos
 cd TargetProjects/BMAD/CHAT/bmad-chat
-git checkout -b "lens/bmad-9d7732/p4/feature-name"
-git push -u origin "lens/bmad-9d7732/p4/feature-name"
+git checkout -b "{Domain}/bmad-9d7732/small-4-feature-name"
+git push -u origin "{Domain}/bmad-9d7732/small-4-feature-name"
 ```
 
 These branches follow a simplified pattern — no full topology duplication. They link back to the control repo's initiative via the `{initiative_id}` segment.
@@ -72,17 +72,17 @@ The control repo's `state.yaml` tracks position across all repos:
 
 ```yaml
 active_initiative: bmad-9d7732
+# Lane is stored in initiatives/{id}.yaml
 current:
   phase: p4
-  lane: small
   workflow: dev-story
   workflow_status: in_progress
   active_repos:
     - repo: bmad-chat
-      branch: "lens/bmad-9d7732/p4/auth-flow"
+      branch: "{Domain}/bmad-9d7732/small-4-auth-flow"
       status: in_progress
     - repo: bmadServer
-      branch: "lens/bmad-9d7732/p4/auth-api"
+      branch: "{Domain}/bmad-9d7732/small-4-auth-api"
       status: in_progress
     - repo: BMAD.Lens
       branch: null
@@ -127,7 +127,7 @@ A concrete example using the BMAD domain initiative:
 | p2 (Planning) | PRD, UX design | No target repo changes |
 | p3 (Solutioning) | Architecture, epics, stories | No target repo changes |
 | p4 (Implementation) | Sprint plan, story tracking | Feature branches in `bmad-chat`, `bmadServer` |
-| Completion | Merge `small` → `lead` → `base` → `main` | Merge feature branches → `main` per repo |
+| Completion | Merge `small` → `large` → `base` → `main` | Merge feature branches → `main` per repo |
 
 ## Best Practices
 

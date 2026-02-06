@@ -35,19 +35,19 @@ After the hotfix is merged to `main`, propagate it into any active initiative br
 
 ```bash
 # Update the initiative's base branch
-git checkout lens/{initiative_id}/base
+git checkout {Domain}/{initiative_id}/base
 git merge main --no-ff -m "merge: hotfix/{description} into initiative base"
-git push origin lens/{initiative_id}/base
+git push origin {Domain}/{initiative_id}/base
 
 # Cascade to lane branches
-git checkout lens/{initiative_id}/small
-git merge lens/{initiative_id}/base --no-ff
-git push origin lens/{initiative_id}/small
+git checkout {Domain}/{initiative_id}/small
+git merge {Domain}/{initiative_id}/base --no-ff
+git push origin {Domain}/{initiative_id}/small
 
 # Cascade to active phase branch
-git checkout lens/{initiative_id}/small/p{N}
-git merge lens/{initiative_id}/small --no-ff
-git push origin lens/{initiative_id}/small/p{N}
+git checkout {Domain}/{initiative_id}/small-{N}
+git merge {Domain}/{initiative_id}/small --no-ff
+git push origin {Domain}/{initiative_id}/small-{N}
 ```
 
 ### 4. Log the Hotfix Event
@@ -72,7 +72,7 @@ git push origin v{version}
 
 ### Initiative Completion Release
 
-When an entire initiative completes (all phases merged through `lead` → `base` → `main`):
+When an entire initiative completes (all phases merged through `large` → `base` → `main`):
 
 ```bash
 # After final merge to main
@@ -98,13 +98,13 @@ When merging hotfixes or cross-branch changes create conflicts:
 # After resolving conflicts
 git add -A
 git commit -m "merge: resolve conflicts from hotfix/{description}"
-git push origin lens/{initiative_id}/small/p{N}
+git push origin {Domain}/{initiative_id}/small-{N}
 ```
 
 ## Summary
 
 | Scenario | Branch From | Merge To | Cascade? |
 |----------|-------------|----------|----------|
-| Hotfix | `main` | `main` → `lens/*/base` → down | Yes, all active initiatives |
+| Hotfix | `main` | `main` → `{Domain}/*/base` → down | Yes, all active initiatives |
 | Release | `main` | Tag only | No |
-| Initiative release | `lens/*/base` → `main` | `main` + tag | Archive initiative |
+| Initiative release | `{Domain}/*/base` → `main` | `main` + tag | Archive initiative |

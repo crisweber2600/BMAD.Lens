@@ -2,7 +2,7 @@
 name: init-initiative
 description: User-facing initiative creation with two-file state architecture
 agent: compass
-trigger: "#new-domain, #new-service, #new-feature"
+trigger: "/new-domain, /new-service, /new-feature (canonical); #new-* accepted"
 category: router
 ---
 
@@ -106,7 +106,21 @@ elif layer == "feature":
   target_repos = [selected_repo]
 ```
 
-### 4. Delegate Branch Creation to Casey
+### 4. Resolve Domain Prefix
+
+```yaml
+# Domain prefix for branch naming
+# Determines the {Domain} segment of branch names: {Domain}/{InitiativeId}/{size}-{N}-{workflow}
+if layer == "domain":
+  domain_prefix = domain   # Use the domain name itself
+elif layer == "service" || layer == "microservice":
+  domain_prefix = domain   # Use parent domain
+elif layer == "feature":
+  # For features, derive domain from target repo's service-map entry
+  domain_prefix = service_map.repos[target_repos[0]].domain || "features"
+```
+
+### 5. Delegate Branch Creation to Casey
 
 ```yaml
 # Hand off to Casey for git operations
@@ -115,16 +129,17 @@ params:
   initiative_id: ${initiative_id}
   initiative_name: "${initiative_name}"
   layer: ${layer}
+  domain_prefix: ${domain_prefix}
   target_repos: ${target_repos}
   
-# Casey creates:
-# - lens/${initiative_id}/base
-# - lens/${initiative_id}/small
-# - lens/${initiative_id}/lead
-# - lens/${initiative_id}/small/p1
+# Casey creates (ALL pushed immediately to remote):
+# - ${domain_prefix}/${initiative_id}/base
+# - ${domain_prefix}/${initiative_id}/small
+# - ${domain_prefix}/${initiative_id}/large
+# - ${domain_prefix}/${initiative_id}/small-1
 ```
 
-### 5. Write Initiative Config (Git-Committed)
+### 6. Write Initiative Config (Git-Committed)
 
 Create directory and file at `{project-root}/_bmad-output/lens-work/initiatives/${initiative_id}.yaml`:
 
@@ -132,7 +147,9 @@ Create directory and file at `{project-root}/_bmad-output/lens-work/initiatives/
 id: ${initiative_id}
 name: "${initiative_name}"
 layer: ${layer}
+lane: small                    # Lane is stored in shared config — canonical for all collaborators
 domain: ${domain}
+domain_prefix: ${domain_prefix}
 service: ${service}
 created_at: "${ISO_TIMESTAMP}"
 created_by: ${git_user}
@@ -145,13 +162,13 @@ gates:
     status: open
 blocks: []
 branches:
-  base: "lens/${initiative_id}/base"
-  active: "lens/${initiative_id}/small/p1"
+  base: "${domain_prefix}/${initiative_id}/base"
+  active: "${domain_prefix}/${initiative_id}/small-1"
 ```
 
-> **Note:** This file is committed to the repo and shared across collaborators. It holds the canonical initiative definition and configuration.
+> **Note:** This file is committed to the repo and shared across collaborators. It holds the canonical initiative definition, configuration, and **lane assignment**. Lane is always read from this file, never from personal state.
 
-### 6. Write Personal State (Git-Ignored)
+### 7. Write Personal State (Git-Ignored)
 
 Write to `{project-root}/_bmad-output/lens-work/state.yaml`:
 
@@ -162,10 +179,9 @@ current:
   phase_name: "Analysis"
   workflow: null
   workflow_status: pending
-  lane: small
 ```
 
-> **Note:** This file is git-ignored. It tracks the individual user's current position in the initiative. Each collaborator has their own local copy.
+> **Note:** This file is git-ignored. It tracks the individual user's current position in the initiative. Each collaborator has their own local copy. Lane is NOT stored here — read from initiative config instead.
 
 ### 7. Log Event
 
@@ -178,8 +194,8 @@ Append to `{project-root}/_bmad-output/lens-work/event-log.jsonl`:
 ### 8. Commit Initiative Config
 
 ```bash
-# Ensure on p1 branch
-git checkout "lens/${initiative_id}/small/p1"
+# Ensure on small-1 branch (phase 1)
+git checkout "${domain_prefix}/${initiative_id}/small-1"
 
 # Stage initiative config and event log (NOT state.yaml — it's git-ignored)
 git add "_bmad-output/lens-work/initiatives/${initiative_id}.yaml"
@@ -191,18 +207,20 @@ git commit -m "init(${initiative_id}): Create ${layer} initiative '${initiative_
 Initiative: ${initiative_id}
 Layer: ${layer}
 Domain: ${domain}
+Lane: small
 Target repos: ${target_repos}
 
 Creates:
-- Branch topology: base, small, lead, p1
-- Initiative config: initiatives/${initiative_id}.yaml
+- Branch topology: base, small, large, small-1
+- Initiative config: initiatives/${initiative_id}.yaml (includes lane)
 - Event log entry
 
-State architecture: two-file (personal state + initiative config)
+Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}-{workflow}
+State architecture: two-file (personal state + shared initiative config)
 Ready for /pre-plan workflow."
 
-# Push to p1 branch
-git push -u origin "lens/${initiative_id}/small/p1"
+# Push to small-1 branch
+git push -u origin "${domain_prefix}/${initiative_id}/small-1"
 ```
 
 ### 9. Ensure .gitignore for Personal State
@@ -213,7 +231,7 @@ if ! grep -q "_bmad-output/lens-work/state.yaml" .gitignore 2>/dev/null; then
   echo "_bmad-output/lens-work/state.yaml" >> .gitignore
   git add .gitignore
   git commit -m "chore: gitignore personal lens-work state"
-  git push origin "lens/${initiative_id}/small/p1"
+  git push origin "${domain_prefix}/${initiative_id}/small-1"
 fi
 ```
 
@@ -226,23 +244,25 @@ Output to Compass:
 ├── Name: ${initiative_name}
 ├── Layer: ${layer}
 ├── Domain: ${domain}
+├── Lane: small (stored in initiative config)
 ├── Target repos: ${target_repos}
 ├──
 ├── Branch Topology:
-│   ├── Base: lens/${initiative_id}/base
-│   ├── Small: lens/${initiative_id}/small
-│   ├── Lead: lens/${initiative_id}/lead
-│   └── Phase: lens/${initiative_id}/small/p1 (committed & pushed)
+│   ├── Base: ${domain_prefix}/${initiative_id}/base
+│   ├── Small: ${domain_prefix}/${initiative_id}/small
+│   ├── Large: ${domain_prefix}/${initiative_id}/large
+│   └── Phase: ${domain_prefix}/${initiative_id}/small-1 (committed & pushed)
 ├──
 ├── State Architecture:
 │   ├── Personal state: _bmad-output/lens-work/state.yaml (git-ignored)
-│   └── Initiative config: _bmad-output/lens-work/initiatives/${initiative_id}.yaml (committed)
+│   └── Initiative config: _bmad-output/lens-work/initiatives/${initiative_id}.yaml (committed, includes lane)
 ├──
 └── Ready for /pre-plan
 
 State loading pattern:
   state = load("_bmad-output/lens-work/state.yaml")
   initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
+  lane = initiative.lane   # Always read lane from initiative config
 ```
 
 ---
@@ -254,7 +274,7 @@ The two-file state architecture separates concerns:
 | File | Scope | Git Status | Contents |
 |------|-------|------------|----------|
 | `state.yaml` | Personal | git-ignored | Active initiative pointer, current phase/workflow position |
-| `initiatives/{id}.yaml` | Shared | committed | Initiative definition, gates, blocks, branches, target repos |
+| `initiatives/{id}.yaml` | Shared | committed | Initiative definition, **lane**, gates, blocks, branches, target repos |
 
 **Loading pattern used by all downstream workflows:**
 
@@ -268,8 +288,10 @@ initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}
 # Step 3: Use both for workflow logic
 current_phase = state.current.phase
 initiative_layer = initiative.layer
+lane = initiative.lane           # ALWAYS read lane from shared initiative config
 target_repos = initiative.target_repos
 gates = initiative.gates
+domain_prefix = initiative.domain_prefix
 ```
 
 ---

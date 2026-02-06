@@ -48,8 +48,12 @@ invoke: casey.verify-clean-state
 state = load("_bmad-output/lens-work/state.yaml")
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 
+# Read lane from initiative config (shared, canonical)
+lane = initiative.lane
+domain_prefix = initiative.domain_prefix
+
 # Validate we're on the correct branch
-# /review operates on the current phase branch (typically p3 or base)
+# /review operates on the current phase branch (typically small-3 or base)
 current_branch = casey.get-current-branch()
 invoke: casey.pull-latest
 ```
@@ -58,8 +62,9 @@ invoke: casey.pull-latest
 
 ```yaml
 # Gate check — verify P3 (Solutioning) is complete
-p3_branch = "lens/${initiative.id}/${initiative.lane}/p3"
-lane_branch = "lens/${initiative.id}/${initiative.lane}"
+# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
+p3_branch = "${domain_prefix}/${initiative.id}/${lane}-3"
+lane_branch = "${domain_prefix}/${initiative.id}/${lane}"
 
 # Ancestry check: P3 must be merged into lane
 result = casey.exec("git merge-base --is-ancestor origin/${p3_branch} origin/${lane_branch}")
@@ -69,7 +74,7 @@ if result.exit_code != 0:
 
 # Verify final PBR is merged
 if not final_pbr_merged():
-  error: "Final PBR not approved. Merge lead → base PR first."
+  error: "Final PBR not approved. Merge large → base PR first."
 ```
 
 ### 1a. Checklist Enforcement — Verify Required Artifacts
@@ -163,8 +168,8 @@ output: |
 # Casey generates PR link for current phase branch → lane branch
 invoke: casey.generate-pr-link
 params:
-  source_branch: "lens/${initiative.id}/${initiative.lane}/p3"
-  target_branch: "lens/${initiative.id}/${initiative.lane}"
+  source_branch: "${domain_prefix}/${initiative.id}/${lane}-3"
+  target_branch: "${domain_prefix}/${initiative.id}/${lane}"
   title: "[Review] Implementation Gate — ${initiative.name}"
   
 output: |

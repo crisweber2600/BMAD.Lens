@@ -17,9 +17,10 @@ auto_triggered: true
 
 ```yaml
 workflow_name: string      # e.g., "discovery", "brainstorm", "product-brief"
-phase: string              # e.g., "p1", "p2", "p3"
-lane: string               # e.g., "small", "lead"
-initiative_id: string      # From state.yaml
+phase: integer             # Phase number: 1, 2, 3, 4
+lane: string               # e.g., "small", "large" (read from initiative.lane)
+initiative_id: string      # From state.active_initiative
+domain_prefix: string      # From initiative.domain_prefix
 ```
 
 ---
@@ -29,10 +30,13 @@ initiative_id: string      # From state.yaml
 ### 1. Load Current State
 
 ```yaml
-# Read from _bmad-output/lens-work/state.yaml
-initiative_id: ${state.initiative.id}
-current_phase: ${state.current.phase}
-current_lane: ${state.current.lane}
+# Read from two-file state architecture
+state = load("_bmad-output/lens-work/state.yaml")
+initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
+initiative_id = initiative.id
+current_phase = state.current.phase
+current_lane = initiative.lane           # Lane from shared initiative config
+domain_prefix = initiative.domain_prefix
 ```
 
 ### 2. Validate Merge Gate
@@ -43,15 +47,16 @@ previous_workflow=$(get_previous_workflow ${phase} ${workflow_name})
 
 if [ -n "$previous_workflow" ]; then
   # Check if previous workflow is merged into phase branch
-  phase_branch="lens/${initiative_id}/${lane}/${phase}"
-  workflow_branch="lens/${initiative_id}/${lane}/${phase}/w/${previous_workflow}"
+  # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
+  phase_branch="${domain_prefix}/${initiative_id}/${lane}-${phase}"
+  workflow_branch="${domain_prefix}/${initiative_id}/${lane}-${phase}-${previous_workflow}"
   
   git fetch origin ${phase_branch} ${workflow_branch}
   
   if ! git merge-base --is-ancestor origin/${workflow_branch} origin/${phase_branch}; then
     # GATE BLOCKED
     echo "⚠️ Merge gate blocked"
-    echo "├── Expected: ${previous_workflow} merged to ${phase}"
+    echo "├── Expected: ${previous_workflow} merged to phase ${phase}"
     echo "├── Actual: ${previous_workflow} not found in ancestry"
     echo "└── Action: Complete and merge previous workflow first"
     exit 1
@@ -59,13 +64,20 @@ if [ -n "$previous_workflow" ]; then
 fi
 ```
 
-### 3. Create Workflow Branch
+### 3. Create Workflow Branch & Push to Remote
 
 ```bash
 # Branch from phase
-git checkout "lens/${initiative_id}/${lane}/${phase}"
-git pull origin "lens/${initiative_id}/${lane}/${phase}"
-git checkout -b "lens/${initiative_id}/${lane}/${phase}/w/${workflow_name}"
+# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}-{workflow}
+phase_branch="${domain_prefix}/${initiative_id}/${lane}-${phase}"
+workflow_branch="${domain_prefix}/${initiative_id}/${lane}-${phase}-${workflow_name}"
+
+git checkout "${phase_branch}"
+git pull origin "${phase_branch}"
+git checkout -b "${workflow_branch}"
+
+# CRITICAL: Push immediately to ensure remote backup exists
+git push -u origin "${workflow_branch}"
 ```
 
 ### 4. Update State
@@ -77,10 +89,10 @@ current:
   workflow_status: in_progress
 
 branches:
-  active: "lens/${initiative_id}/${lane}/${phase}/w/${workflow_name}"
+  active: "${domain_prefix}/${initiative_id}/${lane}-${phase}-${workflow_name}"
 
 gates:
-  - name: "${phase}/w/${workflow_name}"
+  - name: "${lane}-${phase}-${workflow_name}"
     status: in_progress
     started_at: "${ISO_TIMESTAMP}"
 ```
@@ -88,15 +100,16 @@ gates:
 ### 5. Log Event
 
 ```json
-{"ts":"${ISO_TIMESTAMP}","event":"start-workflow","workflow":"${workflow_name}","branch":"lens/${initiative_id}/${lane}/${phase}/w/${workflow_name}"}
+{"ts":"${ISO_TIMESTAMP}","event":"start-workflow","workflow":"${workflow_name}","branch":"${domain_prefix}/${initiative_id}/${lane}-${phase}-${workflow_name}","pushed":true}
 ```
 
 ### 6. Output
 
 ```
-✅ Workflow branch created
-├── Branch: lens/${initiative_id}/${lane}/${phase}/w/${workflow_name}
+✅ Workflow branch created & pushed
+├── Branch: ${domain_prefix}/${initiative_id}/${lane}-${phase}-${workflow_name}
 ├── Phase: ${phase}
+├── Remote: pushed to origin
 └── Status: in_progress
 ```
 

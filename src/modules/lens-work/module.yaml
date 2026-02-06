@@ -75,14 +75,14 @@ workflow_categories:
   core:
     description: "Auto-triggered lifecycle operations"
     workflows:
-      - init-initiative
+      - init-initiative    # DEPRECATED — use router/init-initiative instead
       - start-workflow
       - finish-workflow
       - detect-layer
       - phase-transition
       - start-phase
       - finish-phase
-      - open-lead-review
+      - open-large-review
       - open-final-pbr
   
   router:
@@ -210,8 +210,8 @@ git:
   fetch_strategy: background
   fetch_ttl: 60
   branch_patterns:
-    base: "lens/{initiative_id}/base"
-    small_lane: "lens/{initiative_id}/small"
-    lead_lane: "lens/{initiative_id}/lead"
-    phase: "lens/{initiative_id}/{lane}/p{phase_number}"
-    workflow: "lens/{initiative_id}/{lane}/p{phase_number}/w/{workflow_name}"
+    base: "{domain}/{initiative_id}/base"
+    small_lane: "{domain}/{initiative_id}/small"
+    large_lane: "{domain}/{initiative_id}/large"
+    phase: "{domain}/{initiative_id}/{size}-{phase_number}"
+    workflow: "{domain}/{initiative_id}/{size}-{phase_number}-{workflow_name}"

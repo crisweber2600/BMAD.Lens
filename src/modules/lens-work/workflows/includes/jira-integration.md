@@ -82,7 +82,7 @@ story:
 
 **Story ID:** {id}
 **Sprint:** {sprint}
-**Branch:** lens/{initiative_id}/small/p4/w/dev-story
+**Branch:** {Domain}/{initiative_id}/small-4-dev-story
 
 ## Implementation Plan
 

@@ -15,7 +15,7 @@ This document defines all gate types, event log formats, and validation rules us
 | Gate Type | Purpose | Trigger | Automation |
 |-----------|---------|---------|------------|
 | `phase-gate` | Validates phase completion before next phase starts | Phase transition | Auto (ancestry check) |
-| `review-gate` | Lead/architect review of planning artifacts | PR: small → lead | Manual (PR approval) |
+| `review-gate` | Large-lane review of planning artifacts | PR: small → large | Manual (PR approval) |
 | `merge-gate` | Validates workflow merged before next workflow starts | Workflow transition | Auto (ancestry check) |
 | `deploy-gate` | Validates implementation ready for deployment | Post-P4 completion | Manual (checklist) |
 
@@ -112,7 +112,7 @@ Logged when a gate is manually skipped.
   "status": "skipped",
   "initiative": "rate-limit-x7k2m9",
   "actor": "user",
-  "reason": "Small initiative, lead review not required",
+  "reason": "Small initiative, large review not required",
   "override_by": "user"
 }
 ```
@@ -196,15 +196,15 @@ validation:
 
 ### Review Gate (Manual)
 
-Validates lead review before final PBR.
+Validates large review before final PBR.
 
 ```yaml
 gate: review-gate
 validation:
   - check: pr_approved
-    rule: "PR from small → lead has at least 1 approval"
+    rule: "PR from small → large has at least 1 approval"
     pass_if: pr_approvals >= 1
-    fail_message: "Lead review PR not approved. Request review."
+    fail_message: "Large review PR not approved. Request review."
 
   - check: no_changes_requested
     rule: "No outstanding change requests on PR"
@@ -290,7 +290,7 @@ if gate_status == "blocked":
   output: |
     Action required:
     1. Address PR feedback
-    2. Get lead approval
+    2. Get large review approval
     3. Re-run /review to check gate
 ```
 

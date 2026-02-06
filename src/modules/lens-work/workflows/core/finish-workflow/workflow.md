@@ -28,9 +28,15 @@ commit_message: string     # Optional custom message
 
 ```bash
 # Verify we're on a workflow branch
+# New pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}-{workflow}
 current_branch=$(git branch --show-current)
-if [[ ! "$current_branch" =~ ^lens/.*/(w|p[0-9]+) ]]; then
-  error "Not on a workflow or phase branch: $current_branch"
+
+# Branch must have at least 3 segments separated by / and the last segment must contain-dashes
+# Valid: MyDomain/my-init-abc123/small-1-brainstorm
+# Invalid: main, MyDomain/my-init-abc123/base
+if [[ ! "$current_branch" =~ ^[^/]+/[^/]+/[a-z]+-[0-9]+-[a-z0-9-]+$ ]]; then
+  error "Not on a workflow branch: $current_branch"
+  error "Expected pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}-{workflow}"
   exit 1
 fi
 
@@ -68,12 +74,18 @@ git push -u origin "${current_branch}"
 # Detect remote type
 remote_url=$(git remote get-url origin)
 
-# Parse components
+# Parse components from new branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}-{workflow}
+domain_prefix=$(echo ${current_branch} | cut -d'/' -f1)
 initiative_id=$(echo ${current_branch} | cut -d'/' -f2)
-lane=$(echo ${current_branch} | cut -d'/' -f3)
-phase=$(echo ${current_branch} | cut -d'/' -f4)
+branch_segment=$(echo ${current_branch} | cut -d'/' -f3)
 
-target_branch="lens/${initiative_id}/${lane}/${phase}"
+# Parse size, phase, workflow from the branch segment (e.g., "small-1-brainstorm")
+size=$(echo ${branch_segment} | cut -d'-' -f1)
+phase=$(echo ${branch_segment} | cut -d'-' -f2)
+workflow=$(echo ${branch_segment} | cut -d'-' -f3-)
+
+# Target is the phase branch (same but without workflow suffix)
+target_branch="${domain_prefix}/${initiative_id}/${size}-${phase}"
 source_branch="${current_branch}"
 
 # Generate PR link based on remote type
@@ -91,7 +103,7 @@ fi
 ```yaml
 # Update gates in state.yaml
 gates:
-  - name: "${phase}/w/${workflow_name}"
+  - name: "${size}-${phase}-${workflow}"
     status: completed
     completed_at: "${ISO_TIMESTAMP}"
     pr_link: "${pr_link}"
