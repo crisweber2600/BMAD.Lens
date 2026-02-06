@@ -84,8 +84,10 @@ generate_pr_url() {
 |----------|-------------|---------------|--------------|
 | Finish workflow | `{Domain}/{id}/{lane}-{N}-{name}` | `{Domain}/{id}/{lane}-{N}` | `finish-workflow` |
 | Finish phase | `{Domain}/{id}/{lane}-{N}` | `{Domain}/{id}/{lane}` | `finish-phase` |
-| Large review | `{Domain}/{id}/small` | `{Domain}/{id}/large` | `open-large-review` |
-| Final PBR | `{Domain}/{id}/large` | `{Domain}/{id}/base` | `open-final-pbr` |
+| Large review ¹ | `{Domain}/{id}/small` | `{Domain}/{id}/large` | `finish-phase` (step: open-large-review) |
+| Final PBR | `{Domain}/{id}/large` | `{Domain}/{id}/base` | `finish-phase` (gate: review-gate) |
+
+¹ **Large review PR:** Opened automatically by `finish-phase` when completing P2 (Planning phase) on the small lane. Requires lead/architect approval before merging to base.
 
 ---
 

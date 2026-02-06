@@ -43,6 +43,8 @@ repos:
 
 The BMAD control repo manages all `{Domain}/` branches. Target repos are _consumers_ — they receive work but don't drive lifecycle state.
 
+> **Note:** Replace `{Domain}` with your actual domain prefix (e.g., `lens`, `payment`, `auth`). For example, `{Domain}/{initiative_id}/base` becomes `lens/rate-limit-x7k2m9/base` or `payment/checkout-0a1k2m/base`.
+
 ```
 NorthStarET.BMAD (control repo)
 ├── {Domain}/bmad-9d7732/base          ← lifecycle branches live HERE

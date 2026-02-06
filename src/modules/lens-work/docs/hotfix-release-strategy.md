@@ -4,6 +4,8 @@
 
 lens-work's branch topology is designed for structured lifecycle flow, but real-world emergencies require escape hatches. This guide covers how to handle hotfixes, releases, and merge-back operations without breaking initiative state.
 
+> **IMPORTANT:** Replace `{Domain}` in all commands with your actual domain prefix (e.g., `lens`, `payment`, `auth`). For example, `{Domain}/{initiative_id}/base` becomes `lens/rate-limit-x7k2m9/base` or `payment/checkout-0a1k2m/base`.
+
 ## Emergency Hotfix Flow
 
 When a production issue requires an immediate fix that cannot wait for the normal phase flow:

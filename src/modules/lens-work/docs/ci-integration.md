@@ -4,6 +4,8 @@
 
 lens-work's branch topology maps naturally to CI/CD pipelines. Each branch level (workflow, phase, lane) represents a different validation scope, enabling progressively stricter checks as work flows toward the base branch.
 
+> **IMPORTANT:** Replace `{Domain}` in all branch patterns with your actual domain prefix (e.g., `lens`, `payment`, `auth`). For example, `{Domain}/*/small-*-*` becomes `lens/*/small-*-*` or `payment/*/small-*-*`. See [lane-topology.md](lane-topology.md) for branch naming conventions.
+
 ## Branch-Level CI Strategy
 
 | Branch Level | CI Scope | Trigger |
@@ -65,8 +67,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate Planning Artifacts
         run: |
-          # Check that required artifacts exist for the phase
-          PHASE=$(echo "${{ github.base_ref }}" | grep -oP 'p\d+')
+          # Extract phase number from branch name: {Domain}/{id}/small-{N}
+          # Example: payment/rate-limit-x7k2m9/small-2 → phase=2
+          PHASE_NUM=$(echo "${{ github.base_ref }}" | sed -E 's|.*/small-([0-9]+)$|\1|')
+          PHASE="p${PHASE_NUM}"
           ./.github/scripts/validate-artifacts.sh "$PHASE"
 
   large-review:
