@@ -29,7 +29,7 @@ if user_role != "Scrum Master":
 ## Prerequisites
 
 - [x] `/plan` complete (Phase 3 merged)
-- [x] Final PBR approved (lead → base merged)
+- [x] Final PBR approved (large → base merged)
 - [x] Stories exist
 - [x] state.yaml + initiatives/{id}.yaml exist
 - [x] P3 gate passed (Solutioning artifacts committed)
@@ -288,7 +288,7 @@ Hand off to developer? [Y]es / [N]o
 | Error | Recovery |
 |-------|----------|
 | P3 not complete | Error with merge instructions |
-| Final PBR not merged | Error — must merge lead → base PR first |
+| Final PBR not merged | Error — must merge large → base PR first |
 | Missing artifacts | Warn with list, offer override (passed_with_warnings) |
 | Readiness blockers | Block — must resolve before proceeding |
 | Dirty working directory | Prompt to stash or commit changes first |

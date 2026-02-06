@@ -15,7 +15,7 @@ Use `#think` before defining service boundaries or naming.
 
 **Creates:**
 - Initiative ID: `{sanitized_name}-{random}`
-- Branch: `lens/{id}/base` → `small/p1`
+- Branch: `{domain_prefix}/{id}/base` → `{domain_prefix}/{id}/small-1`
 - Two-file state:
   - `_bmad-output/lens-work/state.yaml` (active initiative pointer)
   - `_bmad-output/lens-work/initiatives/{initiative_id}.yaml` (initiative config)

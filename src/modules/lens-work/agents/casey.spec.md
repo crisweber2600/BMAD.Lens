@@ -89,7 +89,7 @@ Casey responds to lifecycle events, not user commands:
 
 ```bash
 # Branch creation
-git checkout -b lens/{id}/base
+git checkout -b {domain_prefix}/{id}/base
 git checkout -b lens/{id}/small
 git checkout -b lens/{id}/lead
 git checkout -b lens/{id}/small/p1

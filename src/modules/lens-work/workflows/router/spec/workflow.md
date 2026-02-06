@@ -257,10 +257,10 @@ params:
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] On correct branch: `lens/${initiative_id}/${lane}/p2`
+- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{lane}-2`
 - [ ] state.yaml updated with phase p2
 - [ ] initiatives/{id}.yaml updated with p2 status and p1 gate passed
 - [ ] event-log.jsonl entry appended
 - [ ] Planning artifacts written (PRD, architecture; optionally UX)
-- [ ] Lead Review PR opened (small → lead)
+- [ ] Large Review PR opened (small → large)
 - [ ] All changes pushed to origin

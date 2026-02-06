@@ -103,7 +103,29 @@ current_phase = state.current.phase or "unknown"
 current_phase_name = state.current.phase_name or "Unknown"
 current_lane = initiative.lane or "unknown"       # Lane from shared initiative config
 current_layer = initiative.layer or "unknown"
-domain_prefix = initiative.domain_prefix or "lens"
+
+# Resolve domain prefix without hardcoding lens defaults.
+normalize_domain_prefix(input):
+  token = input or ""
+  if token contains "/":
+    token = token.split("/").last_non_empty()
+  token = token.to_lower()
+  token = token.replace(/[^a-z0-9-]/g, "-")
+  token = token.replace(/-+/g, "-").trim("-")
+  return token
+
+domain_prefix = normalize_domain_prefix(initiative.domain_prefix)
+
+if domain_prefix == "":
+  domain_prefix = normalize_domain_prefix(initiative.domain)
+
+if domain_prefix == "":
+  parsed = parse_branch(current_branch)  # {domain_prefix}/{initiative_id}/{segment}
+  domain_prefix = normalize_domain_prefix(parsed.domain_prefix)
+
+if domain_prefix == "":
+  error: "Cannot resolve domain prefix for initiative ${initiative.id}. Set initiatives/${initiative.id}.yaml:domain_prefix."
+  exit: 1
 
 # Display current position summary
 output: |

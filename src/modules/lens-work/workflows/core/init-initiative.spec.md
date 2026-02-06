@@ -28,7 +28,7 @@ target_repo: api-gateway  # resolved from service map
 ### Branch Topology Created
 
 ```
-lens/{id}/base                    # Initiative root
+{domain_prefix}/{id}/base         # Initiative root
 ├── lens/{id}/small               # Small team lane
 │   └── lens/{id}/small/p1        # Phase 1 (Analysis)
 └── lens/{id}/lead                # Lead review lane (created but empty)

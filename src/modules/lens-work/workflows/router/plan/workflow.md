@@ -23,7 +23,7 @@ phase_name: Solutioning
 ## Prerequisites
 
 - [x] `/spec` complete (Phase 2 merged)
-- [x] Lead review approved (small → lead merged)
+- [x] Large review approved (small → large merged)
 - [x] state.yaml + initiatives/{id}.yaml exist
 - [x] P2 gate passed (Planning artifacts committed)
 
@@ -262,10 +262,10 @@ params:
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] On correct branch: `lens/${initiative_id}/${lane}/p3`
+- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{lane}-3`
 - [ ] state.yaml updated with phase p3
 - [ ] initiatives/{id}.yaml updated with p3 status and p2 gate passed
 - [ ] event-log.jsonl entry appended
 - [ ] Planning artifacts written (epics, stories, readiness-checklist)
-- [ ] Final PBR PR opened (lead → base)
+- [ ] Final PBR PR opened (large → base)
 - [ ] All changes pushed to origin

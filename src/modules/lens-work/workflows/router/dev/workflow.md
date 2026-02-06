@@ -236,7 +236,7 @@ params:
   updates:
     current_phase: "p4"
     current_phase_name: "Implementation"
-    active_branch: "lens/${initiative.id}/${initiative.lane}/p4"
+    active_branch: "${domain_prefix}/${initiative.id}/${lane}-4"
     workflow_status: "in_progress"
 ```
 
@@ -252,7 +252,7 @@ params:
     - "_bmad-output/lens-work/event-log.jsonl"
     - "_bmad-output/implementation-artifacts/"
   message: "[lens-work] /dev: Phase 4 Implementation — ${initiative.id} — ${story_id}"
-  branch: "lens/${initiative.id}/${initiative.lane}/p4"
+  branch: "${domain_prefix}/${initiative.id}/${lane}-4"
 ```
 
 ### 9. Log Event
@@ -338,7 +338,7 @@ Throughout `/dev`, the user may work in TargetProjects for actual coding, but al
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] On correct branch: `lens/${initiative_id}/small/p4`
+- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{lane}-4`
 - [ ] Lane validated as "small" for dev phase
 - [ ] state.yaml updated with phase p4
 - [ ] initiatives/{id}.yaml updated with p4 status and gate entries

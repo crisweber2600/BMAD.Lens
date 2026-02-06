@@ -205,7 +205,7 @@ params:
   updates:
     current_phase: "p1"
     current_phase_name: "Analysis"
-    active_branch: "lens/${initiative.id}/${initiative.lane}/p1"
+    active_branch: "${domain_prefix}/${initiative.id}/${lane}-1"
 ```
 
 ### 7. Commit State Changes
@@ -220,7 +220,7 @@ params:
     - "_bmad-output/lens-work/event-log.jsonl"
     - "_bmad-output/planning-artifacts/"
   message: "[lens-work] /pre-plan: Phase 1 Analysis — ${initiative.id}"
-  branch: "lens/${initiative.id}/${initiative.lane}/p1"
+  branch: "${domain_prefix}/${initiative.id}/${lane}-1"
 ```
 
 ### 8. Log Event
@@ -270,7 +270,7 @@ Ready to continue?
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] On correct branch: `lens/${initiative_id}/${lane}/p1`
+- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{lane}-1`
 - [ ] state.yaml updated with phase p1
 - [ ] initiatives/{id}.yaml updated with p1 status
 - [ ] event-log.jsonl entry appended

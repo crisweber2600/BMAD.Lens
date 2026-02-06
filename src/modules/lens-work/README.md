@@ -41,16 +41,14 @@ Git branches mirror the BMAD lifecycle. See `workflows/includes/lane-topology.md
 
 ```
 main
-└── lens/{initiative_id}/base            ← Initiative baseline
-    ├── lens/{initiative_id}/small        ← Small-lane (solo work)
-    │   ├── .../p1                        ← Phase 1 (Analysis)
-    │   │   └── .../p1/w/{workflow}       ← Active workflow branch
-    │   ├── .../p2                        ← Phase 2 (Planning)
-    │   ├── .../p3                        ← Phase 3 (Solutioning)
-    │   └── .../p4                        ← Phase 4 (Implementation)
-    └── lens/{initiative_id}/lead         ← Lead-lane (team work)
-        ├── .../p1
-        └── ...
+└── {domain_prefix}/{initiative_id}/base      ← Initiative baseline
+    ├── {domain_prefix}/{initiative_id}/small ← Small lane
+    │   ├── .../small-1                       ← Phase 1 (Analysis)
+    │   │   └── .../small-1-{workflow}        ← Workflow branch
+    │   ├── .../small-2                       ← Phase 2 (Planning)
+    │   ├── .../small-3                       ← Phase 3 (Solutioning)
+    │   └── .../small-4                       ← Phase 4 (Implementation)
+    └── {domain_prefix}/{initiative_id}/large ← Large review lane
 ```
 
 **Key design principle:** You can reconstruct the entire project lifecycle from the git log alone.

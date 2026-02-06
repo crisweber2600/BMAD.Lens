@@ -111,13 +111,36 @@ elif layer == "feature":
 ```yaml
 # Domain prefix for branch naming
 # Determines the {Domain} segment of branch names: {Domain}/{InitiativeId}/{size}-{N}-{workflow}
-if layer == "domain":
-  domain_prefix = domain   # Use the domain name itself
-elif layer == "service" || layer == "microservice":
-  domain_prefix = domain   # Use parent domain
+normalize_domain_prefix(input):
+  token = input or ""
+  if token contains "/":
+    token = token.split("/").last_non_empty()
+  token = token.to_lower()
+  token = token.replace(/[^a-z0-9-]/g, "-")
+  token = token.replace(/-+/g, "-").trim("-")
+  return token
+
+selected_repo = find(service_map.repos, repo => repo.name == target_repos[0])
+
+if layer == "domain" || layer == "service" || layer == "microservice":
+  # Domain/service flows must resolve from explicit domain input.
+  domain_prefix = normalize_domain_prefix(domain)
 elif layer == "feature":
-  # For features, derive domain from target repo's service-map entry
-  domain_prefix = service_map.repos[target_repos[0]].domain || "features"
+  # Feature flows resolve from explicit domain first, then repo metadata.
+  domain_prefix = normalize_domain_prefix(domain)
+  if domain_prefix == "":
+    domain_prefix = normalize_domain_prefix(selected_repo.domain_prefix)
+  if domain_prefix == "":
+    domain_prefix = normalize_domain_prefix(selected_repo.domain)
+  if domain_prefix == "":
+    # Expected local_path: TargetProjects/{Org}/{Domain}/{Repo}
+    path_parts = split_path(selected_repo.local_path)
+    domain_candidate = path_parts[2] or path_parts[1]
+    domain_prefix = normalize_domain_prefix(domain_candidate)
+
+if domain_prefix == "":
+  error: "Unable to resolve domain prefix for ${initiative_name}. Provide domain or add repo domain metadata to service-map.yaml."
+  exit: 1
 ```
 
 ### 5. Delegate Branch Creation to Casey
