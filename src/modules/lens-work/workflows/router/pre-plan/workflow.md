@@ -116,6 +116,19 @@ if not branch_exists("${domain_prefix}/${initiative.id}/${lane}-1"):
   invoke: casey.pull-latest
 ```
 
+### 2a. Batch Mode (Single-File Questions)
+
+```yaml
+if initiative.question_mode == "batch":
+  invoke: lens-work.batch-process
+  params:
+    phase_number: "1"
+    phase_name: "Analysis"
+    template_path: "templates/phase-1-analysis-questions.template.md"
+    output_filename: "phase-1-analysis-questions.md"
+  exit: 0
+```
+
 ### 3. Offer Workflow Options
 
 ```

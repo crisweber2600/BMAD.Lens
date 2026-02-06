@@ -63,6 +63,21 @@ ${if layer == "microservice"}
 ${endif}
 ```
 
+### 1a. Choose Question Mode
+
+```
+How would you like to answer phase questions?
+
+**[1] Interactive (chat)** — Current guided flow
+**[2] Batch MD** — Single file per phase, filled in one shot
+
+Select mode: [1] or [2]
+```
+
+```yaml
+question_mode = selection == "2" ? "batch" : "interactive"
+```
+
 ### 2. Generate Initiative ID
 
 ```bash
@@ -143,6 +158,38 @@ if domain_prefix == "":
   exit: 1
 ```
 
+### 4a. Resolve Docs Path (Docs/{Domain}/{Service}/{Repo}/{Feature})
+
+```yaml
+normalize_docs_segment(input):
+  token = input or ""
+  token = token.trim()
+  token = token.replace(/[\\/:*?"<>|]/g, "-")
+  token = token.replace(/\s+/g, "-")
+  token = token.replace(/-+/g, "-").trim("-")
+  return token
+
+docs_domain = normalize_docs_segment(domain)
+if docs_domain == "":
+  docs_domain = normalize_docs_segment(domain_prefix)
+if docs_domain == "":
+  docs_domain = normalize_docs_segment(selected_repo.domain)
+
+docs_service = normalize_docs_segment(service)
+if docs_service == "":
+  docs_service = normalize_docs_segment(selected_repo.service)
+
+docs_repo = normalize_docs_segment(selected_repo.name)
+docs_feature = normalize_docs_segment(initiative_id)
+
+if layer == "domain":
+  docs_service = ""
+  docs_repo = ""
+
+docs_segments = [docs_domain, docs_service, docs_repo, docs_feature].filter(seg => seg != "")
+docs_path = "docs/" + docs_segments.join("/")
+```
+
 ### 5. Delegate Branch Creation to Casey
 
 ```yaml
@@ -174,12 +221,20 @@ lane: small                    # Lane is stored in shared config — canonical f
 domain: ${domain}
 domain_prefix: ${domain_prefix}
 service: ${service}
+question_mode: ${question_mode}
 created_at: "${ISO_TIMESTAMP}"
 created_by: ${git_user}
 target_repos:
 ${for repo in target_repos}
   - ${repo}
 ${endfor}
+docs:
+  root: "docs"
+  domain: "${docs_domain}"
+  service: "${docs_service}"
+  repo: "${docs_repo}"
+  feature: "${docs_feature}"
+  path: "${docs_path}"
 gates:
   - name: tests-pass
     status: open
@@ -211,7 +266,7 @@ current:
 Append to `{project-root}/_bmad-output/lens-work/event-log.jsonl`:
 
 ```json
-{"ts":"${ISO_TIMESTAMP}","event":"init-initiative","id":"${initiative_id}","layer":"${layer}","target_repos":${JSON.stringify(target_repos)},"domain":"${domain}","service":"${service}"}
+{"ts":"${ISO_TIMESTAMP}","event":"init-initiative","id":"${initiative_id}","layer":"${layer}","target_repos":${JSON.stringify(target_repos)},"domain":"${domain}","service":"${service}","question_mode":"${question_mode}","docs_path":"${docs_path}"}
 ```
 
 ### 8. Commit Initiative Config
@@ -267,6 +322,8 @@ Output to Compass:
 ├── Name: ${initiative_name}
 ├── Layer: ${layer}
 ├── Domain: ${domain}
+├── Question mode: ${question_mode}
+├── Docs path: ${docs_path}
 ├── Lane: small (stored in initiative config)
 ├── Target repos: ${target_repos}
 ├──

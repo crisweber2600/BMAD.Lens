@@ -111,6 +111,19 @@ else:
   invoke: casey.pull-latest
 ```
 
+### 2a. Batch Mode (Single-File Questions)
+
+```yaml
+if initiative.question_mode == "batch":
+  invoke: lens-work.batch-process
+  params:
+    phase_number: "3"
+    phase_name: "Solutioning"
+    template_path: "templates/phase-3-solutioning-questions.template.md"
+    output_filename: "phase-3-solutioning-questions.md"
+  exit: 0
+```
+
 ### 3. Execute Workflows
 
 #### Epics — Story Breakdown Integration:

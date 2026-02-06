@@ -19,8 +19,7 @@ phase_name: Implementation
 **Authorized:** Developer (post-review only)
 
 ```yaml
-if not dev_story_exists():
-  error: "/review has not produced a dev-ready story. Run /review first."
+# Dev story check deferred to Step 0 for batch mode support
 ```
 
 ---
@@ -28,7 +27,7 @@ if not dev_story_exists():
 ## Prerequisites
 
 - [x] `/review` complete
-- [x] Dev story exists
+- [x] Dev story exists (interactive mode)
 - [x] Developer assigned (or self-assigned)
 - [x] state.yaml + initiatives/{id}.yaml exist
 - [x] Implementation gate passed (P3 Solutioning complete)
@@ -50,6 +49,10 @@ initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}
 # Read lane from initiative config (shared, canonical)
 lane = initiative.lane
 domain_prefix = initiative.domain_prefix
+
+# Require dev story for interactive mode
+if initiative.question_mode != "batch" and not dev_story_exists():
+  error: "/review has not produced a dev-ready story. Run /review first."
 
 # Lane validation — verify current lane allows dev phase
 # Dev (P4) must be on small lane
@@ -118,6 +121,19 @@ else:
   params:
     branch: "${domain_prefix}/${initiative.id}/${lane}-4"
   invoke: casey.pull-latest
+```
+
+### 1b. Batch Mode (Single-File Questions)
+
+```yaml
+if initiative.question_mode == "batch":
+  invoke: lens-work.batch-process
+  params:
+    phase_number: "4"
+    phase_name: "Implementation"
+    template_path: "templates/phase-4-implementation-questions.template.md"
+    output_filename: "phase-4-implementation-questions.md"
+  exit: 0
 ```
 
 ### 2. Load Dev Story

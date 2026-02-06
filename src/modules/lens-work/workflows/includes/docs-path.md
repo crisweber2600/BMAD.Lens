@@ -57,6 +57,18 @@ This document defines the canonical directory structure, file naming conventions
 │   │   ├── initial-discovery-report.md
 │   │   ├── deep-scan-{repo_name}.md
 │   │   └── deep-scan-summary.md
+│   ├── {domain}/                                 # Batch-mode phase docs
+│   │   └── {service}/
+│   │       └── {repo}/
+│   │           └── {initiative_id}/
+│   │               ├── phase-1-analysis-questions.md
+│   │               ├── phase-1-review.md
+│   │               ├── phase-2-planning-questions.md
+│   │               ├── phase-2-review.md
+│   │               ├── phase-3-solutioning-questions.md
+│   │               ├── phase-3-review.md
+│   │               ├── phase-4-implementation-questions.md
+│   │               └── phase-4-review.md
 │   └── lens-sync/                               # Synced repo documentation
 │       └── {repo_name}/
 │           └── ...
@@ -117,6 +129,14 @@ Generated documentation for discovered repos. Produced by `repo-document` workfl
 docs/discovery/
 ```
 
+### Batch Question Docs
+
+```
+docs/{domain}/{service}/{repo}/{initiative_id}/
+```
+
+Batch question files and party-mode review outputs live here. The resolved path is stored in `initiatives/{id}.yaml` as `docs.path`.
+
 Output from `repo-discover` and deep-scan workflows. Committed to main branch.
 
 ### Lens Sync
@@ -176,6 +196,7 @@ Synced documentation from target repos via `sync` workflow.
 | Discovery docs | `main` branch | After discovery workflow |
 | Canonical docs | `main` branch | After repo-document workflow |
 | Lens sync docs | `main` branch | After sync workflow |
+| Batch question docs | Phase branch | During batch-mode processing |
 
 ### Git Add Patterns
 
@@ -195,6 +216,9 @@ git add "docs/discovery/"
 
 # Canonical docs (main branch only)
 git add "_bmad-output/lens-work/docs/"
+
+# Batch question docs (phase branch)
+git add "docs/${domain}/${service}/${repo}/${initiative_id}/"
 ```
 
 ### Commit Message Patterns
@@ -221,6 +245,9 @@ All path patterns use these tokens:
 | `{initiative_id}` | Current initiative ID | `state.yaml` |
 | `{repo_name}` | Target repository name | `service-map.yaml` |
 | `{id}` | Shorthand for `{initiative_id}` | `state.yaml` |
+| `{domain}` | Initiative domain segment | `initiatives/{id}.yaml` (`docs.domain`) |
+| `{service}` | Initiative service segment | `initiatives/{id}.yaml` (`docs.service`) |
+| `{repo}` | Initiative repo segment | `initiatives/{id}.yaml` (`docs.repo`) |
 
 ### Example Resolution
 

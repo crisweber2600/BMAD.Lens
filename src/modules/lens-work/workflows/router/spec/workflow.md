@@ -107,6 +107,19 @@ else:
   invoke: casey.pull-latest
 ```
 
+### 2a. Batch Mode (Single-File Questions)
+
+```yaml
+if initiative.question_mode == "batch":
+  invoke: lens-work.batch-process
+  params:
+    phase_number: "2"
+    phase_name: "Planning"
+    template_path: "templates/phase-2-planning-questions.template.md"
+    output_filename: "phase-2-planning-questions.md"
+  exit: 0
+```
+
 ### 3. Offer Workflow Options
 
 ```
