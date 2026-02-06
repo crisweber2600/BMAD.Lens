@@ -102,7 +102,7 @@ params:
 invoke: casey.finish-workflow
 ```
 
-### 5. Phase Completion + Lead Review
+### 5. Phase Completion + Large Review
 
 ```yaml
 if all_workflows_complete("p2"):
@@ -112,7 +112,7 @@ if all_workflows_complete("p2"):
   output: |
     ✅ /spec complete
     ├── Phase 2 (Planning) finished
-    ├── Lead Review PR opened
+    ├── Large Review PR opened
     └── Next: Get lead approval, then run /plan
 ```
 

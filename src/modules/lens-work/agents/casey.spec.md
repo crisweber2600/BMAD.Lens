@@ -132,7 +132,7 @@ base                           # Initiative root
 1. **Workflow → Phase:** All previous workflows in phase must be merged
 2. **Phase → Lane:** All workflows in phase must be merged
 3. **Small → Lead:** Phase 2 + architecture workflow must be merged
-4. **Lead → Base:** Lead review must be approved and merged
+4. **Large → Base:** Lead review must be approved and merged
 
 ### Validation Command
 

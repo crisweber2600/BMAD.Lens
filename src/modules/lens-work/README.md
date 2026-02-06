@@ -102,7 +102,7 @@ P0 (Bootstrap)  →  P1 (Analysis)  →  P2 (Planning)  →  P3 (Solutioning)  �
 
 Gates enforce quality and authorization between phases:
 
-1. **Lead Review** (`open-large-review`) — PO/Architect reviews phase artifacts before transition
+1. **Large Review** (`open-large-review`) — PO/Architect reviews phase artifacts before transition
 2. **Final PBR** (`open-final-pbr`) — Full team review at solutioning completion
 3. **Phase Transition** (`phase-transition`) — Automated state update when gate passes
 

@@ -99,7 +99,7 @@ initiative_id: string
 
 ---
 
-## Open Lead Review
+## Open Large Review
 
 **Trigger:** Phase 2 complete + architecture workflow merged
 
@@ -109,7 +109,7 @@ initiative_id: string
 # Validate p2 complete
 if phase_complete "p2"; then
   pr_link="${remote}/compare/lead...small"
-  echo "🔍 Lead Review Ready"
+  echo "🔍 Large Review Ready"
   echo "├── PR: ${pr_link}"
   echo "└── Assign large reviewers"
 fi

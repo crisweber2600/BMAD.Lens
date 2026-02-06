@@ -118,7 +118,7 @@ Open PR from small → large for large review.
 
 ### Trigger
 
-Lead review merged
+Large review merged
 
 ### Purpose
 
@@ -126,8 +126,8 @@ Open PR from large → base for final PBR.
 
 ### Sequence
 
-1. Validate lead merged from small
-2. Print PR link: `{remote}/compare/base...lead`
+1. Validate large merged from small
+2. Print PR link: `{remote}/compare/base...large`
 3. Log to event-log.jsonl
 
 ---

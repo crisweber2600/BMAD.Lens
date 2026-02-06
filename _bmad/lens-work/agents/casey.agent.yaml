@@ -97,7 +97,7 @@ agent:
       action: open-large-review
       description: "Print PR link for small → large"
     
-    - event: lead-review-merged
+    - event: large-review-merged
       action: open-final-pbr
       description: "Print PR link for large → base"
     
