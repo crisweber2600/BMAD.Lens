@@ -38,6 +38,32 @@ install_questions:
     default: true
     result: "{answer}"
   
+  discovery_depth:
+    prompt: "Default discovery depth?"
+    type: single-select
+    options:
+      - shallow
+      - standard
+      - deep
+    default: standard
+    result: "{answer}"
+
+  enable_jira_integration:
+    prompt: "Enable JIRA integration during discovery?"
+    type: boolean
+    default: false
+    result: "{answer}"
+
+  lens_data_folder:
+    prompt: "Path for lens data storage"
+    default: "{project-root}/_bmad/lens-work"
+    result: "{answer}"
+
+  metadata_output_folder:
+    prompt: "Path for BMAD metadata storage"
+    default: "{project-root}/_bmad-output"
+    result: "{answer}"
+
   default_git_remote:
     prompt: "Default git remote type"
     type: single-select
@@ -102,6 +128,10 @@ workflow_categories:
       - repo-document
       - repo-reconcile
       - repo-status
+      - discover
+      - analyze-codebase
+      - generate-docs
+      - lens-sync
   
   utility:
     description: "Manual/support workflows"
@@ -168,6 +198,7 @@ prompts:
     - lens-work.bootstrap.prompt.md
     - lens-work.discover.prompt.md
     - lens-work.document.prompt.md
+    - lens-work.lens-sync.prompt.md
     - lens-work.reconcile.prompt.md
     - lens-work.repo-status.prompt.md
     - lens-work.rollback.prompt.md
@@ -189,12 +220,33 @@ docs:
   copilot_instructions: "docs/copilot-instructions.md"
   install_to_github: ".github/lens-work-instructions.md"
   files:
+    # v3 operational docs
     - copilot-instructions.md
     - migration-guide.md
     - branch-protection.md
     - ci-integration.md
     - hotfix-release-strategy.md
     - multi-repo-initiatives.md
+    - bmad-folder-changes-quick-spec.md
+    # Reference docs (from discovery workflows)
+    - agents.md
+    - architecture.md
+    - configuration.md
+    - examples.md
+    - getting-started.md
+    - getting-started-old.md
+    - installation-testing.md
+    - migrations.md
+    - operations.md
+    - prerequisites.md
+    - review-log.md
+    - scope.md
+    - session-store.md
+    - spec-checklist.md
+    - testing.md
+    - traceability.md
+    - troubleshooting.md
+    - workflows.md
 
 # Tests
 tests:
