@@ -24,6 +24,21 @@ commit_message: string     # Optional custom message
 
 ## Execution Sequence
 
+### 0. Validate Branch & Sync
+
+```bash
+# Verify we're on a workflow branch
+current_branch=$(git branch --show-current)
+if [[ ! "$current_branch" =~ ^lens/.*/(w|p[0-9]+) ]]; then
+  error "Not on a workflow or phase branch: $current_branch"
+  exit 1
+fi
+
+# Ensure branch is checked out and up to date
+git checkout "$current_branch"
+git fetch origin
+```
+
 ### 1. Stage Changes
 
 ```bash

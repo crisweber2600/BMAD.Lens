@@ -170,6 +170,76 @@ fetch_ttl: 60               # seconds
 
 ---
 
+## Additional Hook Methods
+
+### branch-status
+
+Triggered by the `branch-status-requested` event. Reports the current branch status including tracking info, clean/dirty state, and ahead/behind counts.
+
+**Behavior:**
+1. Run `git branch --show-current` to get current branch name
+2. Run `git for-each-ref --format='%(upstream:short) %(upstream:track)' $(git symbolic-ref -q HEAD)` for tracking info
+3. Run `git status --porcelain` to check clean/dirty state
+4. Run `git rev-list --left-right --count @{u}...HEAD` for ahead/behind counts
+5. Format and return:
+   ```
+   📊 Branch: {branch}
+   ├── Remote: {tracking_branch}
+   ├── Status: {clean|dirty} ({N} uncommitted)
+   ├── Ahead: {N} commits
+   └── Behind: {N} commits
+   ```
+6. Log status check to `event-log.jsonl`
+
+### create-branch-if-missing
+
+Triggered by the `branch-create-if-missing` event. Creates a branch only if it doesn't already exist; otherwise checks out the existing branch.
+
+**Behavior:**
+1. Run `git branch --list {branch_name}` to check existence
+2. If branch exists: `git checkout {branch_name}`
+3. If branch does not exist: `git checkout -b {branch_name} && git push -u origin {branch_name}`
+4. Log result (created vs. checked-out) to `event-log.jsonl`
+
+This method is idempotent—safe to call multiple times without side effects. Used by workflows that need to ensure a branch exists before proceeding.
+
+### fetch-and-checkout
+
+Triggered by the `fetch-and-checkout` event. Fetches the latest refs from the remote, then checks out the specified branch.
+
+**Behavior:**
+1. Run `git fetch origin --prune` to update remote refs
+2. Check if target branch exists locally or remotely
+3. If remote-only: `git checkout --track origin/{branch_name}`
+4. If local: `git checkout {branch_name} && git pull`
+5. Log operation to `event-log.jsonl`
+
+Used when switching to a branch that may have been created by another team member or on another machine.
+
+### show-branch
+
+Triggered by the `show-branch` event. Displays detailed information about a specific branch.
+
+**Behavior:**
+1. Run `git branch --show-current` for active branch name
+2. Run `git config --get branch.{branch}.remote` for remote name
+3. Run `git config --get branch.{branch}.merge` for tracking ref
+4. Run `git log --oneline -5 {branch}` for recent commits
+5. Format and return:
+   ```
+   🎼 Branch Details: {branch}
+   ├── Remote: {remote}/{branch}
+   ├── Tracking: {merge_ref}
+   ├── Last 5 commits:
+   │   ├── {hash} {message}
+   │   ├── {hash} {message}
+   │   └── ...
+   └── Created from: {parent_branch}
+   ```
+6. Log to `event-log.jsonl`
+
+---
+
 ## Implementation Notes
 
 **Use the create-agent workflow to build this agent.**

@@ -69,6 +69,29 @@ agent:
         GitHub:  https://github.com/{org}/{repo}/compare/{base}...{head}
         GitLab:  https://gitlab.com/{org}/{repo}/-/merge_requests/new?source_branch={head}&target_branch={base}
         Azure:   https://dev.azure.com/{org}/{project}/_git/{repo}/pullrequestcreate?sourceRef={head}&targetRef={base}
+    
+    - id: branch-status
+      content: |
+        Branch status check:
+        1. Current branch: `git branch --show-current`
+        2. Tracking info: `git for-each-ref --format='%(upstream:short) %(upstream:track)' $(git symbolic-ref -q HEAD)`
+        3. Clean check: `git status --porcelain`
+        4. Ahead/behind: `git rev-list --left-right --count @{u}...HEAD`
+        
+        Output format:
+        📊 Branch: {branch}
+        ├── Remote: {tracking_branch}
+        ├── Status: {clean|dirty} ({N} uncommitted)
+        ├── Ahead: {N} commits
+        └── Behind: {N} commits
+    
+    - id: create-branch-if-missing
+      content: |
+        Conditional branch creation:
+        1. Check: `git branch --list {branch_name}`
+        2. If exists: `git checkout {branch_name}`
+        3. If not exists: `git checkout -b {branch_name} && git push -u origin {branch_name}`
+        4. Log result to event-log.jsonl
 
   # Casey has no user-facing menu—all operations are hook-triggered
   # These are internal hooks invoked by Compass or Tracey
@@ -104,6 +127,22 @@ agent:
     - event: sync-requested
       action: git-fetch
       description: "Fetch + prune remote refs (triggered by Tracey SY)"
+    
+    - event: branch-status-requested
+      action: branch-status
+      description: "Report branch status (ahead/behind, clean/dirty)"
+    
+    - event: branch-create-if-missing
+      action: create-branch-if-missing
+      description: "Create branch only if it doesn't exist, else checkout"
+    
+    - event: fetch-and-checkout
+      action: fetch-and-checkout
+      description: "Fetch from remote, then checkout branch"
+    
+    - event: show-branch
+      action: show-branch
+      description: "Display branch details (name, remote, tracking)"
 
   git_config:
     fetch_strategy: background

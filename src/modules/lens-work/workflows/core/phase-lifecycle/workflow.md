@@ -26,6 +26,17 @@ initiative_id: string
 
 ### Sequence
 
+0. **Verify Git State**
+   ```bash
+   # Ensure clean working tree in BMAD control repo
+   if ! git diff-index --quiet HEAD --; then
+     echo "Uncommitted changes detected. Commit or stash before starting a phase."
+     exit 1
+   fi
+
+   git fetch origin
+   ```
+
 1. **Validate Previous Phase**
    ```bash
    if [ ${phase_number} -gt 1 ]; then
@@ -58,6 +69,23 @@ initiative_id: string
    {"ts":"${ISO_TIMESTAMP}","event":"start-phase","phase":"p${phase_number}","lane":"${lane}"}
    ```
 
+5. **Commit Phase Start**
+    ```bash
+    # Ensure we're on the new phase branch
+    git checkout "lens/${initiative_id}/${lane}/p${phase_number}"
+
+    # Stage state + event log
+    git add _bmad-output/lens-work/state.yaml _bmad-output/lens-work/event-log.jsonl
+
+    # Commit only if there are changes
+    if ! git diff-index --quiet HEAD --; then
+       git commit -m "phase(p${phase_number}): Start ${phase_name} (${initiative_id})"
+       git push origin "lens/${initiative_id}/${lane}/p${phase_number}"
+    else
+       echo "No phase-start changes to commit."
+    fi
+    ```
+
 ---
 
 ## Finish Phase
@@ -65,6 +93,17 @@ initiative_id: string
 **Purpose:** Push phase branch and print PR to lane after all workflows complete.
 
 ### Sequence
+
+0. **Verify Git State**
+   ```bash
+   # Ensure clean working tree in BMAD control repo
+   if ! git diff-index --quiet HEAD --; then
+     echo "Uncommitted changes detected. Commit or stash before finishing a phase."
+     exit 1
+   fi
+
+   git fetch origin
+   ```
 
 1. **Validate All Workflows Complete**
    ```bash
@@ -89,7 +128,24 @@ initiative_id: string
    {"ts":"${ISO_TIMESTAMP}","event":"finish-phase","phase":"${phase}","pr":"${pr_link}"}
    ```
 
-5. **Output**
+5. **Commit Phase Finish**
+   ```bash
+   # Ensure we're on the phase branch
+   git checkout "lens/${initiative_id}/${lane}/${phase}"
+
+   # Stage state + event log
+   git add _bmad-output/lens-work/state.yaml _bmad-output/lens-work/event-log.jsonl
+
+   # Commit only if there are changes
+   if ! git diff-index --quiet HEAD --; then
+     git commit -m "phase(${phase}): Finish ${initiative_id} phase"
+     git push origin "lens/${initiative_id}/${lane}/${phase}"
+   else
+     echo "No phase-finish changes to commit."
+   fi
+   ```
+
+6. **Output**
    ```
    ✅ Phase ${phase} complete
    ├── All workflows merged

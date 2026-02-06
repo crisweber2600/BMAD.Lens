@@ -29,12 +29,13 @@ Execute preflight check of all lens-work systems, then activate Compass for work
 - [ ] `workflows/discovery/repo-discover/` — Repo inventory
 - [ ] `workflows/utility/bootstrap/` — Initial setup
 
-## Phase 2: State Check
+## Phase 2: State Check (Two-File Pattern)
 
 ### 2.1 Active Initiative
-- [ ] Check for state file: `_bmad-output/lens-work/state.yaml`
+- [ ] Check for state file: `_bmad-output/lens-work/state.yaml` (active initiative pointer)
+- [ ] Check for initiative configs: `_bmad-output/lens-work/initiatives/{initiative_id}.yaml`
 - [ ] Check for event log: `_bmad-output/lens-work/event-log.jsonl`
-- [ ] Detect current phase and branch
+- [ ] Detect current phase and branch from active initiative config
 
 ### 2.2 Repo Inventory
 - [ ] Check for repo inventory: `_bmad-output/lens-work/repo-inventory.yaml`
@@ -55,5 +56,10 @@ If state exists, show current position:
 ├── Workflow: {workflow}
 └── Next: {recommendation}
 ```
+
+**Additional Commands:**
+- `/switch` — Switch between active initiatives
+- `/context` — Display full current context
+- `[onboard]` — First-time user onboarding walkthrough
 
 ```

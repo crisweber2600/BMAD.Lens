@@ -24,28 +24,79 @@ phase_name: Planning
 
 - [x] `/pre-plan` complete (Phase 1 merged)
 - [x] Product Brief exists
+- [x] state.yaml + initiatives/{id}.yaml exist
+- [x] P1 gate passed (Analysis artifacts committed)
 
 ---
 
 ## Execution Sequence
 
-### 1. Validate Prerequisites
+### 0. Git Discipline — Verify Clean State
 
 ```yaml
-if not phase_complete("p1"):
-  error: "Phase 1 (Analysis) not complete. Run /pre-plan first or merge pending PRs."
+# Verify working directory is clean
+invoke: casey.verify-clean-state
 
-if not file_exists("_bmad-output/planning-artifacts/product-brief.md"):
-  warning: "Product brief not found. Proceeding anyway."
+# Load two-file state
+state = load("_bmad-output/lens-work/state.yaml")
+initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
+
+# Validate we're on the correct branch (or can switch)
+expected_branch: "lens/${initiative.id}/${initiative.lane}/p2"
+current_branch = casey.get-current-branch()
+
+if current_branch != expected_branch:
+  if branch_exists(expected_branch):
+    invoke: casey.checkout-branch
+    params:
+      branch: ${expected_branch}
+    invoke: casey.pull-latest
+  # else: branch will be created in Step 2
 ```
 
-### 2. Start Phase 2
+### 1. Validate Prerequisites & Gate Check
 
 ```yaml
-invoke: casey.start-phase
-params:
-  phase_number: 2
-  phase_name: "Planning"
+# Gate check — verify P1 (Analysis/Pre-Plan) artifacts exist
+p1_branch = "lens/${initiative.id}/${initiative.lane}/p1"
+
+if not phase_complete("p1"):
+  # Ancestry check: P1 must be merged into lane
+  lane_branch = "lens/${initiative.id}/${initiative.lane}"
+  result = casey.exec("git merge-base --is-ancestor origin/${p1_branch} origin/${lane_branch}")
+  
+  if result.exit_code != 0:
+    error: "Phase 1 (Analysis) not complete. Run /pre-plan first or merge pending PRs."
+
+# Verify P1 artifacts exist
+required_artifacts:
+  - "_bmad-output/planning-artifacts/product-brief.md"
+
+for artifact in required_artifacts:
+  if not file_exists(artifact):
+    warning: "Required artifact not found: ${artifact}. Proceeding but spec quality may suffer."
+```
+
+### 2. Start Phase 2 — Auto-Branch Creation
+
+```yaml
+# Casey creates P2 branch if it doesn't exist
+if not branch_exists("lens/${initiative.id}/${initiative.lane}/p2"):
+  invoke: casey.start-phase
+  params:
+    phase_number: 2
+    phase_name: "Planning"
+    initiative_id: ${initiative.id}
+    lane: ${initiative.lane}
+  # Casey creates: lens/{initiative_id}/{lane}/p2
+
+  invoke: casey.pull-latest
+else:
+  # Branch exists, ensure we're on it
+  invoke: casey.checkout-branch
+  params:
+    branch: "lens/${initiative.id}/${initiative.lane}/p2"
+  invoke: casey.pull-latest
 ```
 
 ### 3. Offer Workflow Options
@@ -89,15 +140,18 @@ invoke: bmm.create-ux-design
 invoke: casey.finish-workflow
 ```
 
-#### Architecture:
+#### Architecture — Technical Spec Generation:
 ```yaml
 invoke: casey.start-workflow
 params:
   workflow_name: architecture
 
+# Reference architecture workflow from BMM module
 invoke: bmm.create-architecture
 params:
   prd: "_bmad-output/planning-artifacts/prd.md"
+  product_brief: "_bmad-output/planning-artifacts/product-brief.md"
+  output_path: "_bmad-output/planning-artifacts/"
 
 invoke: casey.finish-workflow
 ```
@@ -116,6 +170,55 @@ if all_workflows_complete("p2"):
     └── Next: Get lead approval, then run /plan
 ```
 
+### 6. Update State Files
+
+```yaml
+# Update initiative file: _bmad-output/lens-work/initiatives/${initiative.id}.yaml
+invoke: tracey.update-initiative
+params:
+  initiative_id: ${initiative.id}
+  updates:
+    current_phase: "p2"
+    current_phase_name: "Planning"
+    phases:
+      p2:
+        status: "in_progress"
+        started_at: "${ISO_TIMESTAMP}"
+    gates:
+      p1_complete:
+        status: "passed"
+        verified_at: "${ISO_TIMESTAMP}"
+
+# Update state.yaml
+invoke: tracey.update-state
+params:
+  updates:
+    current_phase: "p2"
+    current_phase_name: "Planning"
+    active_branch: "lens/${initiative.id}/${initiative.lane}/p2"
+```
+
+### 7. Commit State Changes
+
+```yaml
+# Casey commits all state and artifact changes
+invoke: casey.commit-and-push
+params:
+  paths:
+    - "_bmad-output/lens-work/state.yaml"
+    - "_bmad-output/lens-work/initiatives/${initiative.id}.yaml"
+    - "_bmad-output/lens-work/event-log.jsonl"
+    - "_bmad-output/planning-artifacts/"
+  message: "[lens-work] /spec: Phase 2 Planning — ${initiative.id}"
+  branch: "lens/${initiative.id}/${initiative.lane}/p2"
+```
+
+### 8. Log Event
+
+```json
+{"ts":"${ISO_TIMESTAMP}","event":"spec","id":"${initiative.id}","phase":"p2","workflow":"spec","status":"complete"}
+```
+
 ---
 
 ## Output Artifacts
@@ -125,3 +228,31 @@ if all_workflows_complete("p2"):
 | PRD | `_bmad-output/planning-artifacts/prd.md` |
 | UX Design | `_bmad-output/planning-artifacts/ux-design.md` |
 | Architecture | `_bmad-output/planning-artifacts/architecture.md` |
+| Initiative State | `_bmad-output/lens-work/initiatives/${id}.yaml` |
+
+---
+
+## Error Handling
+
+| Error | Recovery |
+|-------|----------|
+| P1 not complete | Error with merge instructions |
+| Product brief missing | Warn but allow proceeding |
+| Dirty working directory | Prompt to stash or commit changes first |
+| Branch creation failed | Check remote connectivity, retry with backoff |
+| P1 ancestry check failed | Prompt to merge P1 PR before continuing |
+| Architecture workflow failed | Retry or skip with warning |
+| State file write failed | Retry (max 3 attempts), then fail with save instructions |
+
+---
+
+## Post-Conditions
+
+- [ ] Working directory clean (all changes committed)
+- [ ] On correct branch: `lens/${initiative_id}/${lane}/p2`
+- [ ] state.yaml updated with phase p2
+- [ ] initiatives/{id}.yaml updated with p2 status and p1 gate passed
+- [ ] event-log.jsonl entry appended
+- [ ] Planning artifacts written (PRD, architecture; optionally UX)
+- [ ] Lead Review PR opened (small → lead)
+- [ ] All changes pushed to origin

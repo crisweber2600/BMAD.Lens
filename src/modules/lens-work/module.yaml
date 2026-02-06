@@ -93,6 +93,7 @@ workflow_categories:
       - plan
       - review
       - dev
+      - init-initiative
   
   discovery:
     description: "Repo discovery and documentation"
@@ -115,6 +116,19 @@ workflow_categories:
       - onboarding
       - setup-rollback
       - fix-story
+      - switch
+      - check-repos
+      - migrate-state
+
+  includes:
+    description: "Shared reference files included by workflows"
+    files:
+      - lane-topology
+      - jira-integration
+      - gate-event-template
+      - pr-links
+      - docs-path
+      - artifact-validator
 
 # Prompts (entry point commands)
 prompts:
@@ -141,6 +155,13 @@ prompts:
     - lens-work.fix.prompt.md
     - lens-work.override.prompt.md
     - lens-work.archive.prompt.md
+    # Context Commands (Compass)
+    - lens-work.switch.prompt.md
+    - lens-work.context.prompt.md
+    - lens-work.constitution.prompt.md
+    - lens-work.compliance.prompt.md
+    - lens-work.focus.prompt.md
+    - lens-work.lens.prompt.md
     # Bootstrap & Discovery (Scout)
     - lens-work.onboard.prompt.md
     - lens-work.bootstrap.prompt.md
@@ -158,6 +179,31 @@ outputs:
   bootstrap_report: "_bmad-output/lens-work/bootstrap-report.md"
   document_log: "_bmad-output/lens-work/repo-document-log.md"
   dashboards: "_bmad-output/lens-work/dashboards/"
+  initiatives_dir: "_bmad-output/lens-work/initiatives/"
+  personal_profile: "_bmad-output/personal/profile.yaml"
+
+# Documentation
+docs:
+  directory: "docs/"
+  files:
+    - migration-guide.md
+    - branch-protection.md
+    - ci-integration.md
+    - hotfix-release-strategy.md
+    - multi-repo-initiatives.md
+
+# Tests
+tests:
+  directory: "tests/"
+  files:
+    - lens-work-tests.spec.md
+
+# Validation Scripts
+scripts:
+  directory: "scripts/"
+  files:
+    - validate-lens-work.ps1
+    - sync-prompts.ps1
 
 # Git Configuration
 git:

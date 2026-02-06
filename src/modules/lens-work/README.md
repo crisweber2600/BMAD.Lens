@@ -13,8 +13,252 @@ LENS Workbench transforms BMAD from a "large framework you must learn" into a **
 - **Layer-Aware Context** — Auto-detects domain/service/microservice/feature layers
 - **Repo Discovery & Documentation** — Inventories and documents repos before planning
 - **Lifecycle Telemetry** — Tracks phase progress with dashboard visibility
+- **Context Switching** — Seamlessly move between initiatives, lenses, and phases
 
-**The architectural differentiator:** Git history becomes the process tracker—branch topology mirrors BMAD phases, so you can see where you are just by looking at branches.
+**The architectural differentiator:** Git history becomes the process tracker — branch topology mirrors BMAD phases, so you can see where you are just by looking at branches.
+
+---
+
+## Architecture
+
+### Two-File State Architecture
+
+LENS Workbench maintains all runtime state in exactly two files — no database, no external services:
+
+```
+_bmad-output/lens-work/
+├── state.yaml          ← Current initiative context, phase, lane, gate status
+└── event-log.jsonl     ← Append-only audit trail of every lifecycle event
+```
+
+**`state.yaml`** is the single source of truth for "where are we now?" — active initiative, current phase, lane, workflow status, and gate progression. Every workflow reads it at start and writes it at end.
+
+**`event-log.jsonl`** is the immutable history. Each line is a timestamped JSON event recording what happened, who did it, and what changed. Used for recovery, auditing, and telemetry dashboards.
+
+### Branch Topology
+
+Git branches mirror the BMAD lifecycle. See `workflows/includes/lane-topology.md` for the full specification.
+
+```
+main
+└── lens/{initiative_id}/base            ← Initiative baseline
+    ├── lens/{initiative_id}/small        ← Small-lane (solo work)
+    │   ├── .../p1                        ← Phase 1 (Analysis)
+    │   │   └── .../p1/w/{workflow}       ← Active workflow branch
+    │   ├── .../p2                        ← Phase 2 (Planning)
+    │   ├── .../p3                        ← Phase 3 (Solutioning)
+    │   └── .../p4                        ← Phase 4 (Implementation)
+    └── lens/{initiative_id}/lead         ← Lead-lane (team work)
+        ├── .../p1
+        └── ...
+```
+
+**Key design principle:** You can reconstruct the entire project lifecycle from the git log alone.
+
+### Agent Responsibility Matrix
+
+| Agent | Role | Trigger | Responsibility |
+|-------|------|---------|----------------|
+| **Compass** | Phase Router | User commands | Routes `/pre-plan` through `/dev`, detects layers, manages context switches, enforces role gates |
+| **Casey** | Git Conductor | Auto-triggered | Creates/validates branches, commits state, pushes to remote — never invoked directly by users |
+| **Tracey** | State Manager | User shortcodes | Reads/writes `state.yaml`, manages recovery, provides status, handles overrides and archival |
+| **Scout** | Discovery Lead | User commands | Bootstraps repos, runs discovery scans, generates canonical docs, reconciles repo inventory |
+
+---
+
+## Lifecycle
+
+### Phase Flow
+
+The BMAD lifecycle progresses through five phases, each gated by explicit progression criteria:
+
+```
+P0 (Bootstrap)  →  P1 (Analysis)  →  P2 (Planning)  →  P3 (Solutioning)  →  P4 (Implementation)
+   Scout               Compass           Compass            Compass              Compass
+   onboard             /pre-plan          /spec              /plan                /dev
+                                                             /review (gate)
+```
+
+| Phase | Name | Key Artifacts | Gate |
+|-------|------|---------------|------|
+| **P0** | Bootstrap | repo-inventory.yaml, bootstrap-report.md | Repos discovered & profiled |
+| **P1** | Analysis | brainstorm-notes.md, product-brief.md | Product brief approved |
+| **P2** | Planning | PRD, UX design docs | PRD approved |
+| **P3** | Solutioning | Architecture doc, epics & stories | Implementation readiness check passed |
+| **P4** | Implementation | Code, tests, deployments | Story acceptance criteria met |
+
+### Gate Progression
+
+Gates enforce quality and authorization between phases:
+
+1. **Lead Review** (`open-lead-review`) — PO/Architect reviews phase artifacts before transition
+2. **Final PBR** (`open-final-pbr`) — Full team review at solutioning completion
+3. **Phase Transition** (`phase-transition`) — Automated state update when gate passes
+
+### Lane Management
+
+| Lane | Use Case | Branch Pattern |
+|------|----------|----------------|
+| **small** | Solo developer, small features | `lens/{id}/small/p{n}` |
+| **lead** | Team work, requires reviews | `lens/{id}/lead/p{n}` |
+
+Lane is selected during `init-initiative` based on initiative complexity and team size.
+
+---
+
+## Commands
+
+### Complete Command Reference
+
+#### Phase Router Commands (Compass)
+
+| Command | Agent | Description |
+|---------|-------|-------------|
+| `/pre-plan` | Compass | Launch Analysis phase (P1) — brainstorm, research, product brief |
+| `/spec` | Compass | Launch Planning phase (P2) — PRD, UX design |
+| `/plan` | Compass | Complete Solutioning (P3) — architecture, epics, stories |
+| `/review` | Compass | Implementation readiness gate — SM/lead approval required |
+| `/dev` | Compass | Implementation loop (P4) — sprint planning, story dev, code review |
+
+#### Context Commands (Compass)
+
+| Command | Agent | Description |
+|---------|-------|-------------|
+| `/switch` | Compass | Switch context — initiative, lens, phase, or lane |
+| `/context` | Compass | Display current context (active initiative, phase, lane, workflow) |
+| `/constitution` | Compass | Display operating rules and compliance constraints |
+| `/lens` | Compass | Show or change the current lens focus |
+
+#### Initiative Commands (Compass)
+
+| Command | Agent | Description |
+|---------|-------|-------------|
+| `/new-domain` | Compass | Create domain-level initiative (multi-service, org-wide) |
+| `/new-service` | Compass | Create service-level initiative (single service/API) |
+| `/new-feature` | Compass | Create feature-level initiative (single feature within a service) |
+| `#fix-story` | Compass | Correction loop — fix a story that failed review or has defects |
+
+#### State & Recovery Commands (Tracey)
+
+| Command | Agent | Description |
+|---------|-------|-------------|
+| `?` | Tracey | Quick status — one-line summary of current state |
+| `ST` | Tracey | Full status — detailed initiative, phase, gate, and branch info |
+| `RS` | Tracey | Resume — pick up where you left off after interruption |
+| `SY` | Tracey | Sync — reconcile state.yaml with actual git branch state |
+| `FX` | Tracey | Fix state — repair corrupted or inconsistent state |
+| `OR` | Tracey | Override — manually set state values (advanced, use with caution) |
+| `AR` | Tracey | Archive — archive completed or abandoned initiatives |
+
+#### Discovery Commands (Scout)
+
+| Command | Agent | Description |
+|---------|-------|-------------|
+| `onboard` | Scout | First-time setup — create profile, bootstrap target repos |
+| `bootstrap` | Scout | Re-run bootstrap for new or changed repos |
+| `discover` | Scout | Deep scan repos for tech stack, structure, patterns |
+| `document` | Scout | Generate canonical docs from discovery data |
+| `reconcile` | Scout | Reconcile repo inventory with service-map |
+| `repo-status` | Scout | Check health/status of all managed repos |
+
+### Role Gating
+
+| Phase | Authorized Roles |
+|-------|------------------|
+| `#new-*` through `/plan` | PO, Architect, Tech Lead |
+| `/review` | Scrum Master (gate owner) |
+| `/dev` | Developer (post-review only) |
+
+---
+
+## Examples
+
+### Starting a New Feature
+
+```
+# 1. Create the initiative
+#new-feature "rate-limiting"
+
+# Compass auto-detects layer, Casey creates branches:
+#   lens/rate-limit-x7k2m9/base
+#   lens/rate-limit-x7k2m9/small/p1
+
+# 2. Begin analysis
+/pre-plan
+# → Guided through brainstorming, research, product brief
+
+# 3. Move to planning
+/spec
+# → PRD creation, UX design
+
+# 4. Complete solutioning
+/plan
+# → Architecture doc, epics & stories, implementation readiness
+
+# 5. Gate review
+/review
+# → SM reviews artifacts, approves for implementation
+
+# 6. Implement
+/dev
+# → Sprint planning, story development, code review cycles
+```
+
+### Switching Contexts
+
+```
+# Switch to a different initiative
+/switch
+
+# Compass presents active initiatives:
+#   1. rate-limit-x7k2m9  (P3 - Solutioning)
+#   2. auth-refactor-b3j1  (P1 - Analysis)
+# Select: 2
+
+# You're now in auth-refactor context
+/context
+# → Initiative: auth-refactor-b3j1 | Phase: P1 | Lane: small
+```
+
+### Checking Status
+
+```
+# Quick check
+@tracey ?
+# → rate-limit-x7k2m9 | P3/Solutioning | small | architecture-doc in progress
+
+# Full status
+@tracey ST
+# → Detailed breakdown with branch state, gate status, recent events
+
+# Something looks wrong? Sync state with git
+@tracey SY
+```
+
+### Full Lifecycle Walkthrough
+
+```
+# Bootstrap (first time only)
+@scout onboard
+
+# Discovery — learn about the repos
+@scout discover
+@scout document
+
+# New initiative
+#new-domain "payment-platform"
+# → Sets up multi-repo initiative with domain folder structure
+
+# Phase progression
+/pre-plan     # P1: Analysis — brainstorm, research, brief
+/spec         # P2: Planning — PRD, UX
+/plan         # P3: Solutioning — architecture, stories
+/review       # Gate: SM approval
+/dev          # P4: Implementation — sprint loop
+
+# When done
+@tracey AR    # Archive the completed initiative
+```
 
 ---
 
@@ -37,38 +281,6 @@ During installation, you'll be prompted for:
 
 ---
 
-## Components
-
-### Agents
-
-| Agent | Role | Description |
-|-------|------|-------------|
-| **Compass** | Router | Phase-aware lifecycle navigation and layer detection |
-| **Casey** | Conductor | Git branch orchestration (auto-triggered only) |
-| **Tracey** | Diagnostics | State management and recovery |
-| **Scout** | Pathfinder | Repo discovery, documentation, and bootstrap |
-
-### Phase Router Commands
-
-| Command | Phase | Owner |
-|---------|-------|-------|
-| `/pre-plan` | Analysis | PO/Architect/Tech Lead |
-| `/spec` | Planning | PO/Architect/Tech Lead |
-| `/plan` | Solutioning | PO/Architect/Tech Lead |
-| `/review` | Readiness | Scrum Master |
-| `/dev` | Implementation | Developer |
-
-### Initiative Commands
-
-| Command | Purpose | Example |
-|---------|---------|---------|
-| `#new-domain` | Start domain initiative | `#new-domain "payment-platform"` |
-| `#new-service` | Start service initiative | `#new-service "api-gateway"` |
-| `#new-feature` | Start feature initiative | `#new-feature "rate-limiting"` |
-| `#fix-story` | Correction loop | `#fix-story rate-limit-x7k2m9` |
-
----
-
 ## Operating Rules
 
 ### Control-Plane Rule
@@ -79,68 +291,138 @@ During installation, you'll be prompted for:
 - Repo operations run against TargetProjects paths programmatically
 - Planning artifacts remain in the BMAD control repo
 
-### Role Gating
+### Git Discipline
 
-| Phase | Authorized Roles |
-|-------|------------------|
-| `#new-*` through `/plan` | PO, Architect, Tech Lead |
-| `/review` | Scrum Master (gate owner) |
-| `/dev` | Developer (post-review only) |
+Every workflow that mutates state enforces:
 
----
+1. **Step 0 (START):** Verify clean working directory → checkout correct branch → pull from origin
+2. **Final Step (END):** Stage changes → targeted commit with initiative/phase/workflow context → push
 
-## Quick Start
-
-### 1. Onboarding (First Time)
-
-```
-@lens-work onboard
-```
-
-Scout creates your profile and bootstraps TargetProjects.
-
-### 2. Start New Feature
-
-```
-#new-feature "rate-limiting"
-```
-
-Compass detects layer, Casey creates branches, you're guided through `/pre-plan`.
-
-### 3. Continue Through Phases
-
-```
-/spec    # Planning phase
-/plan    # Solutioning phase
-/review  # Readiness gate (SM approval)
-/dev     # Implementation
-```
-
-### 4. Check Status
-
-```
-@tracey ST
-```
+This ensures clean audit trails and prevents uncommitted state drift.
 
 ---
 
-## Module Structure
+## Migration
+
+For upgrading from earlier lens-work versions, see `docs/migration-guide.md`. The migration guide covers:
+
+- State file format changes
+- Branch topology updates
+- New workflow registration
+- Prompt file additions
+
+---
+
+## File Structure
 
 ```
 lens-work/
-├── module.yaml              # Module configuration
-├── README.md                # This file
+├── module.yaml                          # Module configuration & registry
+├── README.md                            # This file
+├── service-map.yaml                     # Target repo mapping
+│
 ├── agents/
-│   ├── compass.agent.yaml   # Phase router
-│   ├── casey.agent.yaml     # Git conductor
-│   ├── tracey.agent.yaml    # State manager
-│   └── scout.agent.yaml     # Bootstrap specialist
+│   ├── compass.agent.yaml               # Phase router agent
+│   ├── casey.agent.yaml                 # Git conductor agent
+│   ├── tracey.agent.yaml               # State manager agent
+│   └── scout.agent.yaml                # Discovery & bootstrap agent
+│
 ├── workflows/
-│   ├── core/                # Auto-triggered operations
-│   ├── router/              # Phase commands
-│   ├── discovery/           # Repo discovery
-│   └── utility/             # Manual workflows
-└── _module-installer/
+│   ├── core/                            # Auto-triggered lifecycle operations
+│   │   ├── init-initiative/             # Initialize new initiative
+│   │   ├── start-workflow/              # Begin a workflow within a phase
+│   │   ├── finish-workflow/             # Complete a workflow
+│   │   ├── detect-layer/               # Auto-detect initiative layer
+│   │   ├── phase-transition/           # Transition between phases
+│   │   ├── start-phase/                # Begin a new phase
+│   │   ├── finish-phase/               # Complete a phase
+│   │   ├── open-lead-review/           # Open lead review gate
+│   │   └── open-final-pbr/             # Open final PBR gate
+│   │
+│   ├── router/                          # Phase router commands (user-facing)
+│   │   ├── pre-plan/                    # /pre-plan → P1 Analysis
+│   │   ├── spec/                        # /spec → P2 Planning
+│   │   ├── plan/                        # /plan → P3 Solutioning
+│   │   ├── review/                      # /review → Gate
+│   │   ├── dev/                         # /dev → P4 Implementation
+│   │   └── init-initiative/             # Router-level initiative init
+│   │
+│   ├── discovery/                       # Repo discovery & documentation
+│   │   ├── repo-discover/               # Deep scan repos
+│   │   ├── repo-document/               # Generate canonical docs
+│   │   ├── repo-reconcile/              # Reconcile inventory
+│   │   └── repo-status/                 # Check repo health
+│   │
+│   ├── utility/                         # Manual/support workflows
+│   │   ├── status/                      # ST — full status
+│   │   ├── resume/                      # RS — resume workflow
+│   │   ├── sync/                        # SY — sync state
+│   │   ├── fix-state/                   # FX — fix corrupted state
+│   │   ├── override/                    # OR — manual override
+│   │   ├── archive/                     # AR — archive initiative
+│   │   ├── bootstrap/                   # Bootstrap repos
+│   │   ├── onboarding/                  # First-time setup
+│   │   ├── setup-rollback/              # Rollback setup
+│   │   ├── fix-story/                   # Correction loop
+│   │   ├── switch/                      # Context switching
+│   │   ├── check-repos/                 # Validate repo state
+│   │   └── migrate-state/              # Migrate state format
+│   │
+│   └── includes/                        # Shared reference files
+│       ├── lane-topology.md             # Lane & branch rules
+│       ├── jira-integration.md          # Jira workflow mapping
+│       ├── gate-event-template.md       # Gate event format
+│       ├── pr-links.md                  # PR linking conventions
+│       ├── docs-path.md                 # Documentation path rules
+│       └── artifact-validator.md        # Artifact validation rules
+│
+├── prompts/                             # Entry-point prompt files
+│   ├── lens-work.start.prompt.md
+│   ├── lens-work.compass.prompt.md
+│   ├── lens-work.pre-plan.prompt.md
+│   ├── lens-work.spec.prompt.md
+│   ├── lens-work.plan.prompt.md
+│   ├── lens-work.review.prompt.md
+│   ├── lens-work.dev.prompt.md
+│   ├── lens-work.new-domain.prompt.md
+│   ├── lens-work.new-service.prompt.md
+│   ├── lens-work.new-feature.prompt.md
+│   ├── lens-work.fix-story.prompt.md
+│   ├── lens-work.switch.prompt.md
+│   ├── lens-work.context.prompt.md
+│   ├── lens-work.constitution.prompt.md
+│   ├── lens-work.compliance.prompt.md
+│   ├── lens-work.focus.prompt.md
+│   ├── lens-work.lens.prompt.md
+│   ├── lens-work.status.prompt.md
+│   ├── lens-work.resume.prompt.md
+│   ├── lens-work.sync.prompt.md
+│   ├── lens-work.fix.prompt.md
+│   ├── lens-work.override.prompt.md
+│   ├── lens-work.archive.prompt.md
+│   ├── lens-work.onboard.prompt.md
+│   ├── lens-work.bootstrap.prompt.md
+│   ├── lens-work.discover.prompt.md
+│   ├── lens-work.document.prompt.md
+│   ├── lens-work.reconcile.prompt.md
+│   ├── lens-work.repo-status.prompt.md
+│   └── lens-work.rollback.prompt.md
+│
+├── docs/                                # Documentation
+│   ├── migration-guide.md
+│   ├── branch-protection.md
+│   ├── ci-integration.md
+│   ├── hotfix-release-strategy.md
+│   └── multi-repo-initiatives.md
+│
+├── tests/                               # Test specifications
+│   └── lens-work-tests.spec.md
+│
+├── scripts/                             # Validation & utility scripts
+│   ├── validate-lens-work.ps1
+│   └── sync-prompts.ps1
+│
+└── _module-installer/                   # BMAD module installer
     └── installer.js
 ```
 
@@ -150,9 +432,15 @@ lens-work/
 
 ### State & Logs
 
-- `_bmad-output/lens-work/state.yaml` — Current initiative state
-- `_bmad-output/lens-work/event-log.jsonl` — Operation log
-- `_bmad-output/lens-work/repo-inventory.yaml` — Discovered repos
+| File | Purpose |
+|------|---------|
+| `_bmad-output/lens-work/state.yaml` | Current initiative context and phase state |
+| `_bmad-output/lens-work/event-log.jsonl` | Append-only lifecycle event audit trail |
+| `_bmad-output/lens-work/repo-inventory.yaml` | Discovered repo metadata |
+| `_bmad-output/lens-work/bootstrap-report.md` | Bootstrap scan results |
+| `_bmad-output/lens-work/initiatives/` | Per-initiative artifacts and state |
+| `_bmad-output/lens-work/dashboards/` | Telemetry dashboard data |
+| `_bmad-output/personal/profile.yaml` | User profile and preferences |
 
 ### Canonical Docs
 
@@ -167,12 +455,12 @@ Docs/{domain}/{service}/{repo}/
 ## Dependencies
 
 **Required:**
-- BMM (workflow execution)
-- BMAD Core (infrastructure)
+- **BMM** — Core workflow execution (planning → implementation lifecycle)
+- **BMAD Core** — Infrastructure, resource management, task library
 
 **Optional:**
-- CIS (brainstorming/research)
-- TEA (test planning)
+- **CIS** — Creative Innovation Suite (brainstorming, research, design thinking)
+- **TEA** — Test Engineering Academy (test planning, QA strategy)
 
 ---
 
