@@ -180,9 +180,9 @@ fi
 **Purpose:** Open PR from large → base for final product backlog review.
 
 ```bash
-# Validate lead merged from small
-if lead_merged_from_small; then
-  pr_link="${remote}/compare/base...lead"
+# Validate large merged from small
+if large_merged_from_small; then
+  pr_link="${remote}/compare/base...large"
   echo "📋 Final PBR Ready"
   echo "├── PR: ${pr_link}"
   echo "└── Ready for implementation planning"

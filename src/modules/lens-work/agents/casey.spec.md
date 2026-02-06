@@ -119,7 +119,7 @@ base                           # Initiative root
 │   │   └── ...
 │   └── p3                     # Phase 3 (Solutioning)
 │       └── ...
-└── lead                       # Large review lane
+└── large                      # Large review lane
     └── (merged from small after p2)
 ```
 

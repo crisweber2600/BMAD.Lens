@@ -107,7 +107,7 @@ invoke: casey.finish-workflow
 ```yaml
 if all_workflows_complete("p2"):
   invoke: casey.finish-phase
-  invoke: casey.open-lead-review  # PR: small → lead
+  invoke: casey.open-large-review  # PR: small → large
   
   output: |
     ✅ /spec complete

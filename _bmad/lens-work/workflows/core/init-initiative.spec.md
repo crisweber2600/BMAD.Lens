@@ -28,10 +28,10 @@ target_repo: api-gateway  # resolved from service map
 ### Branch Topology Created
 
 ```
-lens/{id}/base                    # Initiative root
-├── lens/{id}/small               # Small team lane
-│   └── lens/{id}/small/p1        # Phase 1 (Analysis)
-└── lens/{id}/lead                # Lead review lane (created but empty)
+{domain}/{id}/base                    # Initiative root
+├── {domain}/{id}/small               # Small team lane
+│   └── {domain}/{id}/small/p1        # Phase 1 (Analysis)
+└── {domain}/{id}/large                # Large review lane (created but empty)
 ```
 
 ### Sequence
@@ -39,7 +39,7 @@ lens/{id}/base                    # Initiative root
 1. Generate initiative ID (e.g., `rate-limit-x7k2m9`)
 2. Create base branch from current HEAD
 3. Create small lane from base
-4. Create lead lane from base
+4. Create large lane from base
 5. Create p1 branch from small
 6. Checkout to `small/p1`
 7. Initialize state.yaml
