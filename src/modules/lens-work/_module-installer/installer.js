@@ -92,6 +92,32 @@ active_initiative: null
             await fs.writeFile(stateFile, stateContent);
         }
 
+        // Copy copilot instructions to .github folder
+        const sourceInstructionsFile = path.join(__dirname, '..', 'docs', 'copilot-instructions.md');
+        const githubDir = path.join(projectRoot, '.github');
+        const targetInstructionsFile = path.join(githubDir, 'lens-work-instructions.md');
+        
+        try {
+            if (await fs.pathExists(sourceInstructionsFile)) {
+                if (!(await fs.pathExists(githubDir))) {
+                    await fs.ensureDir(githubDir);
+                }
+                logger.log(chalk.yellow('Installing Copilot instructions to .github/'));
+                await fs.copy(sourceInstructionsFile, targetInstructionsFile, { overwrite: true });
+                
+                // Verify copy succeeded
+                if (await fs.pathExists(targetInstructionsFile)) {
+                    logger.log(chalk.green('✓ Copilot instructions installed'));
+                } else {
+                    logger.warn(chalk.yellow('Warning: Could not verify Copilot instructions file'));
+                }
+            } else {
+                logger.warn(chalk.yellow(`Warning: Copilot instructions source not found at ${sourceInstructionsFile}`));
+            }
+        } catch (copyError) {
+            logger.warn(chalk.yellow(`Warning: Could not install Copilot instructions: ${copyError.message}`));
+        }
+
         // IDE-specific configuration
         if (installedIDEs && installedIDEs.length > 0) {
             for (const ide of installedIDEs) {

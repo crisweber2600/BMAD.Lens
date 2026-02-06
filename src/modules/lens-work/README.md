@@ -19,6 +19,19 @@ LENS Workbench transforms BMAD from a "large framework you must learn" into a **
 
 ---
 
+## Copilot Integration
+
+LENS Workbench is designed for **GitHub Copilot Chat integration** in BMAD control repos. When installed, the module includes comprehensive Copilot guidance:
+
+- **Documentation:** [Copilot Instructions](docs/copilot-instructions.md) — How to work effectively with Copilot in BMAD repos
+- **Agent Loading:** Copilot loads LENS agents (Compass, Casey, Tracey, Scout) from `.github/agents/` stubs
+- **Workflow Guidance:** Copilot provides context for phase routing, git operations, and state management
+- **Command Reference:** See `.github/prompts/` for prompt files used by Compass routing commands
+
+**Start here:** Load Compass in Copilot Chat (`@compass`) and run `/pre-plan` to bootstrap your repository.
+
+---
+
 ## Architecture
 
 ### Two-File State Architecture

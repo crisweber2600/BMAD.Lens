@@ -185,7 +185,10 @@ outputs:
 # Documentation
 docs:
   directory: "docs/"
+  copilot_instructions: "docs/copilot-instructions.md"
+  install_to_github: ".github/lens-work-instructions.md"
   files:
+    - copilot-instructions.md
     - migration-guide.md
     - branch-protection.md
     - ci-integration.md
