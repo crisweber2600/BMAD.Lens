@@ -10,7 +10,7 @@ nextStepFile: './step-03-apply-updates.md'
 Identify drift between discovered structure and domain map.
 
 ## Instructions
-- Load `.lens/domain-map.yaml` if present.
+- Load `_bmad/lens-work/domain-map.yaml` if present.
 - Compare to discovered map.
 - Flag missing or extra services/microservices.
 

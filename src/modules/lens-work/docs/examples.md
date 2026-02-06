@@ -10,7 +10,7 @@ This section provides practical examples for using LENS Sync & Discovery.
 
 1. `Bridge, bootstrap`
 2. `Scout, discover`
-3. `Link, update-lens`
+3. `Link, lens-sync`
 
 **Result:** A complete BMAD-ready documentation set for fast onboarding.
 
@@ -20,7 +20,7 @@ This section provides practical examples for using LENS Sync & Discovery.
 
 1. `Scout, discover`
 2. Review generated docs in `{docs_output_folder}/lens-sync/...`
-3. `Link, update-lens`
+3. `Link, lens-sync`
 
 **Result:** Architecture, API, and data model documentation produced in under an hour.
 
@@ -29,7 +29,7 @@ This section provides practical examples for using LENS Sync & Discovery.
 ### Documentation Propagation After Change
 
 1. Update microservice documentation
-2. `Link, update-lens`
+2. `Link, lens-sync`
 3. Review sharded outputs and reports
 
 **Result:** Service and domain docs stay synchronized with changes.
@@ -95,12 +95,12 @@ This section provides practical examples for using LENS Sync & Discovery.
 
 ---
 
-### update-lens
+### lens-sync
 
-1. `Link, update-lens`
+1. `Link, lens-sync`
 2. Review sharding and propagation summary
 
-**Expected Output:** `{docs_output_folder}/lens-sync/update-lens-report.md`
+**Expected Output:** `{docs_output_folder}/lens-sync/lens-sync-report.md`
 
 ---
 

@@ -20,7 +20,7 @@ Create a workflow branch with merge-gate validation.
 ### Sequence
 
 1. Validate merge gate (previous workflow must be merged)
-2. Create branch: `lens/{id}/{lane}/p{phase}/w/{workflow_name}`
+2. Create branch: `{domain}/{id}/{lane}/p{phase}/w/{workflow_name}`
 3. Checkout to new branch
 4. Update state.yaml
 5. Log to event-log.jsonl
@@ -69,7 +69,7 @@ Create phase branch from lane.
 ### Sequence
 
 1. Validate previous phase complete (all workflows merged)
-2. Create branch: `lens/{id}/{lane}/p{phase_number}`
+2. Create branch: `{domain}/{id}/{lane}/p{phase_number}`
 3. Checkout to new branch
 4. Update state.yaml
 5. Log to event-log.jsonl
@@ -96,7 +96,7 @@ Push phase branch and print PR to lane.
 
 ---
 
-## Workflow: open-lead-review
+## Workflow: open-large-review
 
 ### Trigger
 
@@ -104,7 +104,7 @@ Phase 2 complete + architecture workflow merged
 
 ### Purpose
 
-Open PR from small → lead for lead review.
+Open PR from small → large for large review.
 
 ### Sequence
 
@@ -122,7 +122,7 @@ Lead review merged
 
 ### Purpose
 
-Open PR from lead → base for final PBR.
+Open PR from large → base for final PBR.
 
 ### Sequence
 

@@ -36,7 +36,7 @@ This document defines what the lens-sync extension **does**, **does not** do, an
 - **Goal:** Reliable extraction of architecture, API, and data docs.
 
 ### MVP3 — Propagation & Integrity (Link)
-- **Workflows:** `update-lens`, `validate-schema`, `rollback`
+- **Workflows:** `lens-sync`, `validate-schema`, `rollback`
 - **Goal:** Propagation, schema safety, and recovery tooling.
 
 ---
@@ -69,7 +69,7 @@ This document defines what the lens-sync extension **does**, **does not** do, an
 - **discover:** Produces doc bundle for the target and updates lens metadata.
 - **analyze-codebase:** Produces `{target}/analysis-summary.md`.
 - **generate-docs:** Produces doc bundle for the target.
-- **update-lens:** Produces `update-lens-report.md` after propagation.
+- **lens-sync:** Produces `lens-sync-report.md` after propagation.
 - **validate-schema:** Produces `validate-schema-report.md` with errors/warnings.
 - **rollback:** Produces `rollback-report.md` after restoration.
 
@@ -82,10 +82,10 @@ This document defines what the lens-sync extension **does**, **does not** do, an
 | `bootstrap` | `domain-map.yaml`, `service.yaml`, git access | `bootstrap-report.md` | Manual follow-up
 | `sync-status` | `domain-map.yaml`, target root | `sync-status-report.md` | `reconcile`
 | `reconcile` | conflict report from `sync-status` | `reconcile-report.md` | Manual follow-up
-| `discover` | target root, `discovery_depth` | doc bundle | `update-lens`
+| `discover` | target root, `discovery_depth` | doc bundle | `lens-sync`
 | `analyze-codebase` | target root | `analysis-summary.md` | `generate-docs`
-| `generate-docs` | `analysis-summary.md` | doc bundle | `update-lens`
-| `update-lens` | doc bundle | `update-lens-report.md` | Optional `validate-schema`
+| `generate-docs` | `analysis-summary.md` | doc bundle | `lens-sync`
+| `lens-sync` | doc bundle | `lens-sync-report.md` | Optional `validate-schema`
 | `validate-schema` | lens schemas, lens data | `validate-schema-report.md` | Optional `rollback`
 | `rollback` | snapshots | `rollback-report.md` | Manual follow-up
 

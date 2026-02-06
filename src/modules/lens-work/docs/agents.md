@@ -67,7 +67,7 @@ When documentation changes need to be rolled up or validated across the lens hie
 - Rollback changes safely
 
 **Menu Triggers:**
-- [UL] update-lens
+- [UL] lens-sync
 - [VS] validate-schema
 - [RB] rollback
 

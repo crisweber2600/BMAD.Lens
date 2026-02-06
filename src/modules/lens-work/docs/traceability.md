@@ -20,7 +20,7 @@ Use this checklist to ensure every spec is reflected in user documentation and i
 - [ ] `workflows/discover/discover.spec.md` → `docs/workflows.md` → `workflows/discover/workflow.md`
 - [ ] `workflows/analyze-codebase/analyze-codebase.spec.md` → `docs/workflows.md` → `workflows/analyze-codebase/workflow.md`
 - [ ] `workflows/generate-docs/generate-docs.spec.md` → `docs/workflows.md` → `workflows/generate-docs/workflow.md`
-- [ ] `workflows/update-lens/update-lens.spec.md` → `docs/workflows.md` → `workflows/update-lens/workflow.md`
+- [ ] `workflows/lens-sync/lens-sync.spec.md` → `docs/workflows.md` → `workflows/lens-sync/workflow.md`
 - [ ] `workflows/validate-schema/validate-schema.spec.md` → `docs/workflows.md` → `workflows/validate-schema/workflow.md`
 - [ ] `workflows/rollback/rollback.spec.md` → `docs/workflows.md` → `workflows/rollback/workflow.md`
 

@@ -7,7 +7,7 @@ This document records backward-compatibility guidance for LENS session storage.
 ## Session Store Versions
 
 ### v1 (2026-01-31)
-- Initial schema for `.lens/lens-session.yaml`.
+- Initial schema for `_bmad-output/lens-work/state.yaml`.
 - Required keys: `version`, `updated_at`, `lens`, `context`.
 - Optional keys: `git`, `signals`, `summary`.
 

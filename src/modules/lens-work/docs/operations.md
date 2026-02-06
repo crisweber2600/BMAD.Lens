@@ -28,7 +28,7 @@ This document defines versioning, rollout practices, observability, and ownershi
 
 ### Rollback Triggers
 - Schema validation errors that corrupt lens data
-- Incomplete or failed propagation in `update-lens`
+- Incomplete or failed propagation in `lens-sync`
 - User reports of documentation drift after update
 
 ### Rollback Procedure

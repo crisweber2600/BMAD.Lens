@@ -24,7 +24,7 @@ For each workflow, validate preflight, execution, and report output:
 - [ ] `discover` generates doc bundle under `lens-sync/{target}`
 - [ ] `analyze-codebase` generates `{target}/analysis-summary.md`
 - [ ] `generate-docs` writes `architecture.md`, `api-surface.md`, `data-model.md`, `integration-map.md`, `onboarding.md`
-- [ ] `update-lens` generates `update-lens-report.md`
+- [ ] `lens-sync` generates `lens-sync-report.md`
 - [ ] `validate-schema` generates `validate-schema-report.md`
 - [ ] `rollback` generates `rollback-report.md`
 
@@ -42,7 +42,7 @@ For each workflow, validate preflight, execution, and report output:
 - Verify docs output structure and lens updates
 
 ### End-to-End Tests (Future)
-- Full bootstrap → discover → update-lens pipeline
+- Full bootstrap → discover → lens-sync pipeline
 - Rollback recovery from a staged update
 
 ---

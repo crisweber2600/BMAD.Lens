@@ -332,7 +332,7 @@ All lens-work workflows enforce:
 
 Example commit message:
 ```
-lens/{initiative_id}/{lane}/{phase}[/{workflow}]: description of changes
+{domain}/{initiative_id}/{lane}/{phase}[/{workflow}]: description of changes
 ```
 
 ## Using Copilot Effectively in BMAD Repos

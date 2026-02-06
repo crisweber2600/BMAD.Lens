@@ -44,7 +44,7 @@ node src/modules/lens/extensions/lens-sync/_module-installer/installer.js
 
 1. Run `Bridge, bootstrap` to align structure with the lens domain map.
 2. Run `Scout, discover` to analyze a brownfield service and generate docs.
-3. Run `Link, update-lens` to propagate documentation changes.
+3. Run `Link, lens-sync` to propagate documentation changes.
 
 ---
 
@@ -52,7 +52,7 @@ node src/modules/lens/extensions/lens-sync/_module-installer/installer.js
 
 - **New team member onboarding** — bootstrap and discover to generate a full context pack.
 - **Legacy service documentation** — run discover to create a BMAD-ready doc set.
-- **Documentation propagation** — use update-lens after changes to keep hierarchy aligned.
+- **Documentation propagation** — use lens-sync after changes to keep hierarchy aligned.
 
 ---
 

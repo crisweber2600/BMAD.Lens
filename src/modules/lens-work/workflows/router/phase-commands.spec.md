@@ -69,7 +69,7 @@ PO, Architect, Tech Lead
 4. Route to UX workflow (if UI involved)
 5. Route to Architecture workflow
 6. Casey: finish-workflow, finish-phase
-7. Casey: open-lead-review (if p2 + arch complete)
+7. Casey: open-large-review (if p2 + arch complete)
 
 ---
 
@@ -124,7 +124,7 @@ Scrum Master (gate owner)
 3. Sprint planning (if Scrum)
 4. Create dev-ready story
 5. Hand off to Developer
-6. Casey: open-final-pbr (if lead review complete)
+6. Casey: open-final-pbr (if large review complete)
 
 ---
 

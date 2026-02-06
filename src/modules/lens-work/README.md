@@ -102,7 +102,7 @@ P0 (Bootstrap)  →  P1 (Analysis)  →  P2 (Planning)  →  P3 (Solutioning)  �
 
 Gates enforce quality and authorization between phases:
 
-1. **Lead Review** (`open-lead-review`) — PO/Architect reviews phase artifacts before transition
+1. **Lead Review** (`open-large-review`) — PO/Architect reviews phase artifacts before transition
 2. **Final PBR** (`open-final-pbr`) — Full team review at solutioning completion
 3. **Phase Transition** (`phase-transition`) — Automated state update when gate passes
 
@@ -110,8 +110,8 @@ Gates enforce quality and authorization between phases:
 
 | Lane | Use Case | Branch Pattern |
 |------|----------|----------------|
-| **small** | Solo developer, small features | `lens/{id}/small/p{n}` |
-| **lead** | Team work, requires reviews | `lens/{id}/lead/p{n}` |
+| **small** | Solo developer, small features | `{domain}/{id}/small-{n}` |
+| **large** | Team work, requires reviews | `{domain}/{id}/large-{n}` |
 
 Lane is selected during `init-initiative` based on initiative complexity and team size.
 
@@ -347,7 +347,7 @@ lens-work/
 │   │   ├── phase-transition/           # Transition between phases
 │   │   ├── start-phase/                # Begin a new phase
 │   │   ├── finish-phase/               # Complete a phase
-│   │   ├── open-lead-review/           # Open lead review gate
+│   │   ├── open-large-review/           # Open large review gate
 │   │   └── open-final-pbr/             # Open final PBR gate
 │   │
 │   ├── router/                          # Phase router commands (user-facing)

@@ -20,7 +20,7 @@ auto_triggered: true
 ```yaml
 phase_number: int          # 1, 2, 3, 4
 phase_name: string         # "Analysis", "Planning", "Solutioning", "Implementation"
-lane: string               # "small" or "lead"
+lane: string               # "small" or "large"
 initiative_id: string
 ```
 
@@ -155,11 +155,11 @@ initiative_id: string
 
 ---
 
-## Open Lead Review
+## Open Large Review
 
 **Trigger:** Phase 2 complete + architecture workflow merged
 
-**Purpose:** Open PR from small → lead for lead review.
+**Purpose:** Open PR from small → large for large review.
 
 ```bash
 # Validate p2 complete
@@ -167,7 +167,7 @@ if phase_complete "p2"; then
   pr_link="${remote}/compare/lead...small"
   echo "🔍 Lead Review Ready"
   echo "├── PR: ${pr_link}"
-  echo "└── Assign lead reviewers"
+  echo "└── Assign large reviewers"
 fi
 ```
 
@@ -177,7 +177,7 @@ fi
 
 **Trigger:** Lead review merged
 
-**Purpose:** Open PR from lead → base for final product backlog review.
+**Purpose:** Open PR from large → base for final product backlog review.
 
 ```bash
 # Validate lead merged from small

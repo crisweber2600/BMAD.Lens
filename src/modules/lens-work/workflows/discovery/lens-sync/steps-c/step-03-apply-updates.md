@@ -11,7 +11,7 @@ Apply approved updates to the domain map.
 ## Instructions
 - Present drift report.
 - Apply only user-approved changes.
-- Save updated `.lens/domain-map.yaml`.
+- Save updated `_bmad/lens-work/domain-map.yaml`.
 
 ## Output
 - Updated domain map

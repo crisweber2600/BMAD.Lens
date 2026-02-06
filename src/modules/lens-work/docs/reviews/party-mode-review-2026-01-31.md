@@ -37,5 +37,5 @@ The roadmap is coherent and aligns with the three-agent model (Bridge/Scout/Link
 ## Action Items
 
 1. Run installation tests in a clean project environment.
-2. Execute at least one full flow: `bootstrap → discover → update-lens` using the regression fixture.
+2. Execute at least one full flow: `bootstrap → discover → lens-sync` using the regression fixture.
 3. Capture test outcomes in a short validation report.

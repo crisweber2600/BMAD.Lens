@@ -8,7 +8,7 @@ Use this guide when LENS does not detect or restore context as expected.
 
 **Lens not detected or incorrect lens**
 - Ensure your branch matches a configured pattern.
-- Check `.lens/lens-config.yaml` for overrides that may shadow defaults.
+- Check `_bmad/lens-work/config.yaml` for overrides that may shadow defaults.
 - Run `lens-configure` to validate or adjust patterns.
 
 **No services or microservices detected**
@@ -20,7 +20,7 @@ Use this guide when LENS does not detect or restore context as expected.
 ## Session Issues
 
 **Session not restored**
-- Confirm `.lens/lens-session.yaml` exists and is readable.
+- Confirm `_bmad-output/lens-work/state.yaml` exists and is readable.
 - Run `lens-detect` to regenerate the session snapshot.
 
 **Session feels stale**

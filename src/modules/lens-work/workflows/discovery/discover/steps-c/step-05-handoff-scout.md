@@ -236,7 +236,7 @@ Activate SCOUT agent: {project-root}/_bmad/lens-work/agents/scout
 Trigger: AUTO (full auto mode - DS → AC → GD)
 
 SCOUT will:
-- Load domain map from: {project-root}/.lens/domain-map.yaml
+- Load domain map from: {project-root}/_bmad/lens-work/domain-map.yaml
 - Execute [DS] on every service/microservice
 - Execute [AC] on every analyzed service
 - Execute [GD] on every analyzed codebase

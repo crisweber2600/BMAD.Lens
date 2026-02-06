@@ -21,6 +21,6 @@ Use `#think` before approving readiness or flagging blockers.
 **Outputs:**
 - Sprint backlog approved
 - Implementation permission granted
-- PR link for lead → base merge
+- PR link for large → base merge
 
 ```

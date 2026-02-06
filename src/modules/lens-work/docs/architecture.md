@@ -19,7 +19,7 @@ flowchart LR
   Scout --> DocBundle[docs_output_folder/lens-sync/{target}/*]
 
   DocBundle --> Link
-  Link --> UpdateReport[update-lens-report.md]
+  Link --> UpdateReport[lens-sync-report.md]
   LensSchemas[lens schemas] --> Link
   Link --> SchemaReport[validate-schema-report.md]
   Link --> RollbackReport[rollback-report.md]

@@ -104,12 +104,8 @@ workflow_categories:
       - init-initiative    # DEPRECATED — use router/init-initiative instead
       - start-workflow
       - finish-workflow
-      - detect-layer
-      - phase-transition
-      - start-phase
-      - finish-phase
-      - open-large-review
-      - open-final-pbr
+      - phase-lifecycle    # Consolidates: detect-layer, phase-transition, start-phase, finish-phase, open-large-review, open-final-pbr
+      - git-lifecycle      # Git branch topology spec
   
   router:
     description: "Phase router commands (user-facing)"

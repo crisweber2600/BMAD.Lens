@@ -7,7 +7,7 @@ LENS uses a layered configuration model so you can start with sane defaults and 
 ## Configuration Sources (Priority Order)
 
 1. **Workflow inputs (session-only):** Values provided during a workflow run.
-2. **Project overrides:** `.lens/lens-config.yaml` in the target repository.
+2. **Project overrides:** `_bmad/lens-work/config.yaml` in the target repository.
 3. **Module defaults:** `_bmad/lens-work/module-config.yaml`.
 
 If a key is missing in a higher-priority layer, LENS falls back to the next layer.
@@ -39,7 +39,7 @@ Controls how verbose LENS is during detection and switching.
 ### `session_store`
 Path to the lens session state file.
 
-Default: `.lens/lens-session.yaml`
+Default: `_bmad-output/lens-work/state.yaml`
 
 ---
 
@@ -57,13 +57,13 @@ branch_patterns:
   feature:
     - feature/{service}/{microservice}/{name}
 notification_level: smart
-session_store: ".lens/lens-session.yaml"
+session_store: "_bmad-output/lens-work/state.yaml"
 ```
 
 ---
 
 ## Override Rules
 
-- Keys not present in `.lens/lens-config.yaml` fall back to module defaults.
+- Keys not present in `_bmad/lens-work/config.yaml` fall back to module defaults.
 - For `branch_patterns`, each lens group (`domain`, `service`, `microservice`, `feature`) is replaced when provided.
 - Use the `lens-configure` workflow to generate or update the project override file.

@@ -1,4 +1,4 @@
-# Session Store (.lens/lens-session.yaml)
+# Session Store (_bmad-output/lens-work/state.yaml)
 
 LENS persists the last detected or switched context so sessions can be restored quickly.
 

@@ -83,7 +83,7 @@ See [Bootstrap Quick Reference](../workflows/bootstrap/QUICK-REFERENCE.md) for c
 **Discovery & Synchronization:**
 1. Run `Scout, discover` to analyze a brownfield service and generate docs
 2. Run `Bridge, bootstrap` to manually sync folder structure with domain map
-3. Run `Link, update-lens` to propagate documentation changes
+3. Run `Link, lens-sync` to propagate documentation changes
 4. Use `sync-status` to check alignment between architecture and code
 
 ---
@@ -93,7 +93,7 @@ See [Bootstrap Quick Reference](../workflows/bootstrap/QUICK-REFERENCE.md) for c
 - **New team member onboarding** — Run `bmad.start` for automatic setup with full context
 - **Legacy service documentation** — Run `discover` to create a BMAD-ready doc set
 - **Multi-repository setup** — Configure `domain-map.yaml` and let bootstrap clone everything
-- **Documentation propagation** — Use `update-lens` after changes to keep hierarchy aligned
+- **Documentation propagation** — Use `lens-sync` after changes to keep hierarchy aligned
 
 ---
 

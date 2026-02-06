@@ -58,7 +58,7 @@ git push -u origin "lens/${initiative_id}/base"
 git checkout -b "lens/${initiative_id}/small"
 git push -u origin "lens/${initiative_id}/small"
 
-# Lead review lane (created but empty until p2 complete)
+# Large review lane (created but empty until p2 complete)
 git checkout "lens/${initiative_id}/base"
 git checkout -b "lens/${initiative_id}/lead"
 git push -u origin "lens/${initiative_id}/lead"

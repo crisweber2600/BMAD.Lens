@@ -110,7 +110,7 @@ After analyze-codebase to produce full documentation artifacts.
 
 ---
 
-## update-lens
+## lens-sync
 
 **Purpose:** Propagate documentation changes up the lens hierarchy with auto-sharding.
 

@@ -67,7 +67,7 @@ installed_path: '{project-root}/_bmad/lens-work/workflows/lens-sync'
 
 ### Output Files
 
-- `.lens/domain-map.yaml`
+- `_bmad/lens-work/domain-map.yaml`
 
 ---
 
