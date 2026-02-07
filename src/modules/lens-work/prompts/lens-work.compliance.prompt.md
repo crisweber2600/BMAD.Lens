@@ -1,18 +1,19 @@
 ```prompt
 ---
 mode: 'agent'
-agent: 'bmad-agent-lens-work-compass'
-description: 'Check compliance of current initiative against lens-work rules'
+agent: 'bmad-agent-lens-work-scribe'
+description: 'Check constitutional compliance of an artifact or initiative'
 ---
 
-Check compliance for my current initiative.
+Run constitutional compliance check.
 
 $ARGUMENTS
 
 ## Instructions
-1. Load current initiative config from initiatives/{active_initiative}.yaml
-2. Validate: required fields present, gates properly configured, branch topology correct
-3. Check artifact completeness for current phase
-4. Report compliance status with pass/warn/fail indicators
+1. Load the Scribe agent (Cornelius)
+2. Execute the /compliance command
+3. Resolve applicable constitutions via governance/resolve-constitution/workflow.md
+4. Evaluate artifact against resolved constitutional rules
+5. Report pass/warn/fail counts with specific article citations
 
 ```

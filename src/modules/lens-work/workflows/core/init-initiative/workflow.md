@@ -91,7 +91,7 @@ current:
   phase_name: "Analysis"
   workflow: null
   workflow_status: pending
-  lane: small
+  size: small
 
 branches:
   base: "lens/${initiative_id}/base"

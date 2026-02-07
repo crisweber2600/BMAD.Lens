@@ -58,7 +58,7 @@ bmad.start
    - git-lens: Initializes Tracey state
    - spec: Creates default constitution
 3. ✅ **Bootstrap (If Configured):** Clones repositories from domain-map.yaml (with approval)
-4. ✅ **Navigator Activation:** Launches Navigator for context-aware workflow guidance
+4. ✅ **Compass Activation:** Launches Compass for context-aware workflow guidance
 
 **Bootstrap Configuration (Optional):**
 
@@ -75,9 +75,9 @@ See [Bootstrap Quick Reference](../workflows/bootstrap/QUICK-REFERENCE.md) for c
 ## First Steps (After Setup)
 
 **Navigation:**
-1. Run `navigator` to detect your current lens context
-2. Use `guide` to get lens-aware workflow recommendations
-3. Use `switch lens` to change between Domain/Service/Microservice/Feature views
+1. Run `/context` to detect your current lens context
+2. Use `/help` to get lens-aware workflow recommendations
+3. Use `/switch` to change between Domain/Service/Microservice/Feature views
 4. Use `context load` to pull deeper details for the current lens
 
 **Discovery & Synchronization:**

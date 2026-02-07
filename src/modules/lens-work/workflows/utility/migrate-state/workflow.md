@@ -30,7 +30,7 @@ current:
   phase_name: "Planning"
   workflow: prd
   workflow_status: in_progress
-  lane: small
+  size: small
 branches:
   base: "{Domain}/my-init-abc123/base"
   active: "{Domain}/my-init-abc123/small-2"
@@ -105,8 +105,8 @@ migration_data:
   domain: ${old_state.initiative.domain || null}
   service: ${old_state.initiative.service || null}
 
-  # Lane now lives in shared initiative config
-  lane: ${old_state.current.lane || old_state.initiative.lane || "small"}
+  # Size now lives in shared initiative config (reads legacy "lane" field from old state)
+  size: ${old_state.current.lane || old_state.initiative.lane || "small"}
   
   # Gates and blocks from old state
   gates: ${old_state.gates || []}
@@ -141,7 +141,7 @@ name: "${migration_data.name}"
 layer: ${migration_data.layer}
 domain: ${migration_data.domain}
 service: ${migration_data.service}
-lane: ${migration_data.lane}
+size: ${migration_data.size}
 created_at: "${migration_data.created_at}"
 created_by: ${migration_data.created_by}
 target_repos:

@@ -96,6 +96,11 @@ agents:
     name: Scout
     role: Bootstrap & discovery manager
 
+  - id: scribe
+    file: agents/scribe.agent.yaml
+    name: Cornelius
+    role: Constitutional governance guardian
+
 # Workflow Categories
 workflow_categories:
   core:
@@ -127,7 +132,9 @@ workflow_categories:
       - analyze-codebase
       - generate-docs
       - lens-sync
-  
+      - domain-map
+      - impact-analysis
+
   utility:
     description: "Manual/support workflows"
     workflows:
@@ -145,6 +152,16 @@ workflow_categories:
       - switch
       - check-repos
       - migrate-state
+      - recreate-branches
+
+  governance:
+    description: "Constitutional governance and compliance"
+    workflows:
+      - constitution
+      - compliance-check
+      - resolve-constitution
+      - ancestry
+      - resolve-context
 
   includes:
     description: "Shared reference files included by workflows"
@@ -184,10 +201,18 @@ prompts:
     # Context Commands (Compass)
     - lens-work.switch.prompt.md
     - lens-work.context.prompt.md
-    - lens-work.constitution.prompt.md
-    - lens-work.compliance.prompt.md
     - lens-work.focus.prompt.md
     - lens-work.lens.prompt.md
+    # Governance (Scribe)
+    - lens-work.constitution.prompt.md
+    - lens-work.compliance.prompt.md
+    - lens-work.scribe.prompt.md
+    - lens-work.ancestry.prompt.md
+    # Discovery (Scout)
+    - lens-work.domain-map.prompt.md
+    - lens-work.impact-analysis.prompt.md
+    # Utility (Casey)
+    - lens-work.recreate-branches.prompt.md
     # Bootstrap & Discovery (Scout)
     - lens-work.onboard.prompt.md
     - lens-work.bootstrap.prompt.md
@@ -207,7 +232,19 @@ outputs:
   document_log: "_bmad-output/lens-work/repo-document-log.md"
   dashboards: "_bmad-output/lens-work/dashboards/"
   initiatives_dir: "_bmad-output/lens-work/initiatives/"
+  constitutions_dir: "_bmad-output/lens-work/constitutions/"
+  domain_map: "_bmad-output/lens-work/domain-map.yaml"
   personal_profile: "_bmad-output/personal/profile.yaml"
+
+# Templates
+templates:
+  constitutions:
+    directory: "templates/constitutions/"
+    files:
+      - domain-constitution.md
+      - service-constitution.md
+      - microservice-constitution.md
+      - feature-constitution.md
 
 # Documentation
 docs:
@@ -242,6 +279,14 @@ docs:
     - traceability.md
     - troubleshooting.md
     - workflows.md
+    # Governance docs
+    - context-extension.md
+    - governance/constitution-guide.md
+    - governance/command-reference.md
+    - governance/examples.md
+    - governance/getting-started.md
+    # API Reference
+    - api-reference.md
 
 # Tests
 tests:
