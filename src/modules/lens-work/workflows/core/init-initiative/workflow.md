@@ -60,8 +60,8 @@ git push -u origin "lens/${initiative_id}/small"
 
 # Large review size (created but empty until p2 complete)
 git checkout "lens/${initiative_id}/base"
-git checkout -b "lens/${initiative_id}/lead"
-git push -u origin "lens/${initiative_id}/lead"
+git checkout -b "lens/${initiative_id}/large"
+git push -u origin "lens/${initiative_id}/large"
 ```
 
 ### 4. Create Phase 1 Branch
@@ -117,7 +117,7 @@ Output to Compass:
 ✅ Initiative created: ${initiative_id}
 ├── Base: lens/${initiative_id}/base
 ├── Small: lens/${initiative_id}/small
-├── Lead: lens/${initiative_id}/lead
+├── Large: lens/${initiative_id}/large
 ├── Phase: lens/${initiative_id}/small/p1
 └── Ready for /pre-plan
 ```

@@ -8,7 +8,7 @@ category: utility
 
 # Switch Context Workflow
 
-**Purpose:** Interactively switch between initiatives, lenses (domain/service/microservice/feature), phases (P0–P4), and lanes (small/medium/large), with branch checkout and state synchronization.
+**Purpose:** Interactively switch between initiatives, lenses (domain/service/microservice/feature), phases (P0–P4), and sizes (small/medium/large), with branch checkout and state synchronization.
 
 ---
 
@@ -433,15 +433,15 @@ else
   # Branch doesn't exist — create it from current size branch
   echo "Branch '${target_branch}' does not exist. Creating..."
   
-  lane_branch="${domain_prefix}/${initiative_id}/${current_size}"
+  size_branch="${domain_prefix}/${initiative_id}/${current_size}"
   
   # Ensure size branch exists
-  if git show-ref --verify --quiet "refs/heads/${lane_branch}"; then
-    git checkout "${lane_branch}"
-  elif git show-ref --verify --quiet "refs/remotes/origin/${lane_branch}"; then
-    git checkout -b "${lane_branch}" "origin/${lane_branch}"
+  if git show-ref --verify --quiet "refs/heads/${size_branch}"; then
+    git checkout "${size_branch}"
+  elif git show-ref --verify --quiet "refs/remotes/origin/${size_branch}"; then
+    git checkout -b "${size_branch}" "origin/${size_branch}"
   else
-    echo "Error: Size branch '${lane_branch}' not found."
+    echo "Error: Size branch '${size_branch}' not found."
     exit 1
   fi
   
@@ -473,8 +473,8 @@ goto: Step 7
 ### Step 6: Switch Size
 
 ```yaml
-# Available lanes
-lane_map = {
+# Available sizes
+size_map = {
   "1": { code: "small",  description: "Small team — planning & development track" },
   "2": { code: "medium", description: "Medium team — multi-track coordination" },
   "3": { code: "large",  description: "Large team — review & governance" }
@@ -483,8 +483,8 @@ lane_map = {
 output: |
   🛤️  Switch Size — Current: ${current_size}
   
-  Available lanes:
-  ${for num, size in lane_map}
+  Available sizes:
+  ${for num, size in size_map}
   ${num == current_size_idx ? "▶" : " "} [${num}] ${size.code}
        ${size.description}
   ${endfor}
@@ -493,49 +493,49 @@ output: |
   
   [C] Cancel
 
-read: lane_choice
+read: size_choice
 
-if lane_choice == "C" or lane_choice == "c" or lane_choice == null:
+if size_choice == "C" or size_choice == "c" or size_choice == null:
   output: "Cancelled. Size unchanged."
   exit: 0
 
-selected_lane = lane_map[lane_choice]
+selected_size = size_map[size_choice]
 
-if selected_lane == null:
+if selected_size == null:
   output: "Invalid choice. Please select 1-3 or C to cancel."
   goto: Step 6
 
-if selected_lane.code == current_size:
+if selected_size.code == current_size:
   output: "Already on ${current_size} size. No change needed."
   exit: 0
 
 # Determine target branch for selected size
 # New branch pattern: {Domain}/{InitiativeId}/{size}
-lane_branch = "${domain_prefix}/${initiative.id}/${selected_lane.code}"
+size_branch = "${domain_prefix}/${initiative.id}/${selected_size.code}"
 
 # If currently on a phase branch, also create the phase branch under the new size
 current_phase_num = extract_phase_number(current_phase)
 if current_phase_num != null:
-  phase_branch = "${domain_prefix}/${initiative.id}/${selected_lane.code}-${current_phase_num}"
+  phase_branch = "${domain_prefix}/${initiative.id}/${selected_size.code}-${current_phase_num}"
   target_branch = phase_branch
 else:
-  target_branch = lane_branch
+  target_branch = size_branch
 
-output: "🔀 Switching to ${selected_lane.code} size..."
+output: "🔀 Switching to ${selected_size.code} size..."
 ```
 
 ```bash
 # Casey integration: checkout-branch or create-branch
 target_branch="${target_branch}"
-lane_branch="${lane_branch}"
+size_branch="${size_branch}"
 
 git fetch origin
 
 # First ensure size branch exists
-if git show-ref --verify --quiet "refs/heads/${lane_branch}"; then
+if git show-ref --verify --quiet "refs/heads/${size_branch}"; then
   : # size branch exists locally
-elif git show-ref --verify --quiet "refs/remotes/origin/${lane_branch}"; then
-  git checkout -b "${lane_branch}" "origin/${lane_branch}"
+elif git show-ref --verify --quiet "refs/remotes/origin/${size_branch}"; then
+  git checkout -b "${size_branch}" "origin/${size_branch}"
   git checkout -  # go back, we'll checkout target below
 else
   # Create size branch from base
@@ -548,13 +548,13 @@ else
     echo "Error: Base branch '${base_branch}' not found."
     exit 1
   fi
-  git checkout -b "${lane_branch}"
-  git push -u origin "${lane_branch}"
-  echo "✅ Created size branch: ${lane_branch}"
+  git checkout -b "${size_branch}"
+  git push -u origin "${size_branch}"
+  echo "✅ Created size branch: ${size_branch}"
 fi
 
 # Now checkout the target branch (size or size+phase)
-if [ "${target_branch}" != "${lane_branch}" ]; then
+if [ "${target_branch}" != "${size_branch}" ]; then
   # Need a phase branch under the new size
   if git show-ref --verify --quiet "refs/heads/${target_branch}"; then
     git checkout "${target_branch}"
@@ -563,25 +563,25 @@ if [ "${target_branch}" != "${lane_branch}" ]; then
     git checkout -b "${target_branch}" "origin/${target_branch}"
   else
     # Create phase branch from size branch
-    git checkout "${lane_branch}"
+    git checkout "${size_branch}"
     git checkout -b "${target_branch}"
     git push -u origin "${target_branch}"
     echo "✅ Created phase branch: ${target_branch}"
   fi
 else
-  git checkout "${lane_branch}"
-  git pull origin "${lane_branch}" 2>/dev/null || true
+  git checkout "${size_branch}"
+  git pull origin "${size_branch}" 2>/dev/null || true
 fi
 ```
 
 ```yaml
 # Update size in initiative config (stored in shared config, not personal state)
-initiative.size = selected_lane.code
+initiative.size = selected_size.code
 
 # Update initiative config
 initiative.branches.active = target_branch
 
-output: "✅ Size switched: ${current_size} → ${selected_lane.code}"
+output: "✅ Size switched: ${current_size} → ${selected_size.code}"
 
 # Continue to Step 7 for state sync
 goto: Step 7

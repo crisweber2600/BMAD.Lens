@@ -121,7 +121,7 @@ created: 2026-02-05
 | 2.3.1 | Creates size branch if missing | New branch created for size |
 | 2.3.2 | Updates initiative config `size` | `initiatives/{id}.yaml` size updated to target size |
 | 2.3.3 | Validates size name against allowed values | Invalid size names rejected with list of valid options |
-| 2.3.4 | Size switch preserves phase context | Phase doesn't reset when switching lanes |
+| 2.3.4 | Size switch preserves phase context | Phase doesn't reset when switching sizes |
 
 ---
 

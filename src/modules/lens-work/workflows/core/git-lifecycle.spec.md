@@ -109,7 +109,7 @@ Open PR from small → large for large review.
 ### Sequence
 
 1. Validate p2 complete
-2. Print PR link: `{remote}/compare/lead...small`
+2. Print PR link: `{remote}/compare/large...small`
 3. Log to event-log.jsonl
 
 ---

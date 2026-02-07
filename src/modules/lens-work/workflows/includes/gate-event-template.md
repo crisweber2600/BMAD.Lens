@@ -161,7 +161,7 @@ Validates that a phase is complete before the next phase can begin.
 gate: phase-gate
 validation:
   - check: ancestry
-    command: "git merge-base --is-ancestor origin/${phase_branch} origin/${lane_branch}"
+    command: "git merge-base --is-ancestor origin/${phase_branch} origin/${size_branch}"
     pass_if: exit_code == 0
     fail_message: "Phase ${phase} not merged into size. Complete all workflows and merge PR."
 
