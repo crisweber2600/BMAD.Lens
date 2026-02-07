@@ -48,7 +48,7 @@ agent:
         Current Position
         ├── Phase: {phase} ({phase_name})
         ├── Workflow: {workflow} ({workflow_status})
-        ├── Lane: {lane}
+        ├── Size: {size}
         └── Branch: {active_branch}
         
         Merge Gates

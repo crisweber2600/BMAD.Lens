@@ -133,7 +133,7 @@ output: |
   ├── Initiative: ${initiative.name} (${initiative.id})
   ├── Layer: ${current_layer}
   ├── Phase: ${current_phase} (${current_phase_name})
-  ├── Lane: ${current_size}
+  ├── Size: ${current_size}
   └── Branch: ${current_branch}
   ${if legacy_warning}
   ⚠️  Legacy state format detected. Consider running @tracey migrate.
@@ -153,7 +153,7 @@ if sub_command == null:
     ├── [1] Switch Initiative (change active initiative)
     ├── [2] Switch Lens (domain/service/microservice/feature)
     ├── [3] Switch Phase (P0-P4)
-    ├── [4] Switch Lane (small/medium/large)
+    ├── [4] Switch Size (small/medium/large)
     └── [0] Cancel
   
   read: menu_choice
@@ -162,7 +162,7 @@ if sub_command == null:
     "1": goto Step 3 (Switch Initiative)
     "2": goto Step 4 (Switch Lens)
     "3": goto Step 5 (Switch Phase)
-    "4": goto Step 6 (Switch Lane)
+    "4": goto Step 6 (Switch Size)
     "0": |
       output: "Cancelled. No changes made."
       exit: 0
@@ -441,7 +441,7 @@ else
   elif git show-ref --verify --quiet "refs/remotes/origin/${lane_branch}"; then
     git checkout -b "${lane_branch}" "origin/${lane_branch}"
   else
-    echo "Error: Lane branch '${lane_branch}' not found."
+    echo "Error: Size branch '${lane_branch}' not found."
     exit 1
   fi
   
@@ -470,7 +470,7 @@ goto: Step 7
 
 ---
 
-### Step 6: Switch Lane
+### Step 6: Switch Size
 
 ```yaml
 # Available lanes
@@ -481,12 +481,12 @@ lane_map = {
 }
 
 output: |
-  🛤️  Switch Lane — Current: ${current_size}
+  🛤️  Switch Size — Current: ${current_size}
   
   Available lanes:
-  ${for num, lane in lane_map}
-  ${num == current_size_idx ? "▶" : " "} [${num}] ${lane.code}
-       ${lane.description}
+  ${for num, size in lane_map}
+  ${num == current_size_idx ? "▶" : " "} [${num}] ${size.code}
+       ${size.description}
   ${endfor}
   
   ⚠️  Switching size will create/checkout the size branch.
@@ -496,7 +496,7 @@ output: |
 read: lane_choice
 
 if lane_choice == "C" or lane_choice == "c" or lane_choice == null:
-  output: "Cancelled. Lane unchanged."
+  output: "Cancelled. Size unchanged."
   exit: 0
 
 selected_lane = lane_map[lane_choice]
@@ -581,7 +581,7 @@ initiative.size = selected_lane.code
 # Update initiative config
 initiative.branches.active = target_branch
 
-output: "✅ Lane switched: ${current_size} → ${selected_lane.code}"
+output: "✅ Size switched: ${current_size} → ${selected_lane.code}"
 
 # Continue to Step 7 for state sync
 goto: Step 7
@@ -696,7 +696,7 @@ output: |
 | Initiative config not found | Suggest @tracey migrate or check initiatives/ |
 | Branch not found locally | Attempt fetch from remote |
 | Branch not found on remote | Create from parent (size or base branch) |
-| Lane branch missing | Create from base branch |
+| Size branch missing | Create from base branch |
 | Phase branch missing | Create from size branch |
 | Git fetch/push failure | Check remote connectivity, retry |
 | Invalid menu selection | Re-display menu with guidance |

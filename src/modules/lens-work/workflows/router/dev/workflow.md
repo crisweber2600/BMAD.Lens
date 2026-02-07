@@ -355,7 +355,7 @@ Throughout `/dev`, the user may work in TargetProjects for actual coding, but al
 
 - [ ] Working directory clean (all changes committed)
 - [ ] On correct branch: `{domain_prefix}/{initiative_id}/{size}-4`
-- [ ] Lane validated as "small" for dev phase
+- [ ] Size validated as "small" for dev phase
 - [ ] state.yaml updated with phase p4
 - [ ] initiatives/{id}.yaml updated with p4 status and gate entries
 - [ ] event-log.jsonl entries appended

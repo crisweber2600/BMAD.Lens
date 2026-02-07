@@ -15,8 +15,8 @@ superseded_by: "router/init-initiative"
 > The router version supports:
 > - Two-file state architecture (personal state + shared initiative config)
 > - New branch naming: `{Domain}/{InitiativeId}/{size}-{phaseNumber}-{workflow}`
-> - Lane stored in shared initiative config
-> - `large` lane (replaces legacy `lead`)
+> - Size stored in shared initiative config
+> - `large` size (replaces legacy `lead`)
 > - All branches pushed to remote immediately
 
 **Purpose:** _Legacy_ — Create the full branch topology for a new initiative in the BMAD control repo.
@@ -51,14 +51,14 @@ git checkout -b "lens/${initiative_id}/base"
 git push -u origin "lens/${initiative_id}/base"
 ```
 
-### 3. Create Lane Branches
+### 3. Create Size Branches
 
 ```bash
-# Small team lane (planning happens here)
+# Small team size (planning happens here)
 git checkout -b "lens/${initiative_id}/small"
 git push -u origin "lens/${initiative_id}/small"
 
-# Large review lane (created but empty until p2 complete)
+# Large review size (created but empty until p2 complete)
 git checkout "lens/${initiative_id}/base"
 git checkout -b "lens/${initiative_id}/lead"
 git push -u origin "lens/${initiative_id}/lead"
@@ -67,7 +67,7 @@ git push -u origin "lens/${initiative_id}/lead"
 ### 4. Create Phase 1 Branch
 
 ```bash
-# Phase 1 (Analysis) from small lane
+# Phase 1 (Analysis) from small size
 git checkout "lens/${initiative_id}/small"
 git checkout -b "lens/${initiative_id}/small/p1"
 git push -u origin "lens/${initiative_id}/small/p1"

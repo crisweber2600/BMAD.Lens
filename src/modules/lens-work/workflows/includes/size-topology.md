@@ -1,10 +1,10 @@
 ---
-name: lane-topology
-description: Branch hierarchy, lane definitions, and merge strategies for lens-work
+name: size-topology
+description: Branch hierarchy, size definitions, and merge strategies for lens-work
 type: include
 ---
 
-# Lane Topology Reference
+# Size Topology Reference
 
 This document defines the branch hierarchy used by lens-work to manage initiative lifecycle branches. All branch operations are orchestrated by Casey and triggered through Compass phase commands.
 
@@ -27,7 +27,7 @@ Level 4: Workflows          {Domain}/{id}/{size}-{N}-{workflow}
 {Domain}/{initiative_id}/base
 ```
 
-Root branch for the initiative. Created at init via `init-initiative` workflow. All work merges here eventually through the lane → base PR flow. This branch represents the "done" state of the initiative.
+Root branch for the initiative. Created at init via `init-initiative` workflow. All work merges here eventually through the size → base PR flow. This branch represents the "done" state of the initiative.
 
 **Rules:**
 - Created from `main` (or current HEAD) at initiative start
@@ -46,47 +46,47 @@ Root branch for the initiative. Created at init via `init-initiative` workflow. 
 {Domain}/{initiative_id}/large     # Large review (gate reviews)
 ```
 
-Lanes represent team-size-based workflow paths. Each lane has its own lifecycle and phase progression. **Lane is stored in the shared initiative config** (`initiatives/{id}.yaml`) — never in personal state.
+Lanes represent team-size-based workflow paths. Each size has its own lifecycle and phase progression. **Size is stored in the shared initiative config** (`initiatives/{id}.yaml`) — never in personal state.
 
-#### Lane Definitions
+#### Size Definitions
 
-| Lane | Purpose | Typical Team Size | Phases | Created At |
+| Size | Purpose | Typical Team Size | Phases | Created At |
 |------|---------|-------------------|--------|------------|
 | `small` | Single developer or small team doing end-to-end work | 1–3 | P0–P4 | `init-initiative` |
 | `medium` | Medium team with parallel streams (reserved) | 4–8 | P0–P4 | Future |
-| `large` | Large review lane for gate reviews | 1–2 | Review gates only | `init-initiative` |
+| `large` | Large review size for gate reviews | 1–2 | Review gates only | `init-initiative` |
 
-#### Lane Behaviors
+#### Size Behaviors
 
-**small lane:**
-- Primary working lane for most initiatives
-- Phases P1–P4 branch from and merge back to this lane
+**small size:**
+- Primary working size for most initiatives
+- Phases P1–P4 branch from and merge back to this size
 - All planning and implementation happens here
 - After P2 complete → opens PR to `large` for review
 
-**large lane:**
+**large size:**
 - Receives PR from `small` after architecture review gate
-- Large-lane reviewers approve the planning artifacts
+- Large-size reviewers approve the planning artifacts
 - After approval → opens PR to `base` for final PBR
 
-**medium lane (future):**
+**medium size (future):**
 - Reserved for multi-team initiatives
 - Will support parallel phase execution
-- Not yet implemented — Compass will reject medium lane requests
+- Not yet implemented — Compass will reject medium size requests
 
 ---
 
 ### Level 3: Phases
 
 ```
-{Domain}/{initiative_id}/{lane}-0    # Pre-Plan (optional prep)
-{Domain}/{initiative_id}/{lane}-1    # Analysis
-{Domain}/{initiative_id}/{lane}-2    # Planning
-{Domain}/{initiative_id}/{lane}-3    # Solutioning
-{Domain}/{initiative_id}/{lane}-4    # Implementation
+{Domain}/{initiative_id}/{size}-0    # Pre-Plan (optional prep)
+{Domain}/{initiative_id}/{size}-1    # Analysis
+{Domain}/{initiative_id}/{size}-2    # Planning
+{Domain}/{initiative_id}/{size}-3    # Solutioning
+{Domain}/{initiative_id}/{size}-4    # Implementation
 ```
 
-Phases are sequential workflow stages within a lane. Each phase branch is created from the lane branch when its first workflow begins. **All phase branches are pushed to remote immediately on creation.**
+Phases are sequential workflow stages within a size. Each phase branch is created from the size branch when its first workflow begins. **All phase branches are pushed to remote immediately on creation.**
 
 #### Phase Definitions
 
@@ -101,7 +101,7 @@ Phases are sequential workflow stages within a lane. Each phase branch is create
 #### Phase Progression Rules
 
 1. **Sequential only:** P{N} must complete before P{N+1} can start
-2. **Completion = merged:** A phase is complete when its branch is merged into the lane
+2. **Completion = merged:** A phase is complete when its branch is merged into the size
 3. **Ancestry check:** `git merge-base --is-ancestor origin/{phase_branch} origin/{lane_branch}`
 4. **P1 auto-created:** `init-initiative` creates P1 branch automatically
 5. **P2–P4 lazy-created:** Created by router workflows on first access
@@ -112,7 +112,7 @@ Phases are sequential workflow stages within a lane. Each phase branch is create
 ### Level 4: Workflows
 
 ```
-{Domain}/{initiative_id}/{lane}-{N}-{workflow_name}
+{Domain}/{initiative_id}/{size}-{N}-{workflow_name}
 ```
 
 Workflow branches represent individual units of work within a phase. They are created by `start-workflow` and merged back to the phase branch by `finish-workflow`. **All workflow branches are pushed to remote immediately on creation.**
@@ -149,7 +149,7 @@ Workflow branches represent individual units of work within a phase. They are cr
 ### Merge Flow Diagram
 
 ```
-Workflow ──squash──► Phase ──merge──► Lane ──PR──► Lane ──PR──► Base
+Workflow ──squash──► Phase ──merge──► Size ──PR──► Size ──PR──► Base
  ({size}-{N}-{wf})  ({size}-{N})     (small)      (large)      (base)
 ```
 
@@ -158,7 +158,7 @@ Workflow ──squash──► Phase ──merge──► Lane ──PR──►
 | From → To | Branch Pattern | Strategy | Gate Required | Automation |
 |-----------|----------------|----------|---------------|------------|
 | workflow → phase | `{size}-{N}-{wf}` → `{size}-{N}` | Squash merge | No (auto) | `finish-workflow` |
-| phase → lane | `{size}-{N}` → `{lane}` | Merge commit | Phase gate | `finish-phase` PR |
+| phase → size | `{size}-{N}` → `{size}` | Merge commit | Phase gate | `finish-phase` PR |
 | small → large | `small` → `large` | PR merge | Review gate | `open-large-review` |
 | large → base | `large` → `base` | PR merge | Final PBR | `open-final-pbr` |
 
@@ -242,7 +242,7 @@ workflow=$(echo "$branch_segment" | cut -d'-' -f3-)  # prd
 | Orphaned workflow branch | Detected by `fix-state`, prompted for cleanup |
 | Phase skipped | Blocked — sequential enforcement is strict |
 | Multiple active workflows | Blocked — one workflow per phase at a time |
-| Medium lane requested | Rejected with "not yet implemented" message |
+| Medium size requested | Rejected with "not yet implemented" message |
 
 ---
 

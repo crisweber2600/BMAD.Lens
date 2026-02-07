@@ -259,7 +259,7 @@ current:
   workflow_status: pending
 ```
 
-> **Note:** This file is git-ignored. It tracks the individual user's current position in the initiative. Each collaborator has their own local copy. Lane is NOT stored here — read from initiative config instead.
+> **Note:** This file is git-ignored. It tracks the individual user's current position in the initiative. Each collaborator has their own local copy. Size is NOT stored here — read from initiative config instead.
 
 ### 7. Log Event
 
@@ -285,7 +285,7 @@ git commit -m "init(${initiative_id}): Create ${layer} initiative '${initiative_
 Initiative: ${initiative_id}
 Layer: ${layer}
 Domain: ${domain}
-Lane: small
+Size: small
 Target repos: ${target_repos}
 
 Creates:
@@ -324,7 +324,7 @@ Output to Compass:
 ├── Domain: ${domain}
 ├── Question mode: ${question_mode}
 ├── Docs path: ${docs_path}
-├── Lane: small (stored in initiative config)
+├── Size: small (stored in initiative config)
 ├── Target repos: ${target_repos}
 ├──
 ├── Branch Topology:

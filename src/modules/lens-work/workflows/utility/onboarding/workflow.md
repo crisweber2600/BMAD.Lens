@@ -104,7 +104,7 @@ selected_role = role_map[role_choice]
 output: "Role: ${selected_role} ✓"
 ```
 
-### 1.3 Select Preferred Lane
+### 1.3 Select Preferred Size
 
 ```yaml
 output: |
@@ -123,7 +123,7 @@ lane_map = {
 }
 
 selected_lane = lane_map[lane_choice]
-output: "Lane: ${selected_lane} ✓"
+output: "Size: ${selected_lane} ✓"
 ```
 
 ### 1.4 Save Profile

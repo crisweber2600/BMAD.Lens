@@ -34,7 +34,7 @@ branch_pattern: "{domain}/{initiative_id}/{size}-{phase_number}"
 #   chat/chat-spark-backend-alignment-50cf37/small-2
 ```
 
-> **CRITICAL:** Branch names use `{domain}/{initiative_id}/{size}-{phase_number}`. The old `lens/{id}/{lane}` pattern is obsolete. `lead` is now `large`. `lane` is now `size`.
+> **CRITICAL:** Branch names use `{domain}/{initiative_id}/{size}-{phase_number}`. The old `lens/{id}/{size}` pattern is obsolete. `lead` is now `large`. `size` is now `size`.
 
 ---
 
@@ -323,7 +323,7 @@ main
 **Naming rules:**
 - `{domain}` = domain prefix from initiative config (e.g., `chat`)
 - `{id}` = initiative ID (e.g., `chat-spark-backend-alignment-50cf37`)
-- `small` / `large` = size branches (NOT `lane` / `lead`)
+- `small` / `large` = size branches (NOT `size` / `lead`)
 - `small-{N}` = phase branches (e.g., `small-1`, `small-2`)
 
 ---
