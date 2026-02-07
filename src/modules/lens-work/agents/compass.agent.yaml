@@ -39,7 +39,7 @@ agent:
     - id: layer-detect
       content: |
         Detect the architectural layer using this signal hierarchy (priority order):
-        1. Branch pattern: If on lens/{id}/... branch, parse layer from id
+        1. Branch pattern: If on {domain}/{id}/... branch, parse layer from id
         2. Session state: Check state.yaml for active initiative
         3. Path heuristics: Infer from current working directory structure
         4. User prompt: Extract layer keywords from command
@@ -68,7 +68,7 @@ agent:
            Initiative: {name} ({id})
            Lens: {layer}
            Phase: P{N} ({phase_name})
-           Lane: {lane}
+           Size: {size}
            Branch: {branch}
            Gates: {gate_status_summary}
 
@@ -95,45 +95,70 @@ agent:
       description: "[/dev] Implementation loop (dev-story/code-review/retro)"
     
     # Initiative Commands (canonical — routed to router init-initiative)
-    - trigger: "/new-domain or #new-domain or fuzzy match on new domain"
+    - trigger: '/new-domain or #new-domain or fuzzy match on new domain'
       workflow: "{project-root}/_bmad/lens-work/workflows/router/init-initiative/workflow.md"
       description: "[/new-domain] Create domain-level initiative"
       params:
         layer: domain
     
-    - trigger: "/new-service or #new-service or fuzzy match on new service"
+    - trigger: '/new-service or #new-service or fuzzy match on new service'
       workflow: "{project-root}/_bmad/lens-work/workflows/router/init-initiative/workflow.md"
       description: "[/new-service] Create service-level initiative"
       params:
         layer: service
     
-    - trigger: "/new-feature or #new-feature or fuzzy match on new feature"
+    - trigger: '/new-feature or #new-feature or fuzzy match on new feature'
       workflow: "{project-root}/_bmad/lens-work/workflows/router/init-initiative/workflow.md"
       description: "[/new-feature] Create feature-level initiative"
       params:
         layer: feature
     
-    - trigger: "#fix-story or fuzzy match on fix story or correction"
+    - trigger: '#fix-story or fuzzy match on fix story or correction'
       workflow: "{project-root}/_bmad/lens-work/workflows/utility/fix-story/workflow.md"
       description: "[#fix-story] Correction loop (Quick-Spec → Review → Quick-Dev)"
     
     # Context Commands
     - trigger: /switch or fuzzy match on switch or change context
       workflow: "{project-root}/_bmad/lens-work/workflows/utility/switch/workflow.md"
-      description: "[/switch] Switch active initiative, lens, phase, or lane"
+      description: "[/switch] Switch active initiative, lens, phase, or size"
     
     - trigger: /context or fuzzy match on context or where am I
       action: "display_context"
-      description: "[/context] Display current context (initiative, lens, phase, lane, branch)"
+      description: "[/context] Display current context (initiative, lens, phase, size, branch)"
     
-    - trigger: /constitution or fuzzy match on constitution or rules
-      action: "display_constitution"
-      description: "[/constitution] Display lens-work constitution and operating rules"
-    
+    - trigger: /constitution or fuzzy match on constitution or governance
+      workflow: "{project-root}/_bmad/lens-work/workflows/governance/constitution/workflow.md"
+      description: "[/constitution] Constitutional governance — create, amend, or view constitutions"
+
+    - trigger: /compliance or fuzzy match on compliance or check rules
+      workflow: "{project-root}/_bmad/lens-work/workflows/governance/compliance-check/workflow.md"
+      description: "[/compliance] Check artifact compliance against constitutions"
+
+    - trigger: /resolve or fuzzy match on resolve constitution
+      workflow: "{project-root}/_bmad/lens-work/workflows/governance/resolve-constitution/workflow.md"
+      description: "[/resolve] Resolve accumulated rules for current context"
+
+    - trigger: /ancestry or fuzzy match on ancestry or heritage or lineage
+      workflow: "{project-root}/_bmad/lens-work/workflows/governance/ancestry/workflow.md"
+      description: "[/ancestry] Display constitution inheritance chain"
+
     - trigger: /lens or fuzzy match on lens or layer or scope
       action: "display_lens"
       description: "[/lens] Show/change current lens focus (domain/service/microservice/feature)"
-    
+
+    # Discovery Commands
+    - trigger: /domain-map or fuzzy match on domain map or architecture map
+      workflow: "{project-root}/_bmad/lens-work/workflows/discovery/domain-map/workflow.md"
+      description: "[/domain-map] View/edit domain architecture map"
+
+    - trigger: /impact or fuzzy match on impact analysis or cross-boundary
+      workflow: "{project-root}/_bmad/lens-work/workflows/discovery/impact-analysis/workflow.md"
+      description: "[/impact] Cross-boundary impact analysis"
+
+    - trigger: /recreate-branches or fuzzy match on recreate or recovery branches
+      workflow: "{project-root}/_bmad/lens-work/workflows/utility/recreate-branches/workflow.md"
+      description: "[/recreate-branches] Recreate missing git branches (recovery)"
+
     # Utility Commands
     - trigger: H or fuzzy match on help or menu
       action: "display_menu"

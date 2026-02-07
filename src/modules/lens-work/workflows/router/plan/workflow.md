@@ -41,13 +41,13 @@ invoke: casey.verify-clean-state
 state = load("_bmad-output/lens-work/state.yaml")
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 
-# Read lane from initiative config (shared, canonical)
-lane = initiative.lane
+# Read size from initiative config (shared, canonical)
+size = initiative.size
 domain_prefix = initiative.domain_prefix
 
 # Validate we're on the correct branch (or can switch)
 # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-expected_branch: "${domain_prefix}/${initiative.id}/${lane}-3"
+expected_branch: "${domain_prefix}/${initiative.id}/${size}-3"
 current_branch = casey.get-current-branch()
 
 if current_branch != expected_branch:
@@ -64,11 +64,11 @@ if current_branch != expected_branch:
 ```yaml
 # Gate check — verify P2 (Spec/Planning) is complete
 # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-p2_branch = "${domain_prefix}/${initiative.id}/${lane}-2"
-lane_branch = "${domain_prefix}/${initiative.id}/${lane}"
+p2_branch = "${domain_prefix}/${initiative.id}/${size}-2"
+size_branch = "${domain_prefix}/${initiative.id}/${size}"
 
-# Ancestry check: P2 must be merged into lane
-result = casey.exec("git merge-base --is-ancestor origin/${p2_branch} origin/${lane_branch}")
+# Ancestry check: P2 must be merged into size branch
+result = casey.exec("git merge-base --is-ancestor origin/${p2_branch} origin/${size_branch}")
 
 if result.exit_code != 0:
   error: "Phase 2 (Planning) not complete. Run /spec first or merge pending PRs."
@@ -92,22 +92,22 @@ for artifact in required_artifacts:
 ```yaml
 # Casey creates P3 branch if it doesn't exist
 # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-if not branch_exists("${domain_prefix}/${initiative.id}/${lane}-3"):
+if not branch_exists("${domain_prefix}/${initiative.id}/${size}-3"):
   invoke: casey.start-phase
   params:
     phase_number: 3
     phase_name: "Solutioning"
     initiative_id: ${initiative.id}
-    lane: ${lane}
+    size: ${size}
     domain_prefix: ${domain_prefix}
-  # Casey creates: ${domain_prefix}/{initiative_id}/{lane}-3 and pushes to remote
+  # Casey creates: ${domain_prefix}/{initiative_id}/{size}-3 and pushes to remote
 
   invoke: casey.pull-latest
 else:
   # Branch exists, ensure we're on it
   invoke: casey.checkout-branch
   params:
-    branch: "${domain_prefix}/${initiative.id}/${lane}-3"
+    branch: "${domain_prefix}/${initiative.id}/${size}-3"
   invoke: casey.pull-latest
 ```
 
@@ -220,7 +220,7 @@ params:
   updates:
     current_phase: "p3"
     current_phase_name: "Solutioning"
-    active_branch: "${domain_prefix}/${initiative.id}/${lane}-3"
+    active_branch: "${domain_prefix}/${initiative.id}/${size}-3"
 ```
 
 ### 6. Commit State Changes
@@ -235,7 +235,7 @@ params:
     - "_bmad-output/lens-work/event-log.jsonl"
     - "_bmad-output/planning-artifacts/"
   message: "[lens-work] /plan: Phase 3 Solutioning — ${initiative.id}"
-  branch: "${domain_prefix}/${initiative.id}/${lane}-3"
+  branch: "${domain_prefix}/${initiative.id}/${size}-3"
 ```
 
 ### 7. Log Event
@@ -275,7 +275,7 @@ params:
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{lane}-3`
+- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{size}-3`
 - [ ] state.yaml updated with phase p3
 - [ ] initiatives/{id}.yaml updated with p3 status and p2 gate passed
 - [ ] event-log.jsonl entry appended

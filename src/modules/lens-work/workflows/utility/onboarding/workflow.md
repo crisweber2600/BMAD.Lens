@@ -108,7 +108,7 @@ output: "Role: ${selected_role} ✓"
 
 ```yaml
 output: |
-  🛤️ What's your preferred initiative lane?
+  🛤️ What's your preferred initiative size?
   
   [1] small  — Solo dev, fast iteration (1 reviewer)
   [2] medium — Small team, structured reviews (2-3 reviewers)
@@ -163,13 +163,13 @@ preferences:
   color_output: true
 ```
 
-> **Note:** Profile values override equivalent settings in `bmad-config.yaml`. For example, `preferred_lane` in the profile takes precedence over any default lane configured at the project level.
+> **Note:** Profile values override equivalent settings in `bmad-config.yaml`. For example, `preferred_size` in the profile takes precedence over any default size configured at the project level.
 
 ```yaml
 output: |
   ✅ Profile saved to _bmad-output/personal/profile.yaml
   
-  ${git_user_name} (${selected_role}) — lane: ${selected_lane}
+  ${git_user_name} (${selected_role}) — size: ${selected_lane}
 ```
 
 ---
@@ -551,7 +551,7 @@ if not file_exists(state_path):
       phase_name: null,
       workflow: null,
       workflow_status: "idle",
-      lane: selected_lane
+      size: selected_lane
     },
     last_updated: now_iso()
   }
@@ -596,7 +596,7 @@ append_jsonl(event_log_path, {
   event: "onboarding",
   user: git_user_name,
   role: selected_role,
-  lane: selected_lane,
+  size: selected_lane,
   repos_tracked: reconciled_repos.length or 0
 })
 ```

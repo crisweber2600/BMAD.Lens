@@ -217,7 +217,7 @@ Create directory and file at `{project-root}/_bmad-output/lens-work/initiatives/
 id: ${initiative_id}
 name: "${initiative_name}"
 layer: ${layer}
-lane: small                    # Lane is stored in shared config — canonical for all collaborators
+size: small                    # Size is stored in shared config — canonical for all collaborators
 domain: ${domain}
 domain_prefix: ${domain_prefix}
 service: ${service}
@@ -244,7 +244,7 @@ branches:
   active: "${domain_prefix}/${initiative_id}/small-1"
 ```
 
-> **Note:** This file is committed to the repo and shared across collaborators. It holds the canonical initiative definition, configuration, and **lane assignment**. Lane is always read from this file, never from personal state.
+> **Note:** This file is committed to the repo and shared across collaborators. It holds the canonical initiative definition, configuration, and **size assignment**. Size is always read from this file, never from personal state.
 
 ### 7. Write Personal State (Git-Ignored)
 
@@ -290,7 +290,7 @@ Target repos: ${target_repos}
 
 Creates:
 - Branch topology: base, small, large, small-1
-- Initiative config: initiatives/${initiative_id}.yaml (includes lane)
+- Initiative config: initiatives/${initiative_id}.yaml (includes size)
 - Event log entry
 
 Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}-{workflow}
@@ -335,14 +335,14 @@ Output to Compass:
 ├──
 ├── State Architecture:
 │   ├── Personal state: _bmad-output/lens-work/state.yaml (git-ignored)
-│   └── Initiative config: _bmad-output/lens-work/initiatives/${initiative_id}.yaml (committed, includes lane)
+│   └── Initiative config: _bmad-output/lens-work/initiatives/${initiative_id}.yaml (committed, includes size)
 ├──
 └── Ready for /pre-plan
 
 State loading pattern:
   state = load("_bmad-output/lens-work/state.yaml")
   initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
-  lane = initiative.lane   # Always read lane from initiative config
+  size = initiative.size   # Always read size from initiative config
 ```
 
 ---
@@ -354,7 +354,7 @@ The two-file state architecture separates concerns:
 | File | Scope | Git Status | Contents |
 |------|-------|------------|----------|
 | `state.yaml` | Personal | git-ignored | Active initiative pointer, current phase/workflow position |
-| `initiatives/{id}.yaml` | Shared | committed | Initiative definition, **lane**, gates, blocks, branches, target repos |
+| `initiatives/{id}.yaml` | Shared | committed | Initiative definition, **size**, gates, blocks, branches, target repos |
 
 **Loading pattern used by all downstream workflows:**
 
@@ -368,7 +368,7 @@ initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}
 # Step 3: Use both for workflow logic
 current_phase = state.current.phase
 initiative_layer = initiative.layer
-lane = initiative.lane           # ALWAYS read lane from shared initiative config
+size = initiative.size           # ALWAYS read size from shared initiative config
 target_repos = initiative.target_repos
 gates = initiative.gates
 domain_prefix = initiative.domain_prefix

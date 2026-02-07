@@ -15,8 +15,8 @@ category: utility
 ## Input Parameters
 
 ```yaml
-sub_command: enum | null   # initiative | lens | phase | lane — if omitted, show interactive menu
-target: string | null      # Optional direct target (initiative id, phase number, lane name, etc.)
+sub_command: enum | null   # initiative | lens | phase | size — if omitted, show interactive menu
+target: string | null      # Optional direct target (initiative id, phase number, size name, etc.)
 ```
 
 ---
@@ -101,7 +101,7 @@ else:
 current_branch = exec("git branch --show-current")
 current_phase = state.current.phase or "unknown"
 current_phase_name = state.current.phase_name or "Unknown"
-current_lane = initiative.lane or "unknown"       # Lane from shared initiative config
+current_size = initiative.size or "unknown"       # Size from shared initiative config
 current_layer = initiative.layer or "unknown"
 
 # Resolve domain prefix without hardcoding lens defaults.
@@ -133,7 +133,7 @@ output: |
   ├── Initiative: ${initiative.name} (${initiative.id})
   ├── Layer: ${current_layer}
   ├── Phase: ${current_phase} (${current_phase_name})
-  ├── Lane: ${current_lane}
+  ├── Lane: ${current_size}
   └── Branch: ${current_branch}
   ${if legacy_warning}
   ⚠️  Legacy state format detected. Consider running @tracey migrate.
@@ -175,9 +175,10 @@ else:
     "initiative": goto Step 3
     "lens": goto Step 4
     "phase": goto Step 5
-    "lane": goto Step 6
+    "size": goto Step 6
     default: |
-      output: "Unknown sub-command: ${sub_command}. Use: initiative | lens | phase | lane"
+      output: "Unknown sub-command: ${sub_command}. Use: initiative | lens | phase | size"
+
       exit: 1
 ```
 
@@ -283,7 +284,7 @@ state.current.phase = selected.phase
 state.current.workflow = null
 state.current.workflow_status = null
 
-# Note: lane is read from initiative config, NOT stored in personal state
+# Note: size is read from initiative config, NOT stored in personal state
 
 # Continue to Step 7 for state sync
 goto: Step 7
@@ -407,8 +408,8 @@ if phase_choice == current_phase_num:
   exit: 0
 
 # Determine target branch for selected phase
-# New branch pattern: {Domain}/{InitiativeId}/{lane}-{phaseNumber}
-target_branch = "${domain_prefix}/${initiative.id}/${current_lane}-${phase_choice}"
+# New branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
+target_branch = "${domain_prefix}/${initiative.id}/${current_size}-${phase_choice}"
 
 output: "🔀 Switching to phase P${phase_choice} (${selected_phase.name})..."
 ```
@@ -429,12 +430,12 @@ elif git show-ref --verify --quiet "refs/remotes/origin/${target_branch}"; then
   git checkout -b "${target_branch}" "origin/${target_branch}"
 
 else
-  # Branch doesn't exist — create it from current lane branch
+  # Branch doesn't exist — create it from current size branch
   echo "Branch '${target_branch}' does not exist. Creating..."
   
-  lane_branch="${domain_prefix}/${initiative_id}/${current_lane}"
+  lane_branch="${domain_prefix}/${initiative_id}/${current_size}"
   
-  # Ensure lane branch exists
+  # Ensure size branch exists
   if git show-ref --verify --quiet "refs/heads/${lane_branch}"; then
     git checkout "${lane_branch}"
   elif git show-ref --verify --quiet "refs/remotes/origin/${lane_branch}"; then
@@ -474,21 +475,21 @@ goto: Step 7
 ```yaml
 # Available lanes
 lane_map = {
-  "1": { code: "small",  description: "Small team — planning & development lane" },
+  "1": { code: "small",  description: "Small team — planning & development track" },
   "2": { code: "medium", description: "Medium team — multi-track coordination" },
   "3": { code: "large",  description: "Large team — review & governance" }
 }
 
 output: |
-  🛤️  Switch Lane — Current: ${current_lane}
+  🛤️  Switch Lane — Current: ${current_size}
   
   Available lanes:
   ${for num, lane in lane_map}
-  ${num == current_lane_idx ? "▶" : " "} [${num}] ${lane.code}
+  ${num == current_size_idx ? "▶" : " "} [${num}] ${lane.code}
        ${lane.description}
   ${endfor}
   
-  ⚠️  Switching lane will create/checkout the lane branch.
+  ⚠️  Switching size will create/checkout the size branch.
   
   [C] Cancel
 
@@ -504,15 +505,15 @@ if selected_lane == null:
   output: "Invalid choice. Please select 1-3 or C to cancel."
   goto: Step 6
 
-if selected_lane.code == current_lane:
-  output: "Already on ${current_lane} lane. No change needed."
+if selected_lane.code == current_size:
+  output: "Already on ${current_size} size. No change needed."
   exit: 0
 
-# Determine target branch for selected lane
-# New branch pattern: {Domain}/{InitiativeId}/{lane}
+# Determine target branch for selected size
+# New branch pattern: {Domain}/{InitiativeId}/{size}
 lane_branch = "${domain_prefix}/${initiative.id}/${selected_lane.code}"
 
-# If currently on a phase branch, also create the phase branch under the new lane
+# If currently on a phase branch, also create the phase branch under the new size
 current_phase_num = extract_phase_number(current_phase)
 if current_phase_num != null:
   phase_branch = "${domain_prefix}/${initiative.id}/${selected_lane.code}-${current_phase_num}"
@@ -520,7 +521,7 @@ if current_phase_num != null:
 else:
   target_branch = lane_branch
 
-output: "🔀 Switching to ${selected_lane.code} lane..."
+output: "🔀 Switching to ${selected_lane.code} size..."
 ```
 
 ```bash
@@ -530,14 +531,14 @@ lane_branch="${lane_branch}"
 
 git fetch origin
 
-# First ensure lane branch exists
+# First ensure size branch exists
 if git show-ref --verify --quiet "refs/heads/${lane_branch}"; then
-  : # lane branch exists locally
+  : # size branch exists locally
 elif git show-ref --verify --quiet "refs/remotes/origin/${lane_branch}"; then
   git checkout -b "${lane_branch}" "origin/${lane_branch}"
   git checkout -  # go back, we'll checkout target below
 else
-  # Create lane branch from base
+  # Create size branch from base
   base_branch="${domain_prefix}/${initiative_id}/base"
   if git show-ref --verify --quiet "refs/heads/${base_branch}"; then
     git checkout "${base_branch}"
@@ -549,19 +550,19 @@ else
   fi
   git checkout -b "${lane_branch}"
   git push -u origin "${lane_branch}"
-  echo "✅ Created lane branch: ${lane_branch}"
+  echo "✅ Created size branch: ${lane_branch}"
 fi
 
-# Now checkout the target branch (lane or lane+phase)
+# Now checkout the target branch (size or size+phase)
 if [ "${target_branch}" != "${lane_branch}" ]; then
-  # Need a phase branch under the new lane
+  # Need a phase branch under the new size
   if git show-ref --verify --quiet "refs/heads/${target_branch}"; then
     git checkout "${target_branch}"
     git pull origin "${target_branch}"
   elif git show-ref --verify --quiet "refs/remotes/origin/${target_branch}"; then
     git checkout -b "${target_branch}" "origin/${target_branch}"
   else
-    # Create phase branch from lane branch
+    # Create phase branch from size branch
     git checkout "${lane_branch}"
     git checkout -b "${target_branch}"
     git push -u origin "${target_branch}"
@@ -574,13 +575,13 @@ fi
 ```
 
 ```yaml
-# Update lane in initiative config (stored in shared config, not personal state)
-initiative.lane = selected_lane.code
+# Update size in initiative config (stored in shared config, not personal state)
+initiative.size = selected_lane.code
 
 # Update initiative config
 initiative.branches.active = target_branch
 
-output: "✅ Lane switched: ${current_lane} → ${selected_lane.code}"
+output: "✅ Lane switched: ${current_size} → ${selected_lane.code}"
 
 # Continue to Step 7 for state sync
 goto: Step 7
@@ -598,13 +599,13 @@ state.last_switch = {
   from: {
     initiative: previous_initiative_id or initiative.id,
     phase: previous_phase or current_phase,
-    lane: previous_lane or current_lane,
+    size: previous_size or current_size,
     branch: previous_branch or current_branch
   },
   to: {
     initiative: state.active_initiative or initiative.id,
     phase: state.current.phase,
-      lane: initiative.lane,
+      size: initiative.size,
     branch: exec("git branch --show-current")
   }
 }
@@ -674,7 +675,7 @@ output: |
   ├── Initiative: ${initiative.name} (${initiative.id})
   ├── Lens: ${initiative.layer}
   ├── Phase: ${state.current.phase} (${state.current.phase_name})
-  ├── Lane: ${initiative.lane}
+  ├── Size: ${initiative.size}
   ├── Branch: ${new_branch}
   └── Ready for: ${next_command}
   
@@ -694,9 +695,9 @@ output: |
 | State file missing | Prompt to create initiative |
 | Initiative config not found | Suggest @tracey migrate or check initiatives/ |
 | Branch not found locally | Attempt fetch from remote |
-| Branch not found on remote | Create from parent (lane or base branch) |
+| Branch not found on remote | Create from parent (size or base branch) |
 | Lane branch missing | Create from base branch |
-| Phase branch missing | Create from lane branch |
+| Phase branch missing | Create from size branch |
 | Git fetch/push failure | Check remote connectivity, retry |
 | Invalid menu selection | Re-display menu with guidance |
 | Legacy state format | Warn and suggest @tracey migrate |
@@ -705,7 +706,7 @@ output: |
 
 ## Post-Conditions
 
-- [ ] state.yaml updated with new position (initiative, phase, lane)
+- [ ] state.yaml updated with new position (initiative, phase, size)
 - [ ] Initiative config updated if layer/lens changed
 - [ ] Git branch checked out matching new position
 - [ ] event-log.jsonl entry appended for switch event

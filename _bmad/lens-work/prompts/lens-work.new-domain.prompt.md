@@ -14,7 +14,7 @@ Use `#think` before defining domain boundaries or scope.
 
 **Creates:**
 - Initiative ID: `{sanitized_name}-{random}`
-- Branch: `lens/{id}/base` → `small/p1`
+- Branch: `{domain}/{id}/base` → `small/p1`
 - State file: `_bmad-output/lens-work/state.yaml`
 
 **In-Scope Repos:** All repos in domain (or prompt "all vs subset")
