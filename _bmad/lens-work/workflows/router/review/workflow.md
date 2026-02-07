@@ -29,7 +29,7 @@ if user_role != "Scrum Master":
 ## Prerequisites
 
 - [x] `/plan` complete (Phase 3 merged)
-- [x] Final PBR approved (lead → base merged)
+- [x] Final PBR approved (large → base merged)
 - [x] Stories exist
 
 ---
@@ -43,7 +43,7 @@ if not phase_complete("p3"):
   error: "Phase 3 (Solutioning) not complete. Run /plan first."
 
 if not final_pbr_merged():
-  error: "Final PBR not approved. Merge lead → base PR first."
+  error: "Final PBR not approved. Merge large → base PR first."
 ```
 
 ### 2. Re-run Readiness Checklist

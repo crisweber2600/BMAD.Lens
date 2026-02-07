@@ -47,13 +47,13 @@ invoke: casey.verify-clean-state
 state = load("_bmad-output/lens-work/state.yaml")
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 
-# Read lane from initiative config (shared, canonical)
-lane = initiative.lane
+# Read size from initiative config (shared, canonical)
+size = initiative.size
 domain_prefix = initiative.domain_prefix
 
 # Validate we're on the correct branch (or can switch)
 # New branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-expected_branch: "${domain_prefix}/${initiative.id}/${lane}-1"
+expected_branch: "${domain_prefix}/${initiative.id}/${size}-1"
 current_branch = casey.get-current-branch()
 
 if current_branch != expected_branch:
@@ -102,15 +102,15 @@ for repo in initiative.target_repos:
 ```yaml
 # Invoke Casey if small-1 branch doesn't exist — auto-branch creation
 # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-if not branch_exists("${domain_prefix}/${initiative.id}/${lane}-1"):
+if not branch_exists("${domain_prefix}/${initiative.id}/${size}-1"):
   invoke: casey.start-phase
   params:
     phase_number: 1
     phase_name: "Analysis"
     initiative_id: ${initiative.id}
-    lane: ${lane}
+    size: ${size}
     domain_prefix: ${domain_prefix}
-  # Casey creates: ${domain_prefix}/{initiative_id}/{lane}-1 and pushes to remote
+  # Casey creates: ${domain_prefix}/{initiative_id}/{size}-1 and pushes to remote
 
   # Pull latest after branch creation
   invoke: casey.pull-latest
@@ -218,7 +218,7 @@ params:
   updates:
     current_phase: "p1"
     current_phase_name: "Analysis"
-    active_branch: "${domain_prefix}/${initiative.id}/${lane}-1"
+    active_branch: "${domain_prefix}/${initiative.id}/${size}-1"
 ```
 
 ### 7. Commit State Changes
@@ -233,7 +233,7 @@ params:
     - "_bmad-output/lens-work/event-log.jsonl"
     - "_bmad-output/planning-artifacts/"
   message: "[lens-work] /pre-plan: Phase 1 Analysis — ${initiative.id}"
-  branch: "${domain_prefix}/${initiative.id}/${lane}-1"
+  branch: "${domain_prefix}/${initiative.id}/${size}-1"
 ```
 
 ### 8. Log Event
@@ -283,7 +283,7 @@ Ready to continue?
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{lane}-1`
+- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{size}-1`
 - [ ] state.yaml updated with phase p1
 - [ ] initiatives/{id}.yaml updated with p1 status
 - [ ] event-log.jsonl entry appended

@@ -46,26 +46,26 @@ invoke: casey.verify-clean-state
 state = load("_bmad-output/lens-work/state.yaml")
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 
-# Read lane from initiative config (shared, canonical)
-lane = initiative.lane
+# Read size from initiative config (shared, canonical)
+size = initiative.size
 domain_prefix = initiative.domain_prefix
 
 # Require dev story for interactive mode
 if initiative.question_mode != "batch" and not dev_story_exists():
   error: "/review has not produced a dev-ready story. Run /review first."
 
-# Lane validation — verify current lane allows dev phase
-# Dev (P4) must be on small lane
-if lane != "small":
+# Size validation — verify current size allows dev phase
+# Dev (P4) must be on small size
+if size != "small":
   error: |
-    ❌ Lane validation failed
-    ├── Current lane: ${lane}
+    ❌ Size validation failed
+    ├── Current size: ${size}
     ├── Required: small
-    └── Dev phase (P4) only runs on the small lane.
+    └── Dev phase (P4) only runs on the small size.
 
 # Validate we're on the correct branch (or can switch)
 # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-expected_branch: "${domain_prefix}/${initiative.id}/${lane}-4"
+expected_branch: "${domain_prefix}/${initiative.id}/${size}-4"
 current_branch = casey.get-current-branch()
 
 if current_branch != expected_branch:
@@ -82,17 +82,17 @@ if current_branch != expected_branch:
 ```yaml
 # Merge gate checking — verify P3 (Solutioning) is complete before allowing dev
 # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-p3_branch = "${domain_prefix}/${initiative.id}/${lane}-3"
-lane_branch = "${domain_prefix}/${initiative.id}/${lane}"
+p3_branch = "${domain_prefix}/${initiative.id}/${size}-3"
+size_branch = "${domain_prefix}/${initiative.id}/${size}"
 
-# Ancestry check: P3 must be merged into lane (or base)
-result = casey.exec("git merge-base --is-ancestor origin/${p3_branch} origin/${lane_branch}")
+# Ancestry check: P3 must be merged into size branch (or base)
+result = casey.exec("git merge-base --is-ancestor origin/${p3_branch} origin/${size_branch}")
 
 if result.exit_code != 0:
   error: |
     ❌ Merge gate blocked
-    ├── P3 (Solutioning) not merged into lane
-    ├── Expected: ${p3_branch} is ancestor of ${lane_branch}
+    ├── P3 (Solutioning) not merged into size branch
+    ├── Expected: ${p3_branch} is ancestor of ${size_branch}
     └── Action: Complete /plan and merge P3 PR first
 
 # Verify implementation gate passed
@@ -105,21 +105,21 @@ if initiative.gates.implementation_gate.status not in ["passed", "passed_with_wa
 ```yaml
 # Casey creates P4 branch if it doesn't exist
 # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-if not branch_exists("${domain_prefix}/${initiative.id}/${lane}-4"):
+if not branch_exists("${domain_prefix}/${initiative.id}/${size}-4"):
   invoke: casey.start-phase
   params:
     phase_number: 4
     phase_name: "Implementation"
     initiative_id: ${initiative.id}
-    lane: ${lane}
+    size: ${size}
     domain_prefix: ${domain_prefix}
-  # Casey creates: ${domain_prefix}/{initiative_id}/{lane}-4 and pushes to remote
+  # Casey creates: ${domain_prefix}/{initiative_id}/{size}-4 and pushes to remote
 
   invoke: casey.pull-latest
 else:
   invoke: casey.checkout-branch
   params:
-    branch: "${domain_prefix}/${initiative.id}/${lane}-4"
+    branch: "${domain_prefix}/${initiative.id}/${size}-4"
   invoke: casey.pull-latest
 ```
 
@@ -151,7 +151,7 @@ output: |
   **Technical Notes:**
   ${dev_story.technical_notes}
   
-  **Branch:** ${domain_prefix}/${initiative.id}/${lane}-4
+  **Branch:** ${domain_prefix}/${initiative.id}/${size}-4
 ```
 
 ### 3. Checkout Target Repo
@@ -252,7 +252,7 @@ params:
   updates:
     current_phase: "p4"
     current_phase_name: "Implementation"
-    active_branch: "${domain_prefix}/${initiative.id}/${lane}-4"
+    active_branch: "${domain_prefix}/${initiative.id}/${size}-4"
     workflow_status: "in_progress"
 ```
 
@@ -268,7 +268,7 @@ params:
     - "_bmad-output/lens-work/event-log.jsonl"
     - "_bmad-output/implementation-artifacts/"
   message: "[lens-work] /dev: Phase 4 Implementation — ${initiative.id} — ${story_id}"
-  branch: "${domain_prefix}/${initiative.id}/${lane}-4"
+  branch: "${domain_prefix}/${initiative.id}/${size}-4"
 ```
 
 ### 9. Log Event
@@ -342,7 +342,7 @@ Throughout `/dev`, the user may work in TargetProjects for actual coding, but al
 | No dev story | Prompt to run /review first |
 | P3 not merged | Error with merge gate blocked message |
 | Implementation gate not passed | Error — run /review first |
-| Lane validation failed | Error — must be on small lane for P4 |
+| Size validation failed | Error — must be on small size for P4 |
 | Dirty working directory | Prompt to stash or commit changes first |
 | Target repo checkout failed | Check target_repos config, retry |
 | Branch creation failed | Check remote connectivity, retry with backoff |
@@ -354,7 +354,7 @@ Throughout `/dev`, the user may work in TargetProjects for actual coding, but al
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{lane}-4`
+- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{size}-4`
 - [ ] Lane validated as "small" for dev phase
 - [ ] state.yaml updated with phase p4
 - [ ] initiatives/{id}.yaml updated with p4 status and gate entries

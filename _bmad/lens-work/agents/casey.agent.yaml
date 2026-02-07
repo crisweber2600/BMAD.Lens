@@ -38,13 +38,13 @@ agent:
       content: |
         Branch topology pattern for initiatives:
         
-        lens/{initiative_id}/base                    # Initiative root
-        ├── lens/{initiative_id}/small              # Small team lane (planning)
-        │   ├── lens/{initiative_id}/small/p1       # Phase 1 (Analysis)
-        │   │   └── lens/{initiative_id}/small/p1/w/{workflow}  # Workflow branches
-        │   ├── lens/{initiative_id}/small/p2       # Phase 2 (Planning)
-        │   └── lens/{initiative_id}/small/p3       # Phase 3 (Solutioning)
-        └── lens/{initiative_id}/lead               # Lead review lane
+        {domain}/{initiative_id}/base                    # Initiative root
+        ├── {domain}/{initiative_id}/small              # Small team lane (planning)
+        │   ├── {domain}/{initiative_id}/small/p1       # Phase 1 (Analysis)
+        │   │   └── {domain}/{initiative_id}/small/p1/w/{workflow}  # Workflow branches
+        │   ├── {domain}/{initiative_id}/small/p2       # Phase 2 (Planning)
+        │   └── {domain}/{initiative_id}/small/p3       # Phase 3 (Solutioning)
+        └── {domain}/{initiative_id}/large               # Large review lane
         
         All branches created in BMAD control repo, not TargetProjects.
     
@@ -94,12 +94,12 @@ agent:
       description: "Push phase branch, print PR link to lane"
     
     - event: p2-architecture-merged
-      action: open-lead-review
-      description: "Print PR link for small → lead"
+      action: open-large-review
+      description: "Print PR link for small → large"
     
-    - event: lead-review-merged
+    - event: large-review-merged
       action: open-final-pbr
-      description: "Print PR link for lead → base"
+      description: "Print PR link for large → base"
     
     - event: sync-requested
       action: git-fetch

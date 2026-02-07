@@ -1,7 +1,7 @@
 # Agent Specification: Compass
 
 **Module:** lens-work
-**Status:** Placeholder — To be created via create-agent workflow
+**Status:** Implemented
 **Created:** 2026-02-03
 
 ---
@@ -25,7 +25,7 @@ agent:
 
 ### Role
 
-**Guide / Navigator** — The primary user-facing agent that routes teams through BMAD phases using simple slash commands. Compass detects architectural layers, orchestrates workflow execution, and ensures proper phase progression.
+**Guide** — The primary user-facing agent that routes teams through BMAD phases using simple slash commands. Compass detects architectural layers, orchestrates workflow execution, and ensures proper phase progression.
 
 ### Identity
 
@@ -65,24 +65,36 @@ Compass is the calm mission-control navigator of lens-work. Clear, directive, an
 
 | Trigger | Command | Description | Workflow |
 |---------|---------|-------------|----------|
-| `#new-domain` | New Domain | Create domain-level initiative | `core/init-initiative` |
-| `#new-service` | New Service | Create service-level initiative | `core/init-initiative` |
-| `#new-feature` | New Feature | Create feature-level initiative | `core/init-initiative` |
+| `#new-domain` | New Domain | Create domain-level initiative | `router/init-initiative` |
+| `#new-service` | New Service | Create service-level initiative | `router/init-initiative` |
+| `#new-feature` | New Feature | Create feature-level initiative | `router/init-initiative` |
 | `#fix-story` | Fix Story | Correction loop (Quick-Spec → Review → Quick-Dev) | `utility/fix-story` |
 
 ### Context Commands
 
 | Trigger | Command | Description | Workflow |
 |---------|---------|-------------|----------|
-| `/switch` | Switch | Switch active initiative, lens, phase, or lane | `utility/switch` |
-| `/context` | Context | Display current context (initiative, lens, phase, lane, branch) | action: `display_context` |
-| `/constitution` | Constitution | Display lens-work constitution and operating rules | action: `display_constitution` |
+| `/switch` | Switch | Switch active initiative, lens, phase, or size | `utility/switch` |
+| `/context` | Context | Display current context (initiative, lens, phase, size, branch) | action: `display_context` |
+| `/constitution` | Constitution | Constitutional governance — create, amend, or view constitutions | `governance/constitution` |
+| `/compliance` | Compliance | Evaluate artifact compliance against constitutions | `governance/compliance-check` |
+| `/resolve` | Resolve | Resolve effective constitution with inheritance | `governance/resolve-constitution` |
+| `/ancestry` | Ancestry | Walk governance ancestry chain | `governance/ancestry` |
 | `/lens` | Lens | Show/change current lens focus (domain/service/microservice/feature) | action: `display_lens` |
+
+### Discovery Commands
+
+| Trigger | Command | Description | Workflow |
+|---------|---------|-------------|----------|
+| `/domain-map` | Domain Map | Discover and map domain boundaries | `discovery/domain-map` |
+| `/impact` | Impact Analysis | Run cross-initiative impact analysis | `discovery/impact-analysis` |
 
 ### Utility Commands
 
 | Trigger | Command | Description | Workflow |
 |---------|---------|-------------|----------|
+| `#fix-story` | Fix Story | Correction loop (Quick-Spec → Review → Quick-Dev) | `utility/fix-story` |
+| `/recreate-branches` | Recreate Branches | Recreate worktree branches from initiatives | `utility/recreate-branches` |
 | `H` | Help | Display menu and guidance | exec |
 | `?` | Status | Quick status check (delegates to Tracey) | `utility/status` |
 
@@ -123,7 +135,7 @@ phase_authorization:
 
 ### Signal Hierarchy (Priority Order)
 
-1. **Branch pattern** — If on `lens/{id}/...` branch, parse layer from id
+1. **Branch pattern** — If on `{domain}/{id}/...` branch, parse layer from id
 2. **Session state** — Check `state.yaml` for active initiative
 3. **Path heuristics** — Infer from current working directory
 4. **User prompt** — Extract layer keywords from command
@@ -143,13 +155,13 @@ phase_authorization:
 
 ### /switch Command
 
-The `/switch` command allows users to change the active initiative, lens, phase, or lane without losing their current position. Compass delegates to the `utility/switch/workflow.md` workflow.
+The `/switch` command allows users to change the active initiative, lens, phase, or size without losing their current position. Compass delegates to the `utility/switch/workflow.md` workflow.
 
 **Behavior:**
-1. Present numbered menu of switchable dimensions (initiative, lens, phase, lane)
+1. Present numbered menu of switchable dimensions (initiative, lens, phase, size)
 2. User selects dimension to switch
 3. For initiative: list all known initiatives from `_bmad-output/lens-work/initiatives/`
-4. For lens/phase/lane: list valid options for current initiative
+4. For lens/phase/size: list valid options for current initiative
 5. Update `state.yaml` with new position
 6. Confirm switch with updated context display
 
@@ -158,7 +170,7 @@ The `/switch` command allows users to change the active initiative, lens, phase,
 The `/context` command displays the current working context using the two-file state loading pattern.
 
 **Behavior:**
-1. Load `_bmad-output/lens-work/state.yaml` for personal position (active initiative, phase, lane)
+1. Load `_bmad-output/lens-work/state.yaml` for personal position (active initiative, phase, size)
 2. Load `_bmad-output/lens-work/initiatives/{active_initiative}.yaml` for initiative config
 3. Display formatted context:
    ```
@@ -166,7 +178,7 @@ The `/context` command displays the current working context using the two-file s
    ├── Initiative: {name} ({id})
    ├── Lens: {layer}
    ├── Phase: P{N} ({phase_name})
-   ├── Lane: {lane}
+   ├── Size: {size}
    ├── Branch: {branch}
    └── Gates: {gate_status_summary}
    ```
@@ -202,7 +214,7 @@ Compass uses a two-file state pattern to separate personal position from initiat
 
 | File | Purpose | Contents |
 |------|---------|----------|
-| `state.yaml` | Personal position | `active_initiative`, current phase, lane, branch |
+| `state.yaml` | Personal position | `active_initiative`, current phase, size, branch |
 | `initiatives/{id}.yaml` | Initiative config | Name, layer, target repos, gates, team config |
 
 **Loading sequence:**

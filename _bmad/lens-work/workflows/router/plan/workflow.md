@@ -23,7 +23,7 @@ phase_name: Solutioning
 ## Prerequisites
 
 - [x] `/spec` complete (Phase 2 merged)
-- [x] Lead review approved (small → lead merged)
+- [x] Lead review approved (small → large merged)
 
 ---
 
@@ -35,8 +35,8 @@ phase_name: Solutioning
 if not phase_complete("p2"):
   error: "Phase 2 (Planning) not complete. Run /spec first."
 
-if not lead_review_merged():
-  warning: "Lead review PR not merged. Proceeding but architecture may change."
+if not large_review_merged():
+  warning: "Large review PR not merged. Proceeding but architecture may change."
 ```
 
 ### 2. Start Phase 3
@@ -99,7 +99,7 @@ invoke: casey.finish-workflow
 ```yaml
 if all_workflows_complete("p3"):
   invoke: casey.finish-phase
-  invoke: casey.open-final-pbr  # PR: lead → base
+  invoke: casey.open-final-pbr  # PR: large → base
   
   output: |
     ✅ /plan complete

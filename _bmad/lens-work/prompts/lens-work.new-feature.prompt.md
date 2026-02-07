@@ -14,7 +14,7 @@ Use `#think` before defining feature scope or dependencies.
 
 **Creates:**
 - Initiative ID: `{sanitized_name}-{random}`
-- Branch: `lens/{id}/base` → `small/p1`
+- Branch: `{domain}/{id}/base` → `small/p1`
 - State file: `_bmad-output/lens-work/state.yaml`
 
 **In-Scope Repos:** Target repo + declared deps from service map

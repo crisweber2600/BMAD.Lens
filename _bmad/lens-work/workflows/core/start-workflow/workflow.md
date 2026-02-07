@@ -18,7 +18,7 @@ auto_triggered: true
 ```yaml
 workflow_name: string      # e.g., "discovery", "brainstorm", "product-brief"
 phase: string              # e.g., "p1", "p2", "p3"
-lane: string               # e.g., "small", "lead"
+lane: string               # e.g., "small", "large"
 initiative_id: string      # From state.yaml
 ```
 
