@@ -32,13 +32,18 @@ This workflow supports special keywords to control prompting behavior:
 
 - **"defaults" / "best defaults"** → Apply defaults to **CURRENT STEP ONLY**; resume normal prompting for subsequent steps
 - **"yolo" / "keep rolling"** → Apply defaults to **ENTIRE REMAINING WORKFLOW**; auto-complete all steps
+- **"all questions" / "batch questions"** → Present **ALL QUESTIONS UPFRONT** → wait for batch answers → follow-up questions → adversarial review → final questions → generate artifacts
 - **"skip"** → Jump to a named optional step (e.g., "skip to product brief")
 - **"pause"** → Halt workflow, save progress, resume later
 - **"back"** → Roll back to previous step, re-answer questions
 
 Full documentation: [User Interaction Keywords](../../docs/user-interaction-keywords.md)
 
-**Critical Rule:** "defaults" applies only to the current question/step. "yolo" applies to all remaining steps in the workflow. Other workflows and phases are unaffected.
+**Critical Rule:** 
+- "defaults" applies only to the current question/step
+- "yolo" applies to all remaining steps in the workflow
+- "all questions" presents comprehensive questionnaire, then iteratively refines with follow-ups and party mode review
+- Other workflows and phases are unaffected
 
 ---
 

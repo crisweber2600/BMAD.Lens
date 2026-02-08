@@ -59,7 +59,47 @@ You respond: "yolo"
 
 ---
 
-### 3. **"skip" / "skip to [step-name]"**
+### 3. **"all questions" / "batch questions" / "all at once"**
+
+**Scope:** **ENTIRE WORKFLOW WITH ITERATIVE REFINEMENT**
+
+**Behavior:**
+- Presents ALL questions from ALL workflow steps upfront in a single comprehensive questionnaire
+- User answers all questions in one batch response
+- Agent analyzes answers and generates follow-up clarifying questions based on responses
+- Runs adversarial review (party mode) on the proposed direction
+- Asks final series of questions to address gaps or concerns from review
+- Generates all workflow artifacts after final answers
+- Returns final menu after complete workflow
+
+**Example:**
+```
+You're starting /spec (Planning phase):
+
+You respond: "all questions"
+
+→ Agent presents comprehensive questionnaire covering PRD, UX, Architecture
+→ You answer all questions in one response
+→ Agent asks 3-5 follow-up questions: "You said X, does that mean Y?"
+→ Party mode adversarial review runs with diverse perspectives
+→ Agent asks final 2-3 questions to address review findings
+→ All planning artifacts generated (PRD, UX design, architecture docs)
+→ Presents final menu: "Continue to /plan? [1] Yes [P] Pause [S] Status"
+```
+
+**Workflow Stages:**
+1. **Initial Questionnaire** — All workflow questions presented upfront
+2. **Batch Answer Collection** — User provides comprehensive answers
+3. **Follow-up Clarification** — 3-5 targeted questions based on answers
+4. **Adversarial Review** — Party mode review of proposed direction
+5. **Final Questions** — 2-3 questions addressing review findings
+6. **Artifact Generation** — Complete workflow artifacts created
+
+**Use Case:** When you want to provide all context upfront, but still want iterative refinement and validation before finalizing artifacts.
+
+---
+
+### 4. **"skip" / "skip to [step-name]"**
 
 **Scope:** **JUMP TO NAMED STEP**
 
@@ -85,7 +125,7 @@ You respond: "skip to product brief"
 
 ---
 
-### 4. **"pause" / "pause here" / "hold up"**
+### 5. **"pause" / "pause here" / "hold up"**
 
 **Scope:** **IMMEDIATE WORKFLOW STOP**
 
@@ -113,7 +153,7 @@ You respond: "pause"
 
 ---
 
-### 5. **"back" / "previous" / "redo [step]"**
+### 6. **"back" / "previous" / "redo [step]"**
 
 **Scope:** **GO BACK TO PREVIOUS STEP**
 
@@ -159,13 +199,17 @@ These keywords are recognized at any user prompt in lens-work workflows:
 |-------|---------|--------|-----------|
 | `/pre-plan` (Analysis) | "defaults" | Fills current question; continues prompting | Skip a non-essential question |
 | `/pre-plan` | "yolo" | Auto-completes all remaining steps → product brief | Rapid prototyping with defaults |
+| `/pre-plan` | "all questions" | All questions upfront → follow-ups → review → generate | Comprehensive context available |
 | `/pre-plan` | "pause" | Halts; saves state; can resume later | Need to research before continuing |
 | `/spec` (Planning) | "defaults" | Fills current question; resumes normal flow | Quick decision on specific aspect |
 | `/spec` | "yolo" | Auto-generates PRD, UX design, epics | Known architecture; want rapid output |
+| `/spec` | "all questions" | All PRD/UX/Arch questions → refinement → party mode | Want iterative validation |
 | `/plan` (Solutioning) | "defaults" | Fills steps; continues normally | Stick with sensible defaults |
 | `/plan` | "yolo" | Full solutioning: architecture→epics→stories | Very clear requirements |
+| `/plan` | "all questions" | All architecture questions → follow-ups → review | Complex architecture decisions |
 | `/dev` (Implementation) | "defaults" | Fills steps; continues normally | Straightforward story selection |
 | `/dev` | "yolo" | Sprint auto-plan: stories→tasks→CI setup | Known sprint, clear backlog |
+| `/dev` | "all questions" | All sprint questions → follow-ups → validation | Sprint needs careful planning |
 
 ---
 
@@ -197,6 +241,13 @@ workflow_status:
 - ✅ You want rapid artifact generation for review
 - ✅ You'll refine/adjust artifacts in code review later
 
+### When to Use "all questions":
+- ✅ You have comprehensive context and can answer all questions upfront
+- ✅ You want to provide complete information in one session, then refine
+- ✅ You value iterative refinement with follow-ups and adversarial review
+- ✅ You want validation checkpoints before finalizing artifacts
+- ✅ The phase is complex and benefits from diverse perspectives (party mode)
+
 ### When to Use "pause":
 - ✅ You need external input (stakeholders, research)
 - ✅ You want to reflect before continuing
@@ -225,6 +276,18 @@ A: Yes. All artifacts are saved, state is committed, and you can resume exactly 
 **Q: What if I "yolo" but want to revisit a step?**
 A: Use "back" to roll back to that step, answer differently, and continue forward.
 
+**Q: What's the difference between "yolo" and "all questions"?**
+A: "yolo" uses defaults throughout without asking you anything. "all questions" presents all questions upfront, waits for your comprehensive answers, then iteratively refines with follow-ups and party mode review before generating artifacts.
+
+**Q: How many follow-up questions will "all questions" ask?**
+A: Typically 3-5 clarifying questions after your initial answers, then 2-3 final questions after the adversarial review. The exact number depends on the complexity of your answers and review findings.
+
+**Q: Can I skip the adversarial review in "all questions" mode?**
+A: Not by default—the review is part of the iterative refinement that makes "all questions" valuable. If you want to skip validation, use "yolo" instead.
+
+**Q: What if I can't answer all questions upfront with "all questions"?**
+A: You can answer the ones you know and say "unsure" or "TBD" for others. The follow-up questions will focus on clarifying those areas.
+
 ---
 
 ## Implementation Notes for Agents
@@ -233,8 +296,17 @@ When an agent implementing a workflow encounters a keyword:
 
 1. **"defaults"** → Skip detailed elicitation for current step; fill frontmatter; continue to next question
 2. **"yolo"** → Set `auto_complete_mode: true`; apply defaults to all remaining steps; suppress prompts
-3. **"pause"** → Halt execution; call `casey.commit-state(status: paused)`; exit workflow
-4. **"back"** → Clear outputs from current step; revert to previous step; reload step file
-5. **"skip"** → Validate step is optional; jump to target step; resume normal flow
+3. **"all questions"** → Enter batch mode:
+   - Collect all questions from all workflow steps
+   - Present comprehensive questionnaire
+   - Wait for batch answers
+   - Analyze answers and generate 3-5 follow-up questions
+   - Run `party-mode` adversarial review on proposed direction
+   - Ask 2-3 final questions addressing review findings
+   - Generate all workflow artifacts
+   - Log: `{"keyword": "all_questions", "questionnaire_steps": 6, "follow_ups": N, "review_findings": M}`
+4. **"pause"** → Halt execution; call `casey.commit-state(status: paused)`; exit workflow
+5. **"back"** → Clear outputs from current step; revert to previous step; reload step file
+6. **"skip"** → Validate step is optional; jump to target step; resume normal flow
 
 All keyword handling must preserve audit trail in event-log.jsonl with timestamp and keyword used.
