@@ -306,7 +306,7 @@ The LENS Workbench enforces strict git-based workflow control:
 
 ### Branch Topology
 
-Branches mirror the BMAD lifecycle phases and lanes:
+Branches mirror the BMAD lifecycle phases and sizes:
 
 ```
 main

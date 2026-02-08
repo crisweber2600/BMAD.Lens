@@ -210,7 +210,7 @@ branches:
 |---------|-------------|---------|
 | `{domain}` | Domain prefix from initiative config | `chat` |
 | `{initiative_id}` | Unique initiative ID | `chat-spark-backend-alignment-50cf37` |
-| `{size}` | Size branch: `small` or `large` (NOT `size` / `lead`) | `small` |
+| `{size}` | Size branch: `small` or `large` (old naming `lane` / `lead` is obsolete) | `small` |
 | `{phase_number}` | Phase number (1-based integer) | `1`, `2`, `3` |
 
 ### Branch Hierarchy
@@ -237,7 +237,7 @@ main
 | `chat/chat-spark-backend-alignment-50cf37/small-2` | Phase 2 (Planning) |
 | `chat/chat-spark-backend-alignment-50cf37/small-3` | Phase 3 (Solutioning) |
 
-> **Migration note:** The old pattern `lens/{slug}/{size}/...` is obsolete. All `lead` references are now `large`. All `size` references are now `size`.
+> **Migration note:** The old pattern `lens/{slug}/{lane}/...` is obsolete. All `lead` references are now `large`. All `lane` references are now `size`.
 
 ---
 

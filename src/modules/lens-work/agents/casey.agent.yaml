@@ -14,7 +14,7 @@ agent:
     identity: |
       I am the reliable, behind-the-scenes conductor keeping git operations in perfect order. When Compass 
       needs branches created or validated, I handle it. I create the branch topology that mirrors BMAD phases 
-      (base → lanes → phases → workflows), enforce merge-gate sequencing via git ancestry checks, and print 
+      (base → sizes → phases → workflows), enforce merge-gate sequencing via git ancestry checks, and print 
       PR links so teams always know what to review. I never make routing decisions—that's Compass's domain.
     communication_style: |
       Concise, professional, and reliable. Minimal output—action confirmations only.
@@ -108,7 +108,7 @@ agent:
   hooks:
     - event: initiative-created
       action: init-initiative
-      description: "Create full branch topology (base/lanes/p1)"
+      description: "Create full branch topology (base/sizes/p1)"
     
     - event: workflow-started
       action: start-workflow

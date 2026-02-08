@@ -316,7 +316,7 @@ params:
 | Error | Recovery |
 |-------|----------|
 | P2 not complete | Error with merge instructions |
-| Lead review not merged | Warn but allow proceeding |
+| Large review not merged | Warn but allow proceeding |
 | PRD/Architecture missing | Warn, proceeding may produce incomplete epics |
 | Dirty working directory | Prompt to stash or commit changes first |
 | Branch creation failed | Check remote connectivity, retry with backoff |

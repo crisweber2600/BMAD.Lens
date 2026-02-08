@@ -52,7 +52,7 @@ target_repo: api-gateway  # resolved from service map
 ✅ Initiative created: rate-limit-x7k2m9
 ├── Base: lens/rate-limit-x7k2m9/base
 ├── Small: lens/rate-limit-x7k2m9/small
-├── Lead: lens/rate-limit-x7k2m9/lead
+├── Large: lens/rate-limit-x7k2m9/large
 ├── Phase: lens/rate-limit-x7k2m9/small/p1
 └── Ready for /pre-plan
 ```

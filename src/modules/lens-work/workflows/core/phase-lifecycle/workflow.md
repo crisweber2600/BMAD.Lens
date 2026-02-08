@@ -164,7 +164,7 @@ initiative_id: string
 ```bash
 # Validate p2 complete
 if phase_complete "p2"; then
-  pr_link="${remote}/compare/lead...small"
+  pr_link="${remote}/compare/large...small"
   echo "🔍 Large Review Ready"
   echo "├── PR: ${pr_link}"
   echo "└── Assign large reviewers"
@@ -175,7 +175,7 @@ fi
 
 ## Open Final PBR
 
-**Trigger:** Lead review merged
+**Trigger:** Large review merged
 
 **Purpose:** Open PR from large → base for final product backlog review.
 
