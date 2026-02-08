@@ -29,7 +29,24 @@ casey.verify-clean-state
 
 ## Step 1: Get Artifact
 
-Ask user for the artifact to evaluate:
+Support two invocation modes:
+
+1. **Interactive mode** (default for `/compliance`):
+   Ask user for the artifact to evaluate.
+2. **Non-interactive mode** (workflow-to-workflow call):
+   If `artifact_path` is provided in params, skip prompting and use the supplied artifact directly.
+
+```yaml
+# Non-interactive mode (used by /review gate)
+if params.artifact_path:
+  artifact_path = params.artifact_path
+  artifact_type = params.artifact_type or infer_artifact_type(artifact_path)
+else:
+  # Interactive mode prompt
+  prompt_user_for_artifact()
+```
+
+Interactive prompt:
 
 ```
 📜 Constitutional Compliance Check
@@ -79,6 +96,21 @@ Exit gracefully — this is not an error.
 
 ---
 
+If invoked non-interactively and no constitutions exist, return:
+
+```yaml
+compliance_result:
+  artifact_path: {artifact_path}
+  artifact_type: {artifact_type}
+  verdict: NO_RULES
+  pass_count: 0
+  warn_count: 0
+  fail_count: 0
+  constitution_count: 0
+  article_count: 0
+```
+
+---
 ## Step 3: Evaluate Each Article
 
 For each article in the resolved constitution, evaluate the artifact:
@@ -199,6 +231,26 @@ Note: `initiative_id` is **required** for compliance events (compliance always r
 
 ---
 
+## Step 6: Return Machine-Readable Result
+
+When invoked by another workflow, return a structured summary:
+
+```yaml
+compliance_result:
+  artifact_path: {artifact_path}
+  artifact_type: {artifact_type}
+  verdict: {COMPLIANT|CONDITIONAL_PASS|NON_COMPLIANT|NO_RULES}
+  pass_count: {pass_count}
+  warn_count: {warn_count}
+  fail_count: {fail_count}
+  constitution_count: {constitution_count}
+  article_count: {article_count}
+```
+
+`NO_RULES` is returned when no constitutions exist for the context.
+
+---
+
 ## Completion
 
 ```
@@ -211,3 +263,4 @@ Compliance check complete.
 - Show ancestry → /ancestry
 - Return to Compass → exit
 ```
+

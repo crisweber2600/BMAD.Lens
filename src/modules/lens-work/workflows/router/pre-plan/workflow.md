@@ -26,6 +26,22 @@ if user_role not in ["PO", "Architect", "Tech Lead"]:
 
 ---
 
+## User Interaction Keywords
+
+This workflow supports special keywords to control prompting behavior:
+
+- **"defaults" / "best defaults"** → Apply defaults to **CURRENT STEP ONLY**; resume normal prompting for subsequent steps
+- **"yolo" / "keep rolling"** → Apply defaults to **ENTIRE REMAINING WORKFLOW**; auto-complete all steps
+- **"skip"** → Jump to a named optional step (e.g., "skip to product brief")
+- **"pause"** → Halt workflow, save progress, resume later
+- **"back"** → Roll back to previous step, re-answer questions
+
+Full documentation: [User Interaction Keywords](../../docs/user-interaction-keywords.md)
+
+**Critical Rule:** "defaults" applies only to the current question/step. "yolo" applies to all remaining steps in the workflow. Other workflows and phases are unaffected.
+
+---
+
 ## Prerequisites
 
 - [x] Initiative created via `#new-*` command
@@ -82,7 +98,24 @@ if initiative.current_phase not in [null, "p1"]:
   warning: "Current phase is ${initiative.current_phase}. /pre-plan is for Phase 1."
 ```
 
-### 1a. Discovery Validation
+### 1a. Constitutional Context Injection (Required)
+
+```yaml
+# Resolve constitutional governance for the active initiative context
+constitutional_context = invoke("scribe.resolve-context")
+
+# Parse errors are hard failures because governance cannot be evaluated
+if constitutional_context.status == "parse_error":
+  error: |
+    Constitutional context parse error:
+    ${constitutional_context.error_details.file}
+    ${constitutional_context.error_details.error}
+
+# Make constitutional context available to downstream workflows
+session.constitutional_context = constitutional_context
+```
+
+### 1b. Discovery Validation
 
 ```yaml
 # Check that repo-discover has been run for target repos
@@ -156,6 +189,7 @@ params:
 invoke: cis.brainstorming  # CIS module workflow
 params:
   context: "${initiative.name} at ${initiative.layer} layer"
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```
@@ -167,6 +201,8 @@ params:
   workflow_name: research
 
 invoke: cis.research  # CIS module workflow
+params:
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```
@@ -180,6 +216,7 @@ params:
 invoke: bmm.product-brief  # BMM module workflow
 params:
   output_path: "_bmad-output/planning-artifacts/"
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```

@@ -116,12 +116,28 @@ if missing.length > 0:
   offer: "Continue anyway? [Y]es / [N]o — (choosing Yes will mark gate as 'passed_with_warnings')"
 ```
 
+### 1b. Constitutional Context Injection (Required)
+
+```yaml
+# Resolve constitutional governance for gate checks and downstream workflows
+constitutional_context = invoke("scribe.resolve-context")
+
+if constitutional_context.status == "parse_error":
+  error: |
+    Constitutional context parse error:
+    ${constitutional_context.error_details.file}
+    ${constitutional_context.error_details.error}
+
+session.constitutional_context = constitutional_context
+```
+
 ### 2. Re-run Readiness Checklist
 
 ```yaml
 invoke: bmm.readiness-checklist
 params:
   mode: "validate"  # Check, don't create
+  constitutional_context: ${constitutional_context}
   
 if readiness.blockers > 0:
   output: |
@@ -132,12 +148,60 @@ if readiness.blockers > 0:
   exit: 1
 ```
 
+### 2a. Constitutional Compliance Gate (Required)
+
+```yaml
+# Evaluate required artifacts against resolved constitutional rules
+compliance_targets:
+  - path: "_bmad-output/planning-artifacts/product-brief.md"
+    type: "PRD"
+  - path: "_bmad-output/planning-artifacts/prd.md"
+    type: "PRD"
+  - path: "_bmad-output/planning-artifacts/architecture.md"
+    type: "Architecture document"
+  - path: "_bmad-output/planning-artifacts/epics.md"
+    type: "Story/Epic"
+  - path: "_bmad-output/planning-artifacts/stories.md"
+    type: "Story/Epic"
+  - path: "_bmad-output/planning-artifacts/readiness-checklist.md"
+    type: "Story/Epic"
+
+compliance_failures = []
+compliance_warnings = []
+compliance_checked = 0
+
+for target in compliance_targets:
+  if file_exists(target.path):
+    compliance_result = invoke("scribe.compliance-check")
+    params:
+      artifact_path: ${target.path}
+      artifact_type: ${target.type}
+      constitutional_context: ${constitutional_context}
+
+    compliance_checked = compliance_checked + 1
+
+    if compliance_result.fail_count > 0:
+      compliance_failures.append("${target.path}: ${compliance_result.fail_count} FAIL")
+
+    if compliance_result.warn_count > 0:
+      compliance_warnings.append("${target.path}: ${compliance_result.warn_count} WARN")
+
+if compliance_failures.length > 0:
+  output: |
+    FAIL Constitutional compliance failures detected:
+    ${compliance_failures.join("\n")}
+
+    Implementation gate blocked until violations are resolved.
+  exit: 1
+```
+
 ### 3. Sprint Planning (if Scrum)
 
 ```yaml
 invoke: bmm.sprint-planning
 params:
   stories: "_bmad-output/planning-artifacts/stories.md"
+  constitutional_context: ${constitutional_context}
   
 output: |
   📋 Sprint Planning
@@ -153,6 +217,7 @@ invoke: bmm.create-dev-story
 params:
   story_id: "${selected_story}"
   output_path: "_bmad-output/implementation-artifacts/"
+  constitutional_context: ${constitutional_context}
   
 output: |
   📝 Dev Story Created
@@ -183,7 +248,7 @@ output: |
 
 ```yaml
 # Update gate status in initiatives/{id}.yaml
-gate_status = missing.length > 0 ? "passed_with_warnings" : "passed"
+gate_status = (missing.length > 0 or compliance_warnings.length > 0) ? "passed_with_warnings" : "passed"
 
 invoke: tracey.update-initiative
 params:
@@ -197,7 +262,7 @@ params:
         status: ${gate_status}
         verified_at: "${ISO_TIMESTAMP}"
         reviewer: "${user_role}"
-        warnings: ${missing.length > 0 ? missing : null}
+        warnings: ${(missing + compliance_warnings).length > 0 ? (missing + compliance_warnings) : null}
         readiness_blockers: ${readiness.blockers || 0}
 ```
 
@@ -227,6 +292,7 @@ params:
 events:
   - {"ts":"${ISO_TIMESTAMP}","event":"review-start","id":"${initiative.id}","phase":"gate","workflow":"review"}
   - {"ts":"${ISO_TIMESTAMP}","event":"review-checklist","id":"${initiative.id}","phase":"gate","missing_artifacts":${missing.length},"readiness_blockers":${readiness.blockers || 0}}
+  - {"ts":"${ISO_TIMESTAMP}","event":"review-compliance","id":"${initiative.id}","phase":"gate","checked_artifacts":${compliance_checked || 0},"warn_count":${compliance_warnings.length || 0},"fail_count":0}
   - {"ts":"${ISO_TIMESTAMP}","event":"review-complete","id":"${initiative.id}","phase":"gate","workflow":"review","status":"${gate_status}"}
 
 invoke: tracey.append-events
@@ -309,3 +375,4 @@ Hand off to developer? [Y]es / [N]o
 - [ ] state.yaml workflow_status updated to review_complete
 - [ ] All changes pushed to origin
 - [ ] Developer handoff ready (story + PR link)
+

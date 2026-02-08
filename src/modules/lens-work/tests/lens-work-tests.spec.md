@@ -180,6 +180,7 @@ created: 2026-02-05
 | 4.1.1.3 | Auto-creates phase branch if missing | Branch `{Domain}/{id}/{size}-1` created if not present |
 | 4.1.1.4 | State updates persist after execution | `state.yaml` updated with workflow progress |
 | 4.1.1.5 | Git discipline validates clean state | Dirty working directory blocks workflow start |
+| 4.1.1.6 | Constitutional context is injected | `constitutional_context` is resolved and available before analysis workflow calls |
 
 #### 4.1.2 Spec Router (`/spec`)
 
@@ -190,6 +191,7 @@ created: 2026-02-05
 | 4.1.2.3 | Creates p2 branch via Casey | Branch `{Domain}/{id}/{size}-2` created |
 | 4.1.2.4 | State updates persist | Phase advanced to p2 in state |
 | 4.1.2.5 | Git discipline validates clean state | Blocks on dirty working directory |
+| 4.1.2.6 | Constitutional context is injected | `constitutional_context` is resolved before PRD/UX/architecture workflows run |
 
 #### 4.1.3 Plan Router (`/plan`)
 
@@ -200,6 +202,9 @@ created: 2026-02-05
 | 4.1.3.3 | Creates p3 branch via Casey | Branch `{Domain}/{id}/{size}-3` created |
 | 4.1.3.4 | State updates persist | Phase advanced to p3 in state |
 | 4.1.3.5 | Git discipline validates clean state | Blocks on dirty working directory |
+| 4.1.3.6 | Constitutional context is injected | `constitutional_context` is resolved before epics/stories/readiness workflows run |
+| 4.1.3.7 | Epic adversarial stress gate runs | `bmm.check-implementation-readiness` executes after epics generation and blocks on fail |
+| 4.1.3.8 | Epic party-mode teardown runs per epic | `core.party-mode` executes for each epic and writes `epic-*-party-mode-review.md` files |
 
 #### 4.1.4 Review Router (`/review`)
 
@@ -210,6 +215,8 @@ created: 2026-02-05
 | 4.1.4.3 | Creates review branch if needed | Branch created following naming convention |
 | 4.1.4.4 | State updates persist | Review status tracked in state |
 | 4.1.4.5 | Git discipline validates clean state | Blocks on dirty working directory |
+| 4.1.4.6 | Constitutional context is injected | `constitutional_context` is resolved before readiness and compliance checks |
+| 4.1.4.7 | Compliance gate blocks constitutional FAILs | Any FAIL from compliance checks exits `/review` with gate blocked |
 
 #### 4.1.5 Dev Router (`/dev`)
 
@@ -220,6 +227,14 @@ created: 2026-02-05
 | 4.1.5.3 | Creates p4 branch via Casey | Branch `{Domain}/{id}/{size}-4` created |
 | 4.1.5.4 | State updates persist | Phase advanced to p4 in state |
 | 4.1.5.5 | Git discipline validates clean state | Blocks on dirty working directory |
+| 4.1.5.6 | Constitutional context is injected | `constitutional_context` is resolved before implementation guidance and review loops |
+| 4.1.5.7 | Dev story compliance gate blocks FAILs | `scribe.compliance-check` on dev story exits `/dev` on any FAIL |
+| 4.1.5.8 | Adversarial code review is mandatory | `bmm.code-review` executes when implementation is signaled complete |
+| 4.1.5.9 | Code-review compliance gate blocks FAILs | `scribe.compliance-check` on code review report exits `/dev` on any FAIL |
+| 4.1.5.10 | Party-mode teardown runs after code review | `core.party-mode` executes and writes `party-mode-review-${story_id}.md` |
+| 4.1.5.11 | Epic completion is detected in `/dev` | Current story resolves to parent epic and epic completion is evaluated before workflow exit |
+| 4.1.5.12 | Epic adversarial review runs on epic completion | `bmm.check-implementation-readiness` executes for completed epic and blocks `/dev` on fail |
+| 4.1.5.13 | Epic party-mode teardown runs on epic completion | `core.party-mode` writes `epic-*-party-mode-review.md` and blocks `/dev` on unresolved issues |
 
 ### 4.2 Utility Workflows
 
@@ -467,13 +482,13 @@ created: 2026-02-05
 | 1. State Management | 6 | 6 | 0 | 0 | 12 |
 | 2. Branch Switching | 10 | 4 | 0 | 0 | 14 |
 | 3. Initiative Creation | 9 | 7 | 0 | 0 | 16 |
-| 4. Workflow Execution | 25 | 11 | 0 | 0 | 36 |
+| 4. Workflow Execution | 40 | 11 | 0 | 0 | 51 |
 | 5. Agent Integration | 18 | 15 | 0 | 0 | 33 |
 | 6. Error Handling | 8 | 8 | 0 | 0 | 16 |
 | 7. Git Discipline | 10 | 0 | 0 | 0 | 10 |
 | 8. Module Structure | 0 | 0 | 10 | 0 | 10 |
 | 9. Cross-Cutting | 0 | 0 | 12 | 0 | 12 |
-| **Total** | **86** | **51** | **22** | **0** | **159** |
+| **Total** | **101** | **51** | **22** | **0** | **174** |
 
 ---
 

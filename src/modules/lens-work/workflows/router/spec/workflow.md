@@ -107,7 +107,22 @@ else:
   invoke: casey.pull-latest
 ```
 
-### 2a. Batch Mode (Single-File Questions)
+### 2a. Constitutional Context Injection (Required)
+
+```yaml
+# Resolve constitutional governance for this context before planning workflows
+constitutional_context = invoke("scribe.resolve-context")
+
+if constitutional_context.status == "parse_error":
+  error: |
+    Constitutional context parse error:
+    ${constitutional_context.error_details.file}
+    ${constitutional_context.error_details.error}
+
+session.constitutional_context = constitutional_context
+```
+
+### 2b. Batch Mode (Single-File Questions)
 
 ```yaml
 if initiative.question_mode == "batch":
@@ -146,6 +161,7 @@ invoke: bmm.create-prd
 params:
   product_brief: "_bmad-output/planning-artifacts/product-brief.md"
   output_path: "_bmad-output/planning-artifacts/"
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```
@@ -157,6 +173,8 @@ params:
   workflow_name: ux-design
 
 invoke: bmm.create-ux-design
+params:
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```
@@ -173,6 +191,7 @@ params:
   prd: "_bmad-output/planning-artifacts/prd.md"
   product_brief: "_bmad-output/planning-artifacts/product-brief.md"
   output_path: "_bmad-output/planning-artifacts/"
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```

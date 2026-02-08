@@ -1,12 +1,12 @@
 # Constitutional Context Extension
 
-Lens-work extends LENS context with constitutional governance data via the `resolve-context` workflow.
+Lens-work extends LENS context with constitutional governance data via the `resolve-context` workflow and injects it into phase routers by default.
 
 ---
 
 ## Extended Context Variables
 
-When governance is resolved (on demand via `/resolve` or internally by governance workflows), these variables are added to `lens_context`:
+When governance is resolved (automatic router injection or governance workflow invocation), these variables are added to `lens_context`:
 
 ```yaml
 # Constitutional Context Extension
@@ -51,7 +51,7 @@ constitutional_context:
 
 ## Resolution Algorithm
 
-### On Demand
+### Automatic + On Demand
 
 1. Get current LENS layer from active initiative or branch pattern
 2. Determine constitution root path: `_bmad-output/lens-work/constitutions/{layer}/{name}`
@@ -79,10 +79,15 @@ Feature Constitution (most specific)
 
 ## Context Injection Points
 
-Governance context is available on demand to these lens-work workflows:
+Governance context is injected into these workflows:
 
 | Workflow | Injection Point | Purpose |
 |----------|-----------------|---------|
+| `pre-plan` | Step 1a | Inject constitutional context before analysis workflows |
+| `spec` | Step 2a | Inject constitutional context before planning workflows |
+| `plan` | Step 2a | Inject constitutional context before solutioning workflows |
+| `review` | Step 1b | Inject constitutional context before implementation gate checks |
+| `dev` | Step 1a | Inject constitutional context before implementation loop |
 | `compliance-check` | Pre-evaluation | Rules to check against |
 | `resolve-constitution` | Resolution output | Display resolved rules |
 | `ancestry` | Heritage display | Show inheritance chain |
