@@ -87,6 +87,23 @@ for artifact in required_artifacts:
     warning: "Required artifact not found: ${artifact}."
 ```
 
+### 1a. Constitution Compliance Gate (ADVISORY)
+
+```yaml
+# Invoke compliance-check to verify inherited constitution constraints
+# Mode: ADVISORY (log warnings, do not block)
+invoke: lens-work.compliance-check
+params:
+  phase: "p3"
+  phase_name: "Solutioning"
+  initiative_id: ${initiative.id}
+  target_repos: ${initiative.target_repos}
+  mode: "ADVISORY"
+
+# Compliance check logs findings to _bmad-output/lens-work/compliance-reports/
+# Warnings are surfaced to user but do not block workflow progression
+```
+
 ### 2. Start Phase 3 — Auto-Branch Creation
 
 ```yaml

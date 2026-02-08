@@ -97,6 +97,23 @@ for repo in initiative.target_repos:
       Proceeding without discovery data.
 ```
 
+### 1b. Constitution Compliance Gate (ADVISORY)
+
+```yaml
+# Invoke compliance-check to verify inherited constitution constraints
+# Mode: ADVISORY (log warnings, do not block)
+invoke: lens-work.compliance-check
+params:
+  phase: "p1"
+  phase_name: "Analysis"
+  initiative_id: ${initiative.id}
+  target_repos: ${initiative.target_repos}
+  mode: "ADVISORY"
+
+# Compliance check logs findings to _bmad-output/lens-work/compliance-reports/
+# Warnings are surfaced to user but do not block workflow progression
+```
+
 ### 2. Start Phase (if needed)
 
 ```yaml
