@@ -51,10 +51,10 @@ initiative_id: string
 
 2. **Create Phase Branch**
    ```bash
-   git checkout "lens/${initiative_id}/${size}"
-   git pull origin "lens/${initiative_id}/${size}"
-   git checkout -b "lens/${initiative_id}/${size}/p${phase_number}"
-   git push -u origin "lens/${initiative_id}/${size}/p${phase_number}"
+   git checkout "bmad/${initiative_id}/${size}"
+   git pull origin "bmad/${initiative_id}/${size}"
+   git checkout -b "bmad/${initiative_id}/${size}/p${phase_number}"
+   git push -u origin "bmad/${initiative_id}/${size}/p${phase_number}"
    ```
 
 3. **Update State**
@@ -72,7 +72,7 @@ initiative_id: string
 5. **Commit Phase Start**
     ```bash
     # Ensure we're on the new phase branch
-    git checkout "lens/${initiative_id}/${size}/p${phase_number}"
+    git checkout "bmad/${initiative_id}/${size}/p${phase_number}"
 
     # Stage state + event log
     git add _bmad-output/lens-work/state.yaml _bmad-output/lens-work/event-log.jsonl
@@ -80,7 +80,7 @@ initiative_id: string
     # Commit only if there are changes
     if ! git diff-index --quiet HEAD --; then
        git commit -m "phase(p${phase_number}): Start ${phase_name} (${initiative_id})"
-       git push origin "lens/${initiative_id}/${size}/p${phase_number}"
+       git push origin "bmad/${initiative_id}/${size}/p${phase_number}"
     else
        echo "No phase-start changes to commit."
     fi
@@ -115,7 +115,7 @@ initiative_id: string
 
 2. **Push Phase Branch**
    ```bash
-   git push origin "lens/${initiative_id}/${size}/${phase}"
+   git push origin "bmad/${initiative_id}/${size}/${phase}"
    ```
 
 3. **Generate PR Link**
@@ -131,7 +131,7 @@ initiative_id: string
 5. **Commit Phase Finish**
    ```bash
    # Ensure we're on the phase branch
-   git checkout "lens/${initiative_id}/${size}/${phase}"
+   git checkout "bmad/${initiative_id}/${size}/${phase}"
 
    # Stage state + event log
    git add _bmad-output/lens-work/state.yaml _bmad-output/lens-work/event-log.jsonl
@@ -139,7 +139,7 @@ initiative_id: string
    # Commit only if there are changes
    if ! git diff-index --quiet HEAD --; then
      git commit -m "phase(${phase}): Finish ${initiative_id} phase"
-     git push origin "lens/${initiative_id}/${size}/${phase}"
+     git push origin "bmad/${initiative_id}/${size}/${phase}"
    else
      echo "No phase-finish changes to commit."
    fi

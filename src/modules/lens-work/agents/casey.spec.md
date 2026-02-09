@@ -11,7 +11,7 @@
 ```yaml
 agent:
   metadata:
-    id: "_bmad/lens-work/agents/casey.agent.md"
+    id: "_bmad/lens-work/agents/casey.agent.yaml"
     name: Casey
     title: Git Branch Orchestrator
     icon: 🎼

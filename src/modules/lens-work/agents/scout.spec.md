@@ -12,7 +12,7 @@
 ```yaml
 agent:
   metadata:
-    id: "_bmad/lens-work/agents/scout.agent.md"
+    id: "_bmad/lens-work/agents/scout.agent.yaml"
     name: Scout
     title: Bootstrap & Discovery Manager
     icon: 🔭

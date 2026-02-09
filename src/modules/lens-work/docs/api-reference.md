@@ -16,7 +16,7 @@ lens-work stores state and configuration under `_bmad-output/lens-work/`.
 | `_bmad-output/lens-work/initiatives/{id}.yaml` | Shared initiative config | committed |
 | `_bmad-output/lens-work/event-log.jsonl` | Append-only event log for recovery/audit | committed |
 | `_bmad-output/lens-work/domain-map.yaml` | Domain architecture map | committed |
-| `_bmad-output/lens-work/service-map.yaml` | Service-to-repo mapping | committed |
+| `_bmad/lens-work/service-map.yaml` | Service-to-repo mapping | committed |
 | `_bmad-output/lens-work/repo-inventory.yaml` | Discovered repo inventory | committed |
 | `_bmad-output/lens-work/constitutions/{layer}/{name}/constitution.md` | Constitution documents | committed |
 
@@ -38,8 +38,8 @@ active_branch: "chat/chat-spark-backend-alignment-50cf37/small-3"
 updated_at: "2026-02-05T22:44:19Z"
 
 current:
-  phase: p4
-  phase_name: "Implementation"
+  phase: p3
+  phase_name: "Solutioning"
   workflow: review
   workflow_status: completed
   review_completed_at: "2026-02-06T15:52:42Z"

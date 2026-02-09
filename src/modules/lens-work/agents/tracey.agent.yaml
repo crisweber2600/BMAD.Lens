@@ -118,7 +118,7 @@ agent:
       description: "[DA] Dismiss Tracey agent"
 
   state_schema:
-    version: 1
+    version: 2
     files:
       state: "_bmad-output/lens-work/state.yaml"
       event_log: "_bmad-output/lens-work/event-log.jsonl"

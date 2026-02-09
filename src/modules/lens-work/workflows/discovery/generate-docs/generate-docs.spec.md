@@ -38,12 +38,12 @@ installed_path: '{project-root}/_bmad/lens-work/workflows/generate-docs'
 
 ## Planned Steps
 
-| Step | Name | Goal |
+| Step | File | Goal |
 |------|------|------|
-| 1 | Load analysis | Read analysis results and context |
-| 2 | Map templates | Select appropriate doc templates |
-| 3 | Generate docs | Create architecture, API, data, integration docs |
-| 4 | Write outputs | Save documentation artifacts |
+| 0 | step-00-preflight | Validate inputs and prerequisites |
+| 1 | step-01-load-analysis | Read analysis results and context |
+| 2 | step-02-generate | Create architecture, API, data, integration, migration docs |
+| 3 | step-03-report | Write docs to output folder and generate completion report |
 
 ---
 
@@ -69,29 +69,28 @@ installed_path: '{project-root}/_bmad/lens-work/workflows/generate-docs'
 
 ### Output Structure
 
-**IMPORTANT:** Documentation follows the same domain/service folder structure as TargetProjects.
+**IMPORTANT:** Documentation is written to `lens-sync/{target.name}/` under the configured `docs_output_path`.
 
 ```
-docs/                              # Project root /docs folder
-├── {Domain}/
-│   └── {Service}/
-│       ├── architecture.md
-│       ├── api-surface.md
-│       ├── data-model.md
-│       ├── integration-map.md
-│       └── onboarding.md
-└── README.md                      # Index of all generated docs
+{docs_output_path}/
+└── lens-sync/
+    └── {target.name}/
+        ├── architecture.md
+        ├── api-surface.md
+        ├── data-model.md
+        ├── integration-map.md
+        ├── onboarding.md
+        └── migration-map.md
 ```
-
-**NOT** `_bmad-output/docs` - documentation goes in the project's `/docs` folder.
 
 ### Output Files
 
-- `docs/{domain}/{service}/architecture.md`
-- `docs/{domain}/{service}/api-surface.md`
-- `docs/{domain}/{service}/data-model.md`
-- `docs/{domain}/{service}/integration-map.md`
-- `docs/{domain}/{service}/onboarding.md`
+- `{docs_output_path}/lens-sync/{target.name}/architecture.md`
+- `{docs_output_path}/lens-sync/{target.name}/api-surface.md`
+- `{docs_output_path}/lens-sync/{target.name}/data-model.md`
+- `{docs_output_path}/lens-sync/{target.name}/integration-map.md`
+- `{docs_output_path}/lens-sync/{target.name}/onboarding.md`
+- `{docs_output_path}/lens-sync/{target.name}/migration-map.md`
 
 ---
 

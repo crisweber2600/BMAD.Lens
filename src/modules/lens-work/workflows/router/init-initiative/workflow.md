@@ -261,7 +261,7 @@ current:
 
 > **Note:** This file is git-ignored. It tracks the individual user's current position in the initiative. Each collaborator has their own local copy. Size is NOT stored here — read from initiative config instead.
 
-### 7. Log Event
+### 8. Log Event
 
 Append to `{project-root}/_bmad-output/lens-work/event-log.jsonl`:
 
@@ -269,7 +269,7 @@ Append to `{project-root}/_bmad-output/lens-work/event-log.jsonl`:
 {"ts":"${ISO_TIMESTAMP}","event":"init-initiative","id":"${initiative_id}","layer":"${layer}","target_repos":${JSON.stringify(target_repos)},"domain":"${domain}","service":"${service}","question_mode":"${question_mode}","docs_path":"${docs_path}"}
 ```
 
-### 8. Commit Initiative Config
+### 9. Commit Initiative Config
 
 ```bash
 # Ensure on small-1 branch (phase 1)
@@ -301,7 +301,7 @@ Ready for /pre-plan workflow."
 git push -u origin "${domain_prefix}/${initiative_id}/small-1"
 ```
 
-### 9. Ensure .gitignore for Personal State
+### 10. Ensure .gitignore for Personal State
 
 ```bash
 # Ensure state.yaml is git-ignored (personal state should not be committed)
@@ -313,7 +313,7 @@ if ! grep -q "_bmad-output/lens-work/state.yaml" .gitignore 2>/dev/null; then
 fi
 ```
 
-### 10. Return Control to Compass
+### 11. Return Control to Compass
 
 Output to Compass:
 

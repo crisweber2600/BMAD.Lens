@@ -112,7 +112,7 @@ output: |
   
   [1] small  — Solo dev, fast iteration (1 reviewer)
   [2] medium — Small team, structured reviews (2-3 reviewers)
-  [3] large  — Full team, formal gates (lead + architect review)
+  [3] large  — Full team, formal gates (large + architect review)
 
 size_choice = prompt_user("[1-3]")
 
