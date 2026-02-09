@@ -18,9 +18,9 @@ auto_triggered: true
 ```yaml
 workflow_name: string      # e.g., "discovery", "brainstorm", "product-brief"
 phase: integer             # Phase number: 1, 2, 3, 4
-size: string               # e.g., "small", "large" (read from initiative.size)
 initiative_id: string      # From state.active_initiative
 domain_prefix: string      # From initiative.domain_prefix
+# review_size derived from initiative.review_audience_map["p${phase}"]
 ```
 
 ---
@@ -71,7 +71,7 @@ state = load("_bmad-output/lens-work/state.yaml")
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 initiative_id = initiative.id
 current_phase = state.current.phase
-current_size = initiative.size           # Size from shared initiative config
+review_size = initiative.review_audience_map[current_phase]  # Phase determines review audience
 domain_prefix = initiative.domain_prefix
 ```
 
@@ -83,9 +83,9 @@ previous_workflow=$(get_previous_workflow ${phase} ${workflow_name})
 
 if [ -n "$previous_workflow" ]; then
   # Check if previous workflow is merged into phase branch
-  # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-  phase_branch="${domain_prefix}/${initiative_id}/${size}-${phase}"
-  workflow_branch="${domain_prefix}/${initiative_id}/${size}-${phase}-${previous_workflow}"
+  # Branch pattern: {Domain}/{InitiativeId}-{audience}-p{phaseNumber}
+  phase_branch="${domain_prefix}/${initiative_id}-${review_size}-p${phase}"
+  workflow_branch="${domain_prefix}/${initiative_id}-${review_size}-p${phase}-${previous_workflow}"
   
   git fetch origin ${phase_branch} ${workflow_branch}
   
@@ -104,9 +104,9 @@ fi
 
 ```bash
 # Branch from phase
-# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}-{workflow}
-phase_branch="${domain_prefix}/${initiative_id}/${size}-${phase}"
-workflow_branch="${domain_prefix}/${initiative_id}/${size}-${phase}-${workflow_name}"
+# Branch pattern: {Domain}/{InitiativeId}-{audience}-p{phaseNumber}-{workflow}
+phase_branch="${domain_prefix}/${initiative_id}-${review_size}-p${phase}"
+workflow_branch="${domain_prefix}/${initiative_id}-${review_size}-p${phase}-${workflow_name}"
 
 git checkout "${phase_branch}"
 git pull origin "${phase_branch}"
@@ -125,10 +125,10 @@ current:
   workflow_status: in_progress
 
 branches:
-  active: "${domain_prefix}/${initiative_id}/${size}-${phase}-${workflow_name}"
+  active: "${domain_prefix}/${initiative_id}-${review_size}-p${phase}-${workflow_name}"
 
 gates:
-  - name: "${size}-${phase}-${workflow_name}"
+  - name: "${review_size}-p${phase}-${workflow_name}"
     status: in_progress
     started_at: "${ISO_TIMESTAMP}"
 ```
@@ -136,15 +136,16 @@ gates:
 ### 5. Log Event
 
 ```json
-{"ts":"${ISO_TIMESTAMP}","event":"start-workflow","workflow":"${workflow_name}","branch":"${domain_prefix}/${initiative_id}/${size}-${phase}-${workflow_name}","pushed":true}
+{"ts":"${ISO_TIMESTAMP}","event":"start-workflow","workflow":"${workflow_name}","branch":"${domain_prefix}/${initiative_id}-${review_size}-p${phase}-${workflow_name}","pushed":true}
 ```
 
 ### 6. Output
 
 ```
 ✅ Workflow branch created & pushed
-├── Branch: ${domain_prefix}/${initiative_id}/${size}-${phase}-${workflow_name}
-├── Phase: ${phase}
+├── Branch: ${domain_prefix}/${initiative_id}-${review_size}-p${phase}-${workflow_name}
+├── Phase: p${phase}
+├── Review audience: ${review_size}
 ├── Remote: pushed to origin
 └── Status: in_progress
 ```

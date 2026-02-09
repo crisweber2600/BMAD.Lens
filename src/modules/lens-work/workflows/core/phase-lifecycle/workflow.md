@@ -13,15 +13,16 @@ auto_triggered: true
 
 ## Start Phase
 
-**Purpose:** Create phase branch from size when first workflow of phase begins.
+**Purpose:** Create phase branch from review audience branch when first workflow of phase begins.
 
 ### Input
 
 ```yaml
 phase_number: int          # 1, 2, 3, 4
 phase_name: string         # "Analysis", "Planning", "Solutioning", "Implementation"
-size: string               # "small" or "large"
 initiative_id: string
+# review_size is derived from initiative config:
+# initiative.review_audience_map["p${phase_number}"] → "small" | "medium" | "large"
 ```
 
 ### Sequence
@@ -51,10 +52,15 @@ initiative_id: string
 
 2. **Create Phase Branch**
    ```bash
-   git checkout "bmad/${initiative_id}/${size}"
-   git pull origin "bmad/${initiative_id}/${size}"
-   git checkout -b "bmad/${initiative_id}/${size}/p${phase_number}"
-   git push -u origin "bmad/${initiative_id}/${size}/p${phase_number}"
+   # Derive review audience from initiative config
+   # review_audience_map: {p1: small, p2: medium, p3: large, p4: large}
+   review_size=$(get_review_audience ${phase_number})  # e.g., "small" for p1, "medium" for p2
+   
+   # Phase branch created from review audience branch
+   git checkout "${domain_prefix}/${initiative_id}-${review_size}"
+   git pull origin "${domain_prefix}/${initiative_id}-${review_size}"
+   git checkout -b "${domain_prefix}/${initiative_id}-${review_size}-p${phase_number}"
+   git push -u origin "${domain_prefix}/${initiative_id}-${review_size}-p${phase_number}"
    ```
 
 3. **Update State**
@@ -66,13 +72,13 @@ initiative_id: string
 
 4. **Log Event**
    ```json
-   {"ts":"${ISO_TIMESTAMP}","event":"start-phase","phase":"p${phase_number}","size":"${size}"}
+   {"ts":"${ISO_TIMESTAMP}","event":"start-phase","phase":"p${phase_number}","review_size":"${review_size}"}
    ```
 
 5. **Commit Phase Start**
     ```bash
     # Ensure we're on the new phase branch
-    git checkout "bmad/${initiative_id}/${size}/p${phase_number}"
+    git checkout "${domain_prefix}/${initiative_id}-${review_size}-p${phase_number}"
 
     # Stage state + event log
     git add _bmad-output/lens-work/state.yaml _bmad-output/lens-work/event-log.jsonl
@@ -80,7 +86,7 @@ initiative_id: string
     # Commit only if there are changes
     if ! git diff-index --quiet HEAD --; then
        git commit -m "phase(p${phase_number}): Start ${phase_name} (${initiative_id})"
-       git push origin "bmad/${initiative_id}/${size}/p${phase_number}"
+       git push origin "${domain_prefix}/${initiative_id}-${review_size}-p${phase_number}"
     else
        echo "No phase-start changes to commit."
     fi
@@ -90,7 +96,7 @@ initiative_id: string
 
 ## Finish Phase
 
-**Purpose:** Push phase branch and print PR to size after all workflows complete.
+**Purpose:** Push phase branch and create PR to review audience branch after all workflows complete.
 
 ### Sequence
 
@@ -115,7 +121,8 @@ initiative_id: string
 
 2. **Push Phase Branch**
    ```bash
-   git push origin "bmad/${initiative_id}/${size}/${phase}"
+   review_size=$(get_review_audience ${phase_number})  # e.g., "small" for p1
+   git push origin "${domain_prefix}/${initiative_id}-${review_size}-${phase}"
    ```
 
 3. **Load PAT & Create PR (HARD GATE)**
@@ -143,9 +150,10 @@ initiative_id: string
    ```
 
    ```bash
-   # Create PR: phase → size (using same multi-host logic as finish-workflow)
-   source_branch="bmad/${initiative_id}/${size}/${phase}"
-   target_branch="bmad/${initiative_id}/${size}"
+   # Create PR: phase branch → review audience branch
+   source_branch="${domain_prefix}/${initiative_id}-${review_size}-${phase}"
+   target_branch="${domain_prefix}/${initiative_id}-${review_size}"
+   pr_title="phase(${phase}): Complete ${phase_name} for ${initiative_id} [${review_size} review]"
    
    if [[ "$remote_url" == *"github.com"* ]]; then
      org_repo=$(echo "$remote_url" | sed -E 's|https://github\.com/||; s|\.git$||')
@@ -155,14 +163,15 @@ initiative_id: string
        --repo "${org_repo}" \
        --base "${target_branch}" \
        --head "${source_branch}" \
-       --title "phase(${phase}): Complete ${phase_name} for ${initiative_id}" \
+       --title "phase(${phase}): Complete ${phase_name} for ${initiative_id} [${review_size} review]" \
        --body "## Phase Complete: ${phase_name}
 
    **Initiative:** ${initiative_id}
    **Phase:** ${phase} (${phase_name})
-   **Size:** ${size}
+   **Review audience:** ${review_size}
    
    All workflows in this phase have been completed and merged.
+   Review audience: ${review_size}
    
    ---
    *Created automatically by lens-work phase-lifecycle*" 2>&1)
@@ -190,7 +199,7 @@ initiative_id: string
        -H "PRIVATE-TOKEN: ${pat}" \
        -d "source_branch=${source_branch}" \
        -d "target_branch=${target_branch}" \
-       -d "title=phase(${phase}): Complete ${phase_name} for ${initiative_id}")
+       -d "title=phase(${phase}): Complete ${phase_name} for ${initiative_id} [${review_size} review]")
      pr_url=$(echo "$pr_result" | jq -r '.web_url // empty')
      if [ -z "$pr_url" ]; then
        echo "❌ HARD GATE: MR creation failed"
@@ -205,7 +214,7 @@ initiative_id: string
        "https://dev.azure.com/${ado_org}/${ado_project}/_apis/git/repositories/${ado_repo}/pullrequests?api-version=7.0" \
        -H "Authorization: Basic $(echo -n ":${pat}" | base64)" \
        -H "Content-Type: application/json" \
-       -d "{\"sourceRefName\":\"refs/heads/${source_branch}\",\"targetRefName\":\"refs/heads/${target_branch}\",\"title\":\"phase(${phase}): Complete ${phase_name}\"}")
+       -d "{\"sourceRefName\":\"refs/heads/${source_branch}\",\"targetRefName\":\"refs/heads/${target_branch}\",\"title\":\"phase(${phase}): Complete ${phase_name} [${review_size} review]\"}")
      pr_url=$(echo "$pr_result" | jq -r '.url // empty')
      if [ -z "$pr_url" ]; then
        echo "❌ HARD GATE: PR creation failed"
@@ -228,15 +237,15 @@ initiative_id: string
 5. **Commit Phase Finish**
    ```bash
    # Ensure we're on the phase branch
-   git checkout "bmad/${initiative_id}/${size}/${phase}"
+   git checkout "${domain_prefix}/${initiative_id}-${review_size}-${phase}"
 
    # Stage state + event log
    git add _bmad-output/lens-work/state.yaml _bmad-output/lens-work/event-log.jsonl
 
    # Commit only if there are changes
    if ! git diff-index --quiet HEAD --; then
-     git commit -m "phase(${phase}): Finish ${initiative_id} phase"
-     git push origin "bmad/${initiative_id}/${size}/${phase}"
+     git commit -m "phase(${phase}): Finish ${initiative_id} phase [${review_size} review]"
+     git push origin "${domain_prefix}/${initiative_id}-${review_size}-${phase}"
    else
      echo "No phase-finish changes to commit."
    fi
@@ -246,6 +255,7 @@ initiative_id: string
    ```
    ✅ Phase ${phase} complete
    ├── All workflows merged
+   ├── Review audience: ${review_size}
    ├── PR Created: ${pr_url}
    ├── HARD GATE: PR must be merged before next phase can proceed
    └── Ready for next phase (after PR merge)
@@ -253,36 +263,29 @@ initiative_id: string
 
 ---
 
-## Open Large Review
+## Review Audience Escalation
 
-**Trigger:** Phase 2 complete + architecture workflow merged
+When all phases within a review audience are complete, content flows up:
 
-**Purpose:** Open PR from small → large for large review.
-
-```bash
-# Validate p2 complete
-if phase_complete "p2"; then
-  pr_link="${remote}/compare/large...small"
-  echo "🔍 Large Review Ready"
-  echo "├── PR: ${pr_link}"
-  echo "└── Assign large reviewers"
-fi
+```
+small (p1 merged) → medium gets p1 content via base merge-up
+medium (p2 merged) → large gets p1+p2 content via base merge-up
+large (p3+p4 merged) → base gets everything via final review PR
 ```
 
----
+### Open Final Review
 
-## Open Final PBR
+**Trigger:** All phases complete (p4 merged to large)
 
-**Trigger:** Large review merged
-
-**Purpose:** Open PR from large → base for final product backlog review.
+**Purpose:** Open PR from large → base for final product review.
 
 ```bash
-# Validate large merged from small
-if large_merged_from_small; then
-  pr_link="${remote}/compare/base...large"
-  echo "📋 Final PBR Ready"
+# Validate all phases complete
+if all_phases_complete; then
+  pr_link="${remote}/compare/base...${domain_prefix}/${initiative_id}-large"
+  echo "📋 Final Review Ready"
   echo "├── PR: ${pr_link}"
-  echo "└── Ready for implementation planning"
+  echo "├── All phases complete (p1-p4)"
+  echo "└── Ready for final product review"
 fi
 ```

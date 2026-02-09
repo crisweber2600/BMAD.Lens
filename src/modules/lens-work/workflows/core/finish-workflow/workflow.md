@@ -28,15 +28,15 @@ commit_message: string     # Optional custom message
 
 ```bash
 # Verify we're on a workflow branch
-# New pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}-{workflow}
+# New pattern: {Domain}/{InitiativeId}-{audience}-p{phaseNumber}-{workflow}
 current_branch=$(git branch --show-current)
 
-# Branch must have at least 3 segments separated by / and the last segment must contain-dashes
-# Valid: MyDomain/my-init-abc123/small-1-brainstorm
+# Branch must have the format: {Domain}/{id}-{audience}-p{N}-{workflow}
+# Valid: MyDomain/my-init-abc123-small-p1-brainstorm
 # Invalid: main, MyDomain/my-init-abc123/base
-if [[ ! "$current_branch" =~ ^[^/]+/[^/]+/[a-z]+-[0-9]+-[a-z0-9-]+$ ]]; then
+if [[ ! "$current_branch" =~ ^[^/]+/.+-[a-z]+-p[0-9]+-[a-z0-9-]+$ ]]; then
   error "Not on a workflow branch: $current_branch"
-  error "Expected pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}-{workflow}"
+  error "Expected pattern: {Domain}/{InitiativeId}-{audience}-p{N}-{workflow}"
   exit 1
 fi
 
@@ -74,18 +74,24 @@ git push -u origin "${current_branch}"
 # Detect remote type
 remote_url=$(git remote get-url origin)
 
-# Parse components from new branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}-{workflow}
+# Parse components from branch pattern: {Domain}/{id}-{audience}-p{N}-{workflow}
+# The domain_prefix is before the first /
+# The rest is {initiative_id}-{audience}-p{N}-{workflow}
 domain_prefix=$(echo ${current_branch} | cut -d'/' -f1)
-initiative_id=$(echo ${current_branch} | cut -d'/' -f2)
-branch_segment=$(echo ${current_branch} | cut -d'/' -f3)
+branch_rest=$(echo ${current_branch} | cut -d'/' -f2-)
 
-# Parse size, phase, workflow from the branch segment (e.g., "small-1-brainstorm")
-size=$(echo ${branch_segment} | cut -d'-' -f1)
-phase=$(echo ${branch_segment} | cut -d'-' -f2)
-workflow=$(echo ${branch_segment} | cut -d'-' -f3-)
+# Parse from the end: workflow is after last -p{N}-
+# Pattern: {id}-{audience}-p{N}-{workflow}
+# e.g., rate-limit-x7k2m9-small-p1-brainstorm
+# Extract phase: find -p{N}- pattern
+phase_segment=$(echo ${branch_rest} | grep -oP 'p[0-9]+')
+review_size=$(echo ${branch_rest} | sed -E "s/.*-(small|medium|large)-p[0-9]+-.*/\1/")
+workflow=$(echo ${branch_rest} | sed -E "s/.*-p[0-9]+-//")
+initiative_segment=$(echo ${branch_rest} | sed -E "s/-(small|medium|large)-p[0-9]+-.*//)")
 
-# Target is the phase branch (same but without workflow suffix)
-target_branch="${domain_prefix}/${initiative_id}/${size}-${phase}"
+# Target is the phase branch (without workflow suffix)
+# e.g., {Domain}/{id}-{audience}-p{N}
+target_branch="${domain_prefix}/${initiative_segment}-${review_size}-${phase_segment}"
 source_branch="${current_branch}"
 
 # Generate PR link based on remote type
@@ -143,8 +149,8 @@ if [[ "$remote_url" == *"github.com"* ]]; then
     --body "## Workflow Complete: ${workflow_name}
 
 **Initiative:** ${initiative_id}
-**Phase:** ${phase}
-**Size:** ${size}
+**Phase:** ${phase_segment}
+**Review audience:** ${review_size}
 **Branch:** ${source_branch} → ${target_branch}
 
 ### Changes
@@ -230,42 +236,46 @@ echo "✅ PR created: ${pr_url}"
 
 ```yaml
 # Determine next phase branch
-# Current: {domain}/{id}/{size}-{phase}-{workflow}
-# Next phase branch: {domain}/{id}/{size}-{phase+1}
-next_phase = int(phase) + 1
+# Current: {domain}/{id}-{audience}-p{N}-{workflow}
+# Next phase: needs review_audience_map lookup for next phase
+next_phase_number = int(phase_segment.replace("p", "")) + 1
 
 # Phase map for branch naming
 phase_max = 4  # 4 phases: Analysis, Planning, Solutioning, Implementation
 
-if next_phase <= phase_max:
-  next_branch = "${domain_prefix}/${initiative_id}/${size}-${next_phase}"
+# Look up next review audience from initiative config
+# review_audience_map: {p1: small, p2: medium, p3: large, p4: large}
+if next_phase_number <= phase_max:
+  next_review_size = initiative.review_audience_map["p${next_phase_number}"]
+  next_branch = "${domain_prefix}/${initiative_segment}-${next_review_size}-p${next_phase_number}"
   
   output: |
     🔄 Advancing to next phase branch...
     ├── Current: ${current_branch}
-    └── Next: ${next_branch}
+    ├── Next: ${next_branch}
+    └── Review audience escalation: ${review_size} → ${next_review_size}
 ```
 
 ```bash
 # Only advance if not on the last phase
-if [ ${next_phase} -le ${phase_max} ]; then
+if [ ${next_phase_number} -le ${phase_max} ]; then
   # Check if next phase branch exists
   if git rev-parse --verify "origin/${next_branch}" >/dev/null 2>&1; then
     git checkout "${next_branch}"
     git pull origin "${next_branch}"
     echo "✅ Switched to: ${next_branch}"
   else
-    # Create next phase branch from size branch
-    size_branch="${domain_prefix}/${initiative_id}/${size}"
-    git checkout "${size_branch}"
-    git pull origin "${size_branch}"
+    # Create next phase branch from its review audience branch
+    audience_branch="${domain_prefix}/${initiative_segment}-${next_review_size}"
+    git checkout "${audience_branch}"
+    git pull origin "${audience_branch}"
     git checkout -b "${next_branch}"
     git push -u origin "${next_branch}"
     echo "✅ Created and switched to: ${next_branch}"
   fi
 else
   echo "ℹ️ Final phase reached. Staying on current branch."
-  echo "└── Next: Merge phase branch into ${size} via PR"
+  echo "└── Next: Merge phase branch into ${review_size} audience via PR"
 fi
 ```
 
@@ -274,7 +284,7 @@ fi
 ```yaml
 # Update gates in state.yaml
 gates:
-  - name: "${size}-${phase}-${workflow}"
+  - name: "${review_size}-${phase_segment}-${workflow}"
     status: completed
     completed_at: "${ISO_TIMESTAMP}"
     pr_url: "${pr_url}"
@@ -317,4 +327,4 @@ current:
 | **PR creation failed** | **HARD GATE: Fix issue and re-run finish-workflow** |
 | **PR already exists** | Use existing PR URL, continue |
 | Next branch exists | Checkout and pull latest |
-| Next branch missing | Create from size branch |
+| Next branch missing | Create from review audience branch |
