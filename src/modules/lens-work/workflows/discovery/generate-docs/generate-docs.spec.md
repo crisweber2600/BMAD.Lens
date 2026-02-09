@@ -53,10 +53,11 @@ installed_path: '{project-root}/_bmad/lens-work/workflows/generate-docs'
 
 - Analysis results from analyze-codebase
 - `docs_output_path`
+- Target selection: `domain` and `service` (from target selection in analyze-codebase or discover workflows)
 
 ### Optional Inputs
 
-- Target selection (domain/service/microservice)
+- Target microservice name
 
 ---
 
@@ -69,12 +70,12 @@ installed_path: '{project-root}/_bmad/lens-work/workflows/generate-docs'
 
 ### Output Structure
 
-**IMPORTANT:** Documentation is written to `lens-sync/{target.name}/` under the configured `docs_output_path`.
+**IMPORTANT:** Documentation is written to `{domain}/{service}/` under the configured `docs_output_path`.
 
 ```
 {docs_output_path}/
-└── lens-sync/
-    └── {target.name}/
+└── {domain}/
+    └── {service}/
         ├── architecture.md
         ├── api-surface.md
         ├── data-model.md
@@ -85,12 +86,12 @@ installed_path: '{project-root}/_bmad/lens-work/workflows/generate-docs'
 
 ### Output Files
 
-- `{docs_output_path}/lens-sync/{target.name}/architecture.md`
-- `{docs_output_path}/lens-sync/{target.name}/api-surface.md`
-- `{docs_output_path}/lens-sync/{target.name}/data-model.md`
-- `{docs_output_path}/lens-sync/{target.name}/integration-map.md`
-- `{docs_output_path}/lens-sync/{target.name}/onboarding.md`
-- `{docs_output_path}/lens-sync/{target.name}/migration-map.md`
+- `{docs_output_path}/{domain}/{service}/architecture.md`
+- `{docs_output_path}/{domain}/{service}/api-surface.md`
+- `{docs_output_path}/{domain}/{service}/data-model.md`
+- `{docs_output_path}/{domain}/{service}/integration-map.md`
+- `{docs_output_path}/{domain}/{service}/onboarding.md`
+- `{docs_output_path}/{domain}/{service}/migration-map.md`
 
 ---
 
