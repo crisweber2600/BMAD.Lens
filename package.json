@@ -1,4 +1,8 @@
 {
+  "name": "bmad-lens",
+  "version": "1.0.0",
+  "description": "A guided lifecycle router with git-orchestrated discipline for the BMAD framework",
+  "license": "MIT",
   "dependencies": {
     "bmad-method": "^6.0.0-Beta.7"
   }
