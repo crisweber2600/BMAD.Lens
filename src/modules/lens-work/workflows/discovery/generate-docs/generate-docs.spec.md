@@ -53,10 +53,11 @@ installed_path: '{project-root}/_bmad/lens-work/workflows/generate-docs'
 
 - Analysis results from analyze-codebase
 - `docs_output_path`
+- Target selection: `domain` and `service` (from target selection in analyze-codebase or discover workflows)
 
 ### Optional Inputs
 
-- Target selection (domain/service/microservice)
+- Target microservice name
 
 ---
 
