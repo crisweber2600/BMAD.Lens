@@ -72,7 +72,7 @@ This section provides practical examples for using LENS Sync & Discovery.
 2. Select target service
 
 **Expected Output:**
-`{docs_output_folder}/lens-sync/{target}/architecture.md` and related docs.
+`{docs_output_folder}/{target}/architecture.md` and related docs.
 
 ---
 
@@ -81,7 +81,7 @@ This section provides practical examples for using LENS Sync & Discovery.
 1. `Scout, analyze-codebase`
 2. Select target service
 
-**Expected Output:** `{docs_output_folder}/lens-sync/{target}/analysis-summary.md`
+**Expected Output:** `{docs_output_folder}/{target}/analysis-summary.md`
 
 ---
 
@@ -91,7 +91,7 @@ This section provides practical examples for using LENS Sync & Discovery.
 2. Run `Scout, generate-docs`
 
 **Expected Output:**
-`{docs_output_folder}/lens-sync/{target}/architecture.md`, `api-surface.md`, `data-model.md`, `integration-map.md`, `onboarding.md`
+`{docs_output_folder}/{target}/architecture.md`, `api-surface.md`, `data-model.md`, `integration-map.md`, `onboarding.md`
 
 ---
 

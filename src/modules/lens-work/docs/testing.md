@@ -21,7 +21,7 @@ For each workflow, validate preflight, execution, and report output:
 - [ ] `bootstrap` generates `bootstrap-report.md`
 - [ ] `sync-status` generates `sync-status-report.md`
 - [ ] `reconcile` generates `reconcile-report.md`
-- [ ] `discover` generates doc bundle under `lens-sync/{target}`
+- [ ] `discover` generates doc bundle under `{target}`
 - [ ] `analyze-codebase` generates `{target}/analysis-summary.md`
 - [ ] `generate-docs` writes `architecture.md`, `api-surface.md`, `data-model.md`, `integration-map.md`, `onboarding.md`
 - [ ] `lens-sync` generates `lens-sync-report.md`

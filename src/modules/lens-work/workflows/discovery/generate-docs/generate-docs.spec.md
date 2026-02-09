@@ -69,28 +69,27 @@ installed_path: '{project-root}/_bmad/lens-work/workflows/generate-docs'
 
 ### Output Structure
 
-**IMPORTANT:** Documentation is written to `lens-sync/{target.name}/` under the configured `docs_output_path`.
+**IMPORTANT:** Documentation is written to `{target.name}/` under the configured `docs_output_path`.
 
 ```
 {docs_output_path}/
-└── lens-sync/
-    └── {target.name}/
-        ├── architecture.md
-        ├── api-surface.md
-        ├── data-model.md
-        ├── integration-map.md
-        ├── onboarding.md
-        └── migration-map.md
+└── {target.name}/
+    ├── architecture.md
+    ├── api-surface.md
+    ├── data-model.md
+    ├── integration-map.md
+    ├── onboarding.md
+    └── migration-map.md
 ```
 
 ### Output Files
 
-- `{docs_output_path}/lens-sync/{target.name}/architecture.md`
-- `{docs_output_path}/lens-sync/{target.name}/api-surface.md`
-- `{docs_output_path}/lens-sync/{target.name}/data-model.md`
-- `{docs_output_path}/lens-sync/{target.name}/integration-map.md`
-- `{docs_output_path}/lens-sync/{target.name}/onboarding.md`
-- `{docs_output_path}/lens-sync/{target.name}/migration-map.md`
+- `{docs_output_path}/{target.name}/architecture.md`
+- `{docs_output_path}/{target.name}/api-surface.md`
+- `{docs_output_path}/{target.name}/data-model.md`
+- `{docs_output_path}/{target.name}/integration-map.md`
+- `{docs_output_path}/{target.name}/onboarding.md`
+- `{docs_output_path}/{target.name}/migration-map.md`
 
 ---
 
