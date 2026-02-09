@@ -298,4 +298,4 @@ Resolved: _bmad-output/planning-artifacts/rate-limit-x7k2m9/p2-prd.md
 
 - **artifact-validator.md** — Validates artifacts at these paths
 - **jira-integration.md** — CSV files stored in planning-artifacts
-- **lane-topology.md** — Branch structure artifacts are committed to
+- **size-topology.md** — Branch structure artifacts are committed to

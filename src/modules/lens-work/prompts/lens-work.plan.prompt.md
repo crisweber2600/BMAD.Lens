@@ -13,7 +13,7 @@ Use `#think` before story breakdown or acceptance criteria definition.
 
 **Prerequisites:**
 - `/spec` phase complete (Phase 2 merged)
-- Architecture approved by lead review
+- Architecture approved by large review
 
 **Authorized Roles:** PO, Architect, Tech Lead
 

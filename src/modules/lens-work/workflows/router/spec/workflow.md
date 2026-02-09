@@ -41,8 +41,8 @@ invoke: casey.verify-clean-state
 state = load("_bmad-output/lens-work/state.yaml")
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 
-# Read lane from initiative config (shared, canonical)
-lane = initiative.lane
+# Read size from initiative config (shared, canonical)
+size = initiative.size
 domain_prefix = initiative.domain_prefix
 
 # === Path Resolver (S01-S06: Context Enhancement) ===
@@ -74,7 +74,7 @@ else:
 
 # Validate we're on the correct branch (or can switch)
 # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-expected_branch: "${domain_prefix}/${initiative.id}/${lane}-2"
+expected_branch: "${domain_prefix}/${initiative.id}/${size}-2"
 current_branch = casey.get-current-branch()
 
 if current_branch != expected_branch:
@@ -91,12 +91,12 @@ if current_branch != expected_branch:
 ```yaml
 # Gate check — verify P1 (Analysis/Pre-Plan) artifacts exist
 # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-p1_branch = "${domain_prefix}/${initiative.id}/${lane}-1"
+p1_branch = "${domain_prefix}/${initiative.id}/${size}-1"
 
 if not phase_complete("p1"):
-  # Ancestry check: P1 must be merged into lane
-  lane_branch = "${domain_prefix}/${initiative.id}/${lane}"
-  result = casey.exec("git merge-base --is-ancestor origin/${p1_branch} origin/${lane_branch}")
+  # Ancestry check: P1 must be merged into size branch
+  size_branch = "${domain_prefix}/${initiative.id}/${size}"
+  result = casey.exec("git merge-base --is-ancestor origin/${p1_branch} origin/${size_branch}")
   
   if result.exit_code != 0:
     error: "Phase 1 (Analysis) not complete. Run /pre-plan first or merge pending PRs."
@@ -115,31 +115,63 @@ for artifact in required_artifacts:
       warning: "Required artifact not found: ${artifact}. Proceeding but spec quality may suffer."
 ```
 
+### 1a. Constitution Compliance Gate (ADVISORY)
+
+```yaml
+# Invoke compliance-check to verify inherited constitution constraints
+# Mode: ADVISORY (log warnings, do not block)
+invoke: lens-work.compliance-check
+params:
+  phase: "p2"
+  phase_name: "Planning"
+  initiative_id: ${initiative.id}
+  target_repos: ${initiative.target_repos}
+  mode: "ADVISORY"
+
+# Compliance check logs findings to _bmad-output/lens-work/compliance-reports/
+# Warnings are surfaced to user but do not block workflow progression
+```
+
 ### 2. Start Phase 2 — Auto-Branch Creation
 
 ```yaml
 # Casey creates P2 branch if it doesn't exist
 # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-if not branch_exists("${domain_prefix}/${initiative.id}/${lane}-2"):
+if not branch_exists("${domain_prefix}/${initiative.id}/${size}-2"):
   invoke: casey.start-phase
   params:
     phase_number: 2
     phase_name: "Planning"
     initiative_id: ${initiative.id}
-    lane: ${lane}
+    size: ${size}
     domain_prefix: ${domain_prefix}
-  # Casey creates: ${domain_prefix}/{initiative_id}/{lane}-2 and pushes to remote
+  # Casey creates: ${domain_prefix}/{initiative_id}/{size}-2 and pushes to remote
 
   invoke: casey.pull-latest
 else:
   # Branch exists, ensure we're on it
   invoke: casey.checkout-branch
   params:
-    branch: "${domain_prefix}/${initiative.id}/${lane}-2"
+    branch: "${domain_prefix}/${initiative.id}/${size}-2"
   invoke: casey.pull-latest
 ```
 
-### 2a. Batch Mode (Single-File Questions)
+### 2a. Constitutional Context Injection (Required)
+
+```yaml
+# Resolve constitutional governance for this context before planning workflows
+constitutional_context = invoke("scribe.resolve-context")
+
+if constitutional_context.status == "parse_error":
+  error: |
+    Constitutional context parse error:
+    ${constitutional_context.error_details.file}
+    ${constitutional_context.error_details.error}
+
+session.constitutional_context = constitutional_context
+```
+
+### 2b. Batch Mode (Single-File Questions)
 
 ```yaml
 if initiative.question_mode == "batch":
@@ -178,6 +210,7 @@ invoke: bmm.create-prd
 params:
   product_brief: "${docs_path}/product-brief.md"
   output_path: "${docs_path}/"
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```
@@ -189,6 +222,8 @@ params:
   workflow_name: ux-design
 
 invoke: bmm.create-ux-design
+params:
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```
@@ -205,6 +240,7 @@ params:
   prd: "${docs_path}/prd.md"
   product_brief: "${docs_path}/product-brief.md"
   output_path: "${docs_path}/"
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```
@@ -248,7 +284,7 @@ params:
   updates:
     current_phase: "p2"
     current_phase_name: "Planning"
-    active_branch: "${domain_prefix}/${initiative.id}/${lane}-2"
+    active_branch: "${domain_prefix}/${initiative.id}/${size}-2"
 ```
 
 ### 7. Commit State Changes
@@ -263,7 +299,7 @@ params:
     - "_bmad-output/lens-work/event-log.jsonl"
     - "${docs_path}/"
   message: "[lens-work] /spec: Phase 2 Planning — ${initiative.id}"
-  branch: "${domain_prefix}/${initiative.id}/${lane}-2"
+  branch: "${domain_prefix}/${initiative.id}/${size}-2"
 ```
 
 ### 8. Log Event
@@ -302,7 +338,7 @@ params:
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{lane}-2`
+- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{size}-2`
 - [ ] state.yaml updated with phase p2
 - [ ] initiatives/{id}.yaml updated with p2 status and p1 gate passed
 - [ ] event-log.jsonl entry appended

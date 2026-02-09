@@ -40,28 +40,28 @@ LENS Workbench maintains all runtime state in exactly two files — no database,
 
 ```
 _bmad-output/lens-work/
-├── state.yaml          ← Current initiative context, phase, lane, gate status
+├── state.yaml          ← Current initiative context, phase, size, gate status
 └── event-log.jsonl     ← Append-only audit trail of every lifecycle event
 ```
 
-**`state.yaml`** is the single source of truth for "where are we now?" — active initiative, current phase, lane, workflow status, and gate progression. Every workflow reads it at start and writes it at end.
+**`state.yaml`** is the single source of truth for "where are we now?" — active initiative, current phase, size, workflow status, and gate progression. Every workflow reads it at start and writes it at end.
 
 **`event-log.jsonl`** is the immutable history. Each line is a timestamped JSON event recording what happened, who did it, and what changed. Used for recovery, auditing, and telemetry dashboards.
 
 ### Branch Topology
 
-Git branches mirror the BMAD lifecycle. See `workflows/includes/lane-topology.md` for the full specification.
+Git branches mirror the BMAD lifecycle. See `workflows/includes/size-topology.md` for the full specification.
 
 ```
 main
 └── {domain_prefix}/{initiative_id}/base      ← Initiative baseline
-    ├── {domain_prefix}/{initiative_id}/small ← Small lane
+    ├── {domain_prefix}/{initiative_id}/small ← Small size
     │   ├── .../small-1                       ← Phase 1 (Analysis)
     │   │   └── .../small-1-{workflow}        ← Workflow branch
     │   ├── .../small-2                       ← Phase 2 (Planning)
     │   ├── .../small-3                       ← Phase 3 (Solutioning)
     │   └── .../small-4                       ← Phase 4 (Implementation)
-    └── {domain_prefix}/{initiative_id}/large ← Large review lane
+    └── {domain_prefix}/{initiative_id}/large ← Large review size
 ```
 
 **Key design principle:** You can reconstruct the entire project lifecycle from the git log alone.
@@ -102,18 +102,18 @@ P0 (Bootstrap)  →  P1 (Analysis)  →  P2 (Planning)  →  P3 (Solutioning)  �
 
 Gates enforce quality and authorization between phases:
 
-1. **Lead Review** (`open-lead-review`) — PO/Architect reviews phase artifacts before transition
+1. **Large Review** (`open-large-review`) — PO/Architect reviews phase artifacts before transition
 2. **Final PBR** (`open-final-pbr`) — Full team review at solutioning completion
 3. **Phase Transition** (`phase-transition`) — Automated state update when gate passes
 
-### Lane Management
+### Size Management
 
-| Lane | Use Case | Branch Pattern |
+| Size | Use Case | Branch Pattern |
 |------|----------|----------------|
-| **small** | Solo developer, small features | `lens/{id}/small/p{n}` |
-| **lead** | Team work, requires reviews | `lens/{id}/lead/p{n}` |
+| **small** | Solo developer, small features | `{domain}/{id}/small-{n}` |
+| **large** | Team work, requires reviews | `{domain}/{id}/large-{n}` |
 
-Lane is selected during `init-initiative` based on initiative complexity and team size.
+Size is selected during `init-initiative` based on initiative complexity and team size.
 
 ---
 
@@ -135,8 +135,8 @@ Lane is selected during `init-initiative` based on initiative complexity and tea
 
 | Command | Agent | Description |
 |---------|-------|-------------|
-| `/switch` | Compass | Switch context — initiative, lens, phase, or lane |
-| `/context` | Compass | Display current context (active initiative, phase, lane, workflow) |
+| `/switch` | Compass | Switch context — initiative, lens, phase, or size |
+| `/context` | Compass | Display current context (active initiative, phase, size, workflow) |
 | `/constitution` | Compass | Display operating rules and compliance constraints |
 | `/lens` | Compass | Show or change the current lens focus |
 
@@ -228,7 +228,7 @@ Lane is selected during `init-initiative` based on initiative complexity and tea
 
 # You're now in auth-refactor context
 /context
-# → Initiative: auth-refactor-b3j1 | Phase: P1 | Lane: small
+# → Initiative: auth-refactor-b3j1 | Phase: P1 | Size: small
 ```
 
 ### Checking Status
@@ -347,7 +347,7 @@ lens-work/
 │   │   ├── phase-transition/           # Transition between phases
 │   │   ├── start-phase/                # Begin a new phase
 │   │   ├── finish-phase/               # Complete a phase
-│   │   ├── open-lead-review/           # Open lead review gate
+│   │   ├── open-large-review/           # Open large review gate
 │   │   └── open-final-pbr/             # Open final PBR gate
 │   │
 │   ├── router/                          # Phase router commands (user-facing)
@@ -380,7 +380,7 @@ lens-work/
 │   │   └── migrate-state/              # Migrate state format
 │   │
 │   └── includes/                        # Shared reference files
-│       ├── lane-topology.md             # Lane & branch rules
+│       ├── size-topology.md             # Size & branch rules
 │       ├── jira-integration.md          # Jira workflow mapping
 │       ├── gate-event-template.md       # Gate event format
 │       ├── pr-links.md                  # PR linking conventions

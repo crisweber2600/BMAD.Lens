@@ -10,7 +10,7 @@ phase_name: Solutioning
 
 # /plan — Solutioning Phase Router
 
-**Purpose:** Complete the Solutioning phase with Epics, Stories, and Readiness checklist.
+**Purpose:** Complete the Solutioning phase with Epics, Stories, and Readiness checklist, including mandatory adversarial and party-mode stress tests for epic quality.
 
 ---
 
@@ -41,8 +41,8 @@ invoke: casey.verify-clean-state
 state = load("_bmad-output/lens-work/state.yaml")
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 
-# Read lane from initiative config (shared, canonical)
-lane = initiative.lane
+# Read size from initiative config (shared, canonical)
+size = initiative.size
 domain_prefix = initiative.domain_prefix
 
 # === Path Resolver (S01-S06: Context Enhancement) ===
@@ -77,7 +77,7 @@ else:
 
 # Validate we're on the correct branch (or can switch)
 # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-expected_branch: "${domain_prefix}/${initiative.id}/${lane}-3"
+expected_branch: "${domain_prefix}/${initiative.id}/${size}-3"
 current_branch = casey.get-current-branch()
 
 if current_branch != expected_branch:
@@ -94,11 +94,11 @@ if current_branch != expected_branch:
 ```yaml
 # Gate check — verify P2 (Spec/Planning) is complete
 # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-p2_branch = "${domain_prefix}/${initiative.id}/${lane}-2"
-lane_branch = "${domain_prefix}/${initiative.id}/${lane}"
+p2_branch = "${domain_prefix}/${initiative.id}/${size}-2"
+size_branch = "${domain_prefix}/${initiative.id}/${size}"
 
-# Ancestry check: P2 must be merged into lane
-result = casey.exec("git merge-base --is-ancestor origin/${p2_branch} origin/${lane_branch}")
+# Ancestry check: P2 must be merged into size branch
+result = casey.exec("git merge-base --is-ancestor origin/${p2_branch} origin/${size_branch}")
 
 if result.exit_code != 0:
   error: "Phase 2 (Planning) not complete. Run /spec first or merge pending PRs."
@@ -122,31 +122,63 @@ for artifact in required_artifacts:
       warning: "Required artifact not found: ${artifact}."
 ```
 
+### 1a. Constitution Compliance Gate (ADVISORY)
+
+```yaml
+# Invoke compliance-check to verify inherited constitution constraints
+# Mode: ADVISORY (log warnings, do not block)
+invoke: lens-work.compliance-check
+params:
+  phase: "p3"
+  phase_name: "Solutioning"
+  initiative_id: ${initiative.id}
+  target_repos: ${initiative.target_repos}
+  mode: "ADVISORY"
+
+# Compliance check logs findings to _bmad-output/lens-work/compliance-reports/
+# Warnings are surfaced to user but do not block workflow progression
+```
+
 ### 2. Start Phase 3 — Auto-Branch Creation
 
 ```yaml
 # Casey creates P3 branch if it doesn't exist
 # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-if not branch_exists("${domain_prefix}/${initiative.id}/${lane}-3"):
+if not branch_exists("${domain_prefix}/${initiative.id}/${size}-3"):
   invoke: casey.start-phase
   params:
     phase_number: 3
     phase_name: "Solutioning"
     initiative_id: ${initiative.id}
-    lane: ${lane}
+    size: ${size}
     domain_prefix: ${domain_prefix}
-  # Casey creates: ${domain_prefix}/{initiative_id}/{lane}-3 and pushes to remote
+  # Casey creates: ${domain_prefix}/{initiative_id}/{size}-3 and pushes to remote
 
   invoke: casey.pull-latest
 else:
   # Branch exists, ensure we're on it
   invoke: casey.checkout-branch
   params:
-    branch: "${domain_prefix}/${initiative.id}/${lane}-3"
+    branch: "${domain_prefix}/${initiative.id}/${size}-3"
   invoke: casey.pull-latest
 ```
 
-### 2a. Batch Mode (Single-File Questions)
+### 2a. Constitutional Context Injection (Required)
+
+```yaml
+# Resolve constitutional governance for this context before solutioning workflows
+constitutional_context = invoke("scribe.resolve-context")
+
+if constitutional_context.status == "parse_error":
+  error: |
+    Constitutional context parse error:
+    ${constitutional_context.error_details.file}
+    ${constitutional_context.error_details.error}
+
+session.constitutional_context = constitutional_context
+```
+
+### 2b. Batch Mode (Single-File Questions)
 
 ```yaml
 if initiative.question_mode == "batch":
@@ -173,10 +205,45 @@ params:
   architecture: "${docs_path}/architecture.md"
   prd: "${docs_path}/prd.md"
   output_path: "${docs_path}/"
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```
 
+#### Epic Stress Gate (Required: Adversarial + Party Mode):
+```yaml
+# Run adversarial + party-mode teardown for EACH generated epic
+epic_ids = extract_epic_ids("_bmad-output/planning-artifacts/epics.md")
+
+for epic_id in epic_ids:
+  readiness_adversarial = invoke("bmm.check-implementation-readiness")
+  params:
+    mode: "adversarial"
+    scope: "epic"
+    epic_id: ${epic_id}
+    prd: "_bmad-output/planning-artifacts/prd.md"
+    architecture: "_bmad-output/planning-artifacts/architecture.md"
+    epics: "_bmad-output/planning-artifacts/epics.md"
+    constitutional_context: ${constitutional_context}
+
+  if readiness_adversarial.status in ["blocked", "fail"]:
+    error: |
+      Epic adversarial review failed for ${epic_id}.
+      Resolve implementation-readiness findings before continuing.
+
+  invoke: core.party-mode
+  params:
+    input_file: "_bmad-output/planning-artifacts/epics.md"
+    focus_epic: ${epic_id}
+    artifacts_path: "_bmad-output/planning-artifacts/"
+    output_file: "_bmad-output/planning-artifacts/epic-${epic_id}-party-mode-review.md"
+    constitutional_context: ${constitutional_context}
+
+  if party_mode.status not in ["pass", "complete"]:
+    error: |
+      Epic party-mode review flagged unresolved issues for ${epic_id}.
+      Address _bmad-output/planning-artifacts/epic-${epic_id}-party-mode-review.md and re-run /plan.
+```
 #### Stories — Story Breakdown Integration:
 ```yaml
 invoke: casey.start-workflow
@@ -189,6 +256,7 @@ params:
   epics: "${docs_path}/epics.md"
   architecture: "${docs_path}/architecture.md"
   output_path: "${docs_path}/"
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```
@@ -208,6 +276,7 @@ params:
     - epics.md
     - stories.md
   output_path: "${docs_path}/"
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```
@@ -255,7 +324,7 @@ params:
   updates:
     current_phase: "p3"
     current_phase_name: "Solutioning"
-    active_branch: "${domain_prefix}/${initiative.id}/${lane}-3"
+    active_branch: "${domain_prefix}/${initiative.id}/${size}-3"
 ```
 
 ### 6. Commit State Changes
@@ -270,7 +339,7 @@ params:
     - "_bmad-output/lens-work/event-log.jsonl"
     - "${docs_path}/"
   message: "[lens-work] /plan: Phase 3 Solutioning — ${initiative.id}"
-  branch: "${domain_prefix}/${initiative.id}/${lane}-3"
+  branch: "${domain_prefix}/${initiative.id}/${size}-3"
 ```
 
 ### 7. Log Event
@@ -286,6 +355,8 @@ params:
 | Artifact | Location |
 |----------|----------|
 | Epics | `${docs_path}/epics.md` |
+| Epic Party-Mode Review | `_bmad-output/planning-artifacts/epic-*-party-mode-review.md` |
+| Implementation Readiness Adversarial Report | `_bmad-output/planning-artifacts/implementation-readiness-report-*.md` |
 | Stories | `${docs_path}/stories.md` |
 | Readiness | `${docs_path}/readiness-checklist.md` |
 | Initiative State | `_bmad-output/lens-work/initiatives/${id}.yaml` |
@@ -297,12 +368,14 @@ params:
 | Error | Recovery |
 |-------|----------|
 | P2 not complete | Error with merge instructions |
-| Lead review not merged | Warn but allow proceeding |
+| Large review not merged | Warn but allow proceeding |
 | PRD/Architecture missing | Warn, proceeding may produce incomplete epics |
 | Dirty working directory | Prompt to stash or commit changes first |
 | Branch creation failed | Check remote connectivity, retry with backoff |
 | P2 ancestry check failed | Prompt to merge P2 PR before continuing |
 | Epic/Story generation failed | Retry or allow manual creation |
+| Epic adversarial review failed | Resolve implementation-readiness findings and re-run /plan |
+| Epic party-mode review failed | Address party-mode findings and re-run /plan |
 | State file write failed | Retry (max 3 attempts), then fail with save instructions |
 
 ---
@@ -310,10 +383,13 @@ params:
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{lane}-3`
+- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{size}-3`
 - [ ] state.yaml updated with phase p3
 - [ ] initiatives/{id}.yaml updated with p3 status and p2 gate passed
 - [ ] event-log.jsonl entry appended
 - [ ] Planning artifacts written to `${docs_path}/` (epics, stories, readiness-checklist)
+- [ ] Epic adversarial review executed and passed
+- [ ] Epic party-mode review executed and report generated
 - [ ] Final PBR PR opened (large → base)
 - [ ] All changes pushed to origin
+

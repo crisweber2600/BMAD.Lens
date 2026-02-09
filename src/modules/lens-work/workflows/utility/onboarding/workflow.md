@@ -104,26 +104,26 @@ selected_role = role_map[role_choice]
 output: "Role: ${selected_role} ✓"
 ```
 
-### 1.3 Select Preferred Lane
+### 1.3 Select Preferred Size
 
 ```yaml
 output: |
-  🛤️ What's your preferred initiative lane?
+  🛤️ What's your preferred initiative size?
   
   [1] small  — Solo dev, fast iteration (1 reviewer)
   [2] medium — Small team, structured reviews (2-3 reviewers)
-  [3] large  — Full team, formal gates (lead + architect review)
+  [3] large  — Full team, formal gates (large + architect review)
 
-lane_choice = prompt_user("[1-3]")
+size_choice = prompt_user("[1-3]")
 
-lane_map = {
+size_map = {
   "1": "small",
   "2": "medium",
   "3": "large"
 }
 
-selected_lane = lane_map[lane_choice]
-output: "Lane: ${selected_lane} ✓"
+selected_size = size_map[size_choice]
+output: "Size: ${selected_size} ✓"
 ```
 
 ### 1.4 Save Profile
@@ -133,7 +133,7 @@ profile = {
   name: git_user_name,
   email: git_user_email,
   role: selected_role,
-  preferred_lane: selected_lane,
+  preferred_size: selected_size,
   created_at: now_iso(),
   preferences: {
     auto_fetch: true,
@@ -155,7 +155,7 @@ Profile file format:
 name: "Jane Smith"
 email: "jane.smith@example.com"
 role: "Developer"
-preferred_lane: "small"
+preferred_size: "small"
 created_at: "2026-02-05T14:30:00Z"
 preferences:
   auto_fetch: true
@@ -163,13 +163,13 @@ preferences:
   color_output: true
 ```
 
-> **Note:** Profile values override equivalent settings in `bmad-config.yaml`. For example, `preferred_lane` in the profile takes precedence over any default lane configured at the project level.
+> **Note:** Profile values override equivalent settings in `bmad-config.yaml`. For example, `preferred_size` in the profile takes precedence over any default size configured at the project level.
 
 ```yaml
 output: |
   ✅ Profile saved to _bmad-output/personal/profile.yaml
   
-  ${git_user_name} (${selected_role}) — lane: ${selected_lane}
+  ${git_user_name} (${selected_role}) — size: ${selected_size}
 ```
 
 ---
@@ -551,7 +551,7 @@ if not file_exists(state_path):
       phase_name: null,
       workflow: null,
       workflow_status: "idle",
-      lane: selected_lane
+      size: selected_size
     },
     last_updated: now_iso()
   }
@@ -596,7 +596,7 @@ append_jsonl(event_log_path, {
   event: "onboarding",
   user: git_user_name,
   role: selected_role,
-  lane: selected_lane,
+  size: selected_size,
   repos_tracked: reconciled_repos.length or 0
 })
 ```

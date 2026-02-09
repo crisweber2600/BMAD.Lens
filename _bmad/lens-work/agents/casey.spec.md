@@ -62,8 +62,8 @@ Casey responds to lifecycle events, not user commands:
 | Workflow completes | `finish-workflow` | Commit, push, print PR link |
 | Phase begins | `start-phase` | Create/checkout phase branch |
 | Phase completes | `finish-phase` | Push phase branch, print PR link |
-| Phase 2 + arch merged | `open-lead-review` | Print PR link for small → lead |
-| Lead review merged | `open-final-pbr` | Print PR link for lead → base |
+| Phase 2 + arch merged | `open-large-review` | Print PR link for small → large |
+| Lead review merged | `open-final-pbr` | Print PR link for large → base |
 
 ### Diagnostic Command (Tracey Delegates)
 
@@ -89,11 +89,11 @@ Casey responds to lifecycle events, not user commands:
 
 ```bash
 # Branch creation
-git checkout -b lens/{id}/base
-git checkout -b lens/{id}/small
-git checkout -b lens/{id}/lead
-git checkout -b lens/{id}/small/p1
-git checkout -b lens/{id}/small/p1/w/{workflow}
+git checkout -b {domain}/{id}/base
+git checkout -b {domain}/{id}/small
+git checkout -b {domain}/{id}/large
+git checkout -b {domain}/{id}/small/p1
+git checkout -b {domain}/{id}/small/p1/w/{workflow}
 
 # Merge validation
 git merge-base --is-ancestor {parent} {child}
@@ -119,7 +119,7 @@ base                           # Initiative root
 │   │   └── ...
 │   └── p3                     # Phase 3 (Solutioning)
 │       └── ...
-└── lead                       # Lead review lane
+└── large                      # Large review lane
     └── (merged from small after p2)
 ```
 
@@ -132,7 +132,7 @@ base                           # Initiative root
 1. **Workflow → Phase:** All previous workflows in phase must be merged
 2. **Phase → Lane:** All workflows in phase must be merged
 3. **Small → Lead:** Phase 2 + architecture workflow must be merged
-4. **Lead → Base:** Lead review must be approved and merged
+4. **Large → Base:** Lead review must be approved and merged
 
 ### Validation Command
 

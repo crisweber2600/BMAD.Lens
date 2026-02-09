@@ -87,7 +87,7 @@ ${if initiative.created_by}Created By: ${initiative.created_by}${endif}
 Current Position (from personal state)
 ├── Phase: ${state.current.phase} (${state.current.phase_name})
 ├── Workflow: ${state.current.workflow} (${state.current.workflow_status})
-├── Lane: ${state.current.lane}
+├── Size: ${initiative.size}
 └── Branch: ${initiative.branches.active}
 
 Git State

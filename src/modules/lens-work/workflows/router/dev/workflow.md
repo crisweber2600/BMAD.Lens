@@ -10,7 +10,7 @@ phase_name: Implementation
 
 # /dev — Implementation Phase Router
 
-**Purpose:** Guide developers through implementation, code review, and retrospective.
+**Purpose:** Guide developers through implementation, constitution-aware adversarial code review, epic-completion teardown, and retrospective.
 
 ---
 
@@ -46,8 +46,8 @@ invoke: casey.verify-clean-state
 state = load("_bmad-output/lens-work/state.yaml")
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 
-# Read lane from initiative config (shared, canonical)
-lane = initiative.lane
+# Read size from initiative config (shared, canonical)
+size = initiative.size
 domain_prefix = initiative.domain_prefix
 
 # === Path Resolver (S01-S06: Context Enhancement) ===
@@ -78,18 +78,18 @@ else:
 if initiative.question_mode != "batch" and not dev_story_exists():
   error: "/review has not produced a dev-ready story. Run /review first."
 
-# Lane validation — verify current lane allows dev phase
-# Dev (P4) must be on small lane
-if lane != "small":
+# Size validation — verify current size allows dev phase
+# Dev (P4) must be on small size
+if size != "small":
   error: |
-    ❌ Lane validation failed
-    ├── Current lane: ${lane}
+    ❌ Size validation failed
+    ├── Current size: ${size}
     ├── Required: small
-    └── Dev phase (P4) only runs on the small lane.
+    └── Dev phase (P4) only runs on the small size.
 
 # Validate we're on the correct branch (or can switch)
 # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-expected_branch: "${domain_prefix}/${initiative.id}/${lane}-4"
+expected_branch: "${domain_prefix}/${initiative.id}/${size}-4"
 current_branch = casey.get-current-branch()
 
 if current_branch != expected_branch:
@@ -106,17 +106,17 @@ if current_branch != expected_branch:
 ```yaml
 # Merge gate checking — verify P3 (Solutioning) is complete before allowing dev
 # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-p3_branch = "${domain_prefix}/${initiative.id}/${lane}-3"
-lane_branch = "${domain_prefix}/${initiative.id}/${lane}"
+p3_branch = "${domain_prefix}/${initiative.id}/${size}-3"
+size_branch = "${domain_prefix}/${initiative.id}/${size}"
 
-# Ancestry check: P3 must be merged into lane (or base)
-result = casey.exec("git merge-base --is-ancestor origin/${p3_branch} origin/${lane_branch}")
+# Ancestry check: P3 must be merged into size branch (or base)
+result = casey.exec("git merge-base --is-ancestor origin/${p3_branch} origin/${size_branch}")
 
 if result.exit_code != 0:
   error: |
     ❌ Merge gate blocked
-    ├── P3 (Solutioning) not merged into lane
-    ├── Expected: ${p3_branch} is ancestor of ${lane_branch}
+    ├── P3 (Solutioning) not merged into size branch
+    ├── Expected: ${p3_branch} is ancestor of ${size_branch}
     └── Action: Complete /plan and merge P3 PR first
 
 # Verify implementation gate passed
@@ -124,30 +124,45 @@ if initiative.gates.implementation_gate.status not in ["passed", "passed_with_wa
   error: "Implementation gate not passed. Run /review first."
 ```
 
-### 1a. Auto-Branch Creation — P4
+### 1a. Constitutional Context Injection (Required)
+
+```yaml
+# Resolve constitutional governance for this context before implementation loop
+constitutional_context = invoke("scribe.resolve-context")
+
+if constitutional_context.status == "parse_error":
+  error: |
+    Constitutional context parse error:
+    ${constitutional_context.error_details.file}
+    ${constitutional_context.error_details.error}
+
+session.constitutional_context = constitutional_context
+```
+
+### 1b. Auto-Branch Creation - P4
 
 ```yaml
 # Casey creates P4 branch if it doesn't exist
 # Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-if not branch_exists("${domain_prefix}/${initiative.id}/${lane}-4"):
+if not branch_exists("${domain_prefix}/${initiative.id}/${size}-4"):
   invoke: casey.start-phase
   params:
     phase_number: 4
     phase_name: "Implementation"
     initiative_id: ${initiative.id}
-    lane: ${lane}
+    size: ${size}
     domain_prefix: ${domain_prefix}
-  # Casey creates: ${domain_prefix}/{initiative_id}/{lane}-4 and pushes to remote
+  # Casey creates: ${domain_prefix}/{initiative_id}/{size}-4 and pushes to remote
 
   invoke: casey.pull-latest
 else:
   invoke: casey.checkout-branch
   params:
-    branch: "${domain_prefix}/${initiative.id}/${lane}-4"
+    branch: "${domain_prefix}/${initiative.id}/${size}-4"
   invoke: casey.pull-latest
 ```
 
-### 1b. Batch Mode (Single-File Questions)
+### 1c. Batch Mode (Single-File Questions)
 
 ```yaml
 if initiative.question_mode == "batch":
@@ -175,7 +190,25 @@ output: |
   **Technical Notes:**
   ${dev_story.technical_notes}
   
-  **Branch:** ${domain_prefix}/${initiative.id}/${lane}-4
+  **Branch:** ${domain_prefix}/${initiative.id}/${size}-4
+```
+
+### 2a. Dev Story Constitution Check (Required)
+
+```yaml
+dev_story_path = "_bmad-output/implementation-artifacts/dev-story-${id}.md"
+
+dev_story_compliance = invoke("scribe.compliance-check")
+params:
+  artifact_path: ${dev_story_path}
+  artifact_type: "Story/Epic"
+  constitutional_context: ${constitutional_context}
+
+if dev_story_compliance.fail_count > 0:
+  error: |
+    Dev story failed constitutional compliance gate.
+    FAIL count: ${dev_story_compliance.fail_count}
+    Resolve story/compliance issues in /review before implementation.
 ```
 
 ### 3. Checkout Target Repo
@@ -216,7 +249,7 @@ You're now working in: ${target_path}
 - `@compass help` — Show available commands
 ```
 
-### 5. Code Review (when signaled)
+### 5. Adversarial Code Review + Constitutional Gates (when signaled)
 
 ```yaml
 # User signals: @compass done
@@ -224,10 +257,80 @@ invoke: casey.start-workflow
 params:
   workflow_name: code-review
 
+# BMM code-review is explicitly adversarial and must challenge implementation claims
 invoke: bmm.code-review
 params:
   target_repo: "${target_path}"
   branch: "feature/${story_id}"
+  constitutional_context: ${constitutional_context}
+
+# Re-check constitutional compliance on review outputs before allowing progression
+code_review_path = "_bmad-output/implementation-artifacts/code-review-${id}.md"
+code_review_compliance = invoke("scribe.compliance-check")
+params:
+  artifact_path: ${code_review_path}
+  artifact_type: "Code file"
+  constitutional_context: ${constitutional_context}
+
+if code_review_compliance.fail_count > 0:
+  error: |
+    Code review compliance gate failed.
+    FAIL count: ${code_review_compliance.fail_count}
+    Resolve violations and re-run @compass done.
+
+# Multi-agent teardown pass to aggressively probe edge cases
+invoke: core.party-mode
+params:
+  input_file: ${code_review_path}
+  artifacts_path: ${target_path}
+  output_file: "_bmad-output/implementation-artifacts/party-mode-review-${story_id}.md"
+  constitutional_context: ${constitutional_context}
+
+if party_mode.status not in ["pass", "complete"]:
+  error: |
+    Party mode teardown found unresolved issues.
+    Address _bmad-output/implementation-artifacts/party-mode-review-${story_id}.md and re-run @compass done.
+
+# Epic-level teardown is mandatory when this story completes its parent epic
+current_epic_id = resolve_story_epic_id(
+  "${story_id}",
+  "_bmad-output/planning-artifacts/stories.md",
+  ${dev_story_path}
+)
+
+if current_epic_id:
+  epic_completion = evaluate_epic_completion(
+    "${current_epic_id}",
+    "_bmad-output/planning-artifacts/stories.md",
+    "_bmad-output/implementation-artifacts/"
+  )
+
+  if epic_completion.status == "complete":
+    epic_adversarial = invoke("bmm.check-implementation-readiness")
+    params:
+      scope: "epic"
+      epic_id: ${current_epic_id}
+      stories: "_bmad-output/planning-artifacts/stories.md"
+      implementation_artifacts: "_bmad-output/implementation-artifacts/"
+      constitutional_context: ${constitutional_context}
+
+    if epic_adversarial.status in ["blocked", "fail", "failed"]:
+      error: |
+        Epic adversarial review failed for ${current_epic_id}.
+        Resolve implementation-readiness findings and re-run @compass done.
+
+    invoke: core.party-mode
+    params:
+      input_file: "_bmad-output/planning-artifacts/epics.md"
+      focus_epic: ${current_epic_id}
+      artifacts_path: ${target_path}
+      output_file: "_bmad-output/implementation-artifacts/epic-${current_epic_id}-party-mode-review.md"
+      constitutional_context: ${constitutional_context}
+
+    if party_mode.status not in ["pass", "complete"]:
+      error: |
+        Epic party-mode teardown found unresolved issues for ${current_epic_id}.
+        Address _bmad-output/implementation-artifacts/epic-${current_epic_id}-party-mode-review.md and re-run @compass done.
 
 invoke: casey.finish-workflow
 ```
@@ -243,7 +346,8 @@ if yes:
     workflow_name: retro
     
   invoke: bmm.retrospective
-  
+  params:
+    constitutional_context: ${constitutional_context}
   invoke: casey.finish-workflow
 ```
 
@@ -276,7 +380,7 @@ params:
   updates:
     current_phase: "p4"
     current_phase_name: "Implementation"
-    active_branch: "${domain_prefix}/${initiative.id}/${lane}-4"
+    active_branch: "${domain_prefix}/${initiative.id}/${size}-4"
     workflow_status: "in_progress"
 ```
 
@@ -292,7 +396,7 @@ params:
     - "_bmad-output/lens-work/event-log.jsonl"
     - "_bmad-output/implementation-artifacts/"
   message: "[lens-work] /dev: Phase 4 Implementation — ${initiative.id} — ${story_id}"
-  branch: "${domain_prefix}/${initiative.id}/${lane}-4"
+  branch: "${domain_prefix}/${initiative.id}/${size}-4"
 ```
 
 ### 9. Log Event
@@ -353,6 +457,8 @@ Throughout `/dev`, the user may work in TargetProjects for actual coding, but al
 | Artifact | Location |
 |----------|----------|
 | Code Review Report | `_bmad-output/implementation-artifacts/code-review-${id}.md` |
+| Party Mode Review Report | `_bmad-output/implementation-artifacts/party-mode-review-${story_id}.md` |
+| Epic Party Mode Review Report | `_bmad-output/implementation-artifacts/epic-*-party-mode-review.md` |
 | Retro Notes | `_bmad-output/implementation-artifacts/retro-${id}.md` |
 | Initiative State | `_bmad-output/lens-work/initiatives/${id}.yaml` |
 | Event Log | `_bmad-output/lens-work/event-log.jsonl` |
@@ -366,11 +472,16 @@ Throughout `/dev`, the user may work in TargetProjects for actual coding, but al
 | No dev story | Prompt to run /review first |
 | P3 not merged | Error with merge gate blocked message |
 | Implementation gate not passed | Error — run /review first |
-| Lane validation failed | Error — must be on small lane for P4 |
+| Size validation failed | Error — must be on small size for P4 |
 | Dirty working directory | Prompt to stash or commit changes first |
 | Target repo checkout failed | Check target_repos config, retry |
 | Branch creation failed | Check remote connectivity, retry with backoff |
+| Dev story compliance gate failed | Resolve constitution FAILs in /review before coding |
 | Code review failed | Allow retry or manual review |
+| Code review compliance gate failed | Resolve constitutional violations and re-run code review |
+| Party mode teardown failed | Address party-mode findings and re-run code review |
+| Epic adversarial review failed | Resolve implementation-readiness findings for the epic and re-run code review |
+| Epic party mode teardown failed | Address epic party-mode findings and re-run code review |
 | State file write failed | Retry (max 3 attempts), then fail with save instructions |
 
 ---
@@ -378,11 +489,18 @@ Throughout `/dev`, the user may work in TargetProjects for actual coding, but al
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{lane}-4`
-- [ ] Lane validated as "small" for dev phase
+- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{size}-4`
+- [ ] Size validated as "small" for dev phase
 - [ ] state.yaml updated with phase p4
 - [ ] initiatives/{id}.yaml updated with p4 status and gate entries
 - [ ] event-log.jsonl entries appended
 - [ ] Dev story loaded and implementation started
+- [ ] Dev story compliance gate passed
 - [ ] Target repo feature branch checked out
+- [ ] Adversarial code review executed
+- [ ] Party mode teardown executed and report generated
+- [ ] Epic adversarial review executed when epic completion is detected
+- [ ] Epic party-mode teardown executed when epic completion is detected
 - [ ] All state changes pushed to origin
+
+
