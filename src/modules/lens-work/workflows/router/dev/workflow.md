@@ -50,6 +50,30 @@ initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}
 size = initiative.size
 domain_prefix = initiative.domain_prefix
 
+# === Path Resolver (S01-S06: Context Enhancement) ===
+docs_path = initiative.docs.path    # e.g., "docs/BMAD/LENS/BMAD.Lens/context-enhancement-9bfe4e"
+repo_docs_path = "docs/${initiative.docs.domain}/${initiative.docs.service}/${initiative.docs.repo}"
+
+if docs_path == null or docs_path == "":
+  # Fallback for older initiatives without docs block
+  docs_path = "_bmad-output/planning-artifacts/"
+  repo_docs_path = null
+  warning: "⚠️ DEPRECATED: Initiative missing docs.path configuration."
+  warning: "  → Run: /compass migrate <initiative-id> to add docs.path"
+  warning: "  → This fallback will be removed in a future version."
+
+# NOTE: docs_path is READ-ONLY in /dev — used for context loading (S11)
+# Dev outputs go to _bmad-output/implementation-artifacts/ (unchanged)
+
+# === Context Loader (S11: Context Enhancement) ===
+# Load planning context for dev reference (read-only)
+if docs_path != "_bmad-output/planning-artifacts/":
+  architecture = load_if_exists("${docs_path}/architecture.md")
+  stories = load_if_exists("${docs_path}/stories.md")
+  planning_context = { architecture: architecture, stories: stories }
+else:
+  planning_context = null
+
 # Require dev story for interactive mode
 if initiative.question_mode != "batch" and not dev_story_exists():
   error: "/review has not produced a dev-ready story. Run /review first."
