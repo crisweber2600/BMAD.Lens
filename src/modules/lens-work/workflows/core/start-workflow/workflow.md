@@ -27,6 +27,42 @@ domain_prefix: string      # From initiative.domain_prefix
 
 ## Execution Sequence
 
+### 0. Pre-Flight Branch Check (HARD GATE)
+
+```bash
+# Verify we are in the BMAD control repo, not a TargetProject
+control_repo_marker="_bmad"
+if [ ! -d "$control_repo_marker" ]; then
+  echo "❌ HARD GATE: Not in BMAD control repo"
+  echo "├── Expected: _bmad/ directory at repo root"
+  echo "├── Current dir: $(pwd)"
+  echo "└── All BMAD operations must run from the control repo"
+  exit 1
+fi
+
+# Verify clean working tree
+if ! git diff-index --quiet HEAD --; then
+  uncommitted=$(git status --porcelain | wc -l)
+  echo "⚠️ ${uncommitted} uncommitted change(s) detected"
+  echo "├── Auto-committing before workflow start..."
+  
+  # Trigger auto-commit to save any pending work
+  git add -A
+  git commit -m "chore: auto-save before starting ${workflow_name} [agent:casey]" --no-verify
+  echo "└── ✅ Auto-committed"
+fi
+
+# Verify remote connectivity (non-blocking)
+if ! git ls-remote --exit-code origin HEAD >/dev/null 2>&1; then
+  echo "⚠️ Cannot reach remote origin"
+  echo "├── Continuing offline (push will happen at finish-workflow)"
+  echo "└── Verify network before finishing workflow"
+fi
+
+# Fetch latest
+git fetch origin --prune
+```
+
 ### 1. Load Current State
 
 ```yaml
@@ -119,6 +155,9 @@ gates:
 
 | Error | Recovery |
 |-------|----------|
+| **Not in control repo** | **HARD GATE: Must run from BMAD control repo root** |
+| **Uncommitted changes** | **Auto-commit pending work before proceeding** |
+| Remote unreachable | Warn, continue offline, push at finish |
 | Gate blocked | Return block message, do not create branch |
 | Branch exists | Checkout existing, warn user |
 | Fetch failed | Retry with backoff, then fail gracefully |

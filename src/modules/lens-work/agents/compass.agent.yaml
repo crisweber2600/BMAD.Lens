@@ -166,6 +166,15 @@ agent:
       workflow: "{project-root}/_bmad/lens-work/workflows/utility/recreate-branches/workflow.md"
       description: "[/recreate-branches] Recreate missing git branches (recovery)"
 
+    # Credential & Configuration Commands
+    - trigger: /credentials or fuzzy match on pat or token or credentials
+      workflow: "{project-root}/_bmad/lens-work/workflows/utility/manage-credentials/workflow.md"
+      description: "[/credentials] Add, update, or view git host credentials (PATs)"
+
+    - trigger: /onboard or fuzzy match on setup or onboard
+      workflow: "{project-root}/_bmad/lens-work/workflows/utility/onboarding/workflow.md"
+      description: "[/onboard] Full onboarding (profile + credentials + repo reconciliation)"
+
     # Utility Commands
     - trigger: H or fuzzy match on help or menu
       action: "display_menu"

@@ -118,14 +118,111 @@ initiative_id: string
    git push origin "bmad/${initiative_id}/${size}/${phase}"
    ```
 
-3. **Generate PR Link**
+3. **Load PAT & Create PR (HARD GATE)**
+   ```yaml
+   # Load user profile for git credentials
+   profile = load("_bmad-output/personal/profile.yaml")
+   
+   # Determine which host PAT to use by matching remote URL
+   remote_url = shell("git remote get-url origin")
+   remote_host = extract_hostname(remote_url)
+   
+   pat = null
+   if profile.git_credentials != null:
+     for cred in profile.git_credentials:
+       if cred.host == remote_host:
+         pat = cred.pat
+         break
+   
+   if pat == null:
+     error: |
+       ⚠️ HARD GATE: No PAT found for host '${remote_host}'
+       ├── Run @scout onboard to configure git credentials
+       └── Then re-run finish-phase
+     exit: 1
    ```
-   PR: ${remote}/compare/${size}...${size}/${phase}
+
+   ```bash
+   # Create PR: phase → size (using same multi-host logic as finish-workflow)
+   source_branch="bmad/${initiative_id}/${size}/${phase}"
+   target_branch="bmad/${initiative_id}/${size}"
+   
+   if [[ "$remote_url" == *"github.com"* ]]; then
+     org_repo=$(echo "$remote_url" | sed -E 's|https://github\.com/||; s|\.git$||')
+     export GH_TOKEN="${pat}"
+     
+     pr_result=$(gh pr create \
+       --repo "${org_repo}" \
+       --base "${target_branch}" \
+       --head "${source_branch}" \
+       --title "phase(${phase}): Complete ${phase_name} for ${initiative_id}" \
+       --body "## Phase Complete: ${phase_name}
+
+   **Initiative:** ${initiative_id}
+   **Phase:** ${phase} (${phase_name})
+   **Size:** ${size}
+   
+   All workflows in this phase have been completed and merged.
+   
+   ---
+   *Created automatically by lens-work phase-lifecycle*" 2>&1)
+     
+     pr_exit_code=$?
+     if [ $pr_exit_code -ne 0 ]; then
+       if echo "$pr_result" | grep -q "already exists"; then
+         echo "ℹ️ PR already exists for this phase"
+         pr_url=$(gh pr view "${source_branch}" --repo "${org_repo}" --json url -q '.url' 2>/dev/null)
+       else
+         echo "❌ HARD GATE: PR creation failed"
+         echo "├── Error: ${pr_result}"
+         echo "└── Fix the issue and re-run finish-phase"
+         exit 1
+       fi
+     else
+       pr_url="${pr_result}"
+     fi
+   
+   elif [[ "$remote_url" == *"gitlab.com"* ]]; then
+     org_repo=$(echo "$remote_url" | sed -E 's|https://gitlab\.com/||; s|\.git$||')
+     encoded_repo=$(echo "$org_repo" | sed 's|/|%2F|g')
+     pr_result=$(curl -s -X POST \
+       "https://gitlab.com/api/v4/projects/${encoded_repo}/merge_requests" \
+       -H "PRIVATE-TOKEN: ${pat}" \
+       -d "source_branch=${source_branch}" \
+       -d "target_branch=${target_branch}" \
+       -d "title=phase(${phase}): Complete ${phase_name} for ${initiative_id}")
+     pr_url=$(echo "$pr_result" | jq -r '.web_url // empty')
+     if [ -z "$pr_url" ]; then
+       echo "❌ HARD GATE: MR creation failed"
+       exit 1
+     fi
+   
+   elif [[ "$remote_url" == *"dev.azure.com"* ]]; then
+     ado_org=$(echo "$remote_url" | sed -E 's|https://dev\.azure\.com/([^/]+)/.*|\1|')
+     ado_project=$(echo "$remote_url" | sed -E 's|https://dev\.azure\.com/[^/]+/([^/]+)/.*|\1|')
+     ado_repo=$(echo "$remote_url" | sed -E 's|.*/_git/([^/]+)(\.git)?$|\1|')
+     pr_result=$(curl -s -X POST \
+       "https://dev.azure.com/${ado_org}/${ado_project}/_apis/git/repositories/${ado_repo}/pullrequests?api-version=7.0" \
+       -H "Authorization: Basic $(echo -n ":${pat}" | base64)" \
+       -H "Content-Type: application/json" \
+       -d "{\"sourceRefName\":\"refs/heads/${source_branch}\",\"targetRefName\":\"refs/heads/${target_branch}\",\"title\":\"phase(${phase}): Complete ${phase_name}\"}")
+     pr_url=$(echo "$pr_result" | jq -r '.url // empty')
+     if [ -z "$pr_url" ]; then
+       echo "❌ HARD GATE: PR creation failed"
+       exit 1
+     fi
+   
+   else
+     echo "⚠️ Unknown remote type. Create PR manually: ${source_branch} → ${target_branch}"
+     pr_url="manual"
+   fi
+   
+   echo "✅ Phase PR created: ${pr_url}"
    ```
 
 4. **Log Event**
    ```json
-   {"ts":"${ISO_TIMESTAMP}","event":"finish-phase","phase":"${phase}","pr":"${pr_link}"}
+   {"ts":"${ISO_TIMESTAMP}","event":"finish-phase","phase":"${phase}","pr_url":"${pr_url}"}
    ```
 
 5. **Commit Phase Finish**
@@ -149,8 +246,9 @@ initiative_id: string
    ```
    ✅ Phase ${phase} complete
    ├── All workflows merged
-   ├── PR: ${pr_link}
-   └── Ready for next phase
+   ├── PR Created: ${pr_url}
+   ├── HARD GATE: PR must be merged before next phase can proceed
+   └── Ready for next phase (after PR merge)
    ```
 
 ---

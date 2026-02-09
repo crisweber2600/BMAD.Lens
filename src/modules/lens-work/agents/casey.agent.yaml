@@ -103,6 +103,37 @@ agent:
         All branches MUST be pushed to remote immediately on creation.
         This ensures remote backup exists even if IDE crashes mid-workflow.
 
+    - id: auto-commit-protocol
+      content: |
+        Auto-commit fires after every agent chat that produces artifacts.
+        
+        Rules:
+        - NEVER prompt user — fire-and-forget only
+        - If nothing changed, exit silently (zero-cost)
+        - Skip during rebase/merge (check .git/rebase-merge, .git/MERGE_HEAD)
+        - Use conventional commit format: {type}({initiative}): {summary} [agent:{name}]
+        - Do NOT push — pushes only happen at finish-workflow or explicit /sync-now
+        - Output exactly ONE line: 📝 {hash} — {message}
+        
+        This creates granular, reviewable history per AI interaction.
+
+    - id: pr-creation-protocol
+      content: |
+        PR creation is a HARD GATE at finish-workflow and finish-phase.
+        
+        Multi-host support:
+        - GitHub: gh CLI with GH_TOKEN from profile PAT
+        - GitLab: REST API with PRIVATE-TOKEN header
+        - Azure DevOps: REST API with Basic auth (base64 :PAT)
+        - Bitbucket: REST API with App Password
+        
+        PAT source: _bmad-output/personal/profile.yaml → git_credentials[].pat
+        Host matching: extract hostname from `git remote get-url origin`, match to credentials
+        
+        If no PAT found: HARD GATE — block and instruct user to run @scout onboard
+        If PR already exists: Use existing PR URL, continue
+        If PR creation fails: HARD GATE — block and report error
+
   # Casey has no user-facing menu—all operations are hook-triggered
   # These are internal hooks invoked by Compass or Tracey
   hooks:
@@ -112,11 +143,11 @@ agent:
     
     - event: workflow-started
       action: start-workflow
-      description: "Create workflow branch with merge-gate check"
+      description: "Create workflow branch with merge-gate check + branch verification"
     
     - event: workflow-completed
       action: finish-workflow
-      description: "Commit, push, print PR link"
+      description: "Commit, push, create PR (HARD GATE), advance branch"
     
     - event: phase-started
       action: start-phase
@@ -124,7 +155,11 @@ agent:
     
     - event: phase-completed
       action: finish-phase
-      description: "Push phase branch, print PR link to size"
+      description: "Push phase branch, create PR (HARD GATE) to size"
+    
+    - event: post-message
+      action: auto-commit
+      description: "Auto-commit after every agent chat that modifies artifacts"
     
     - event: p2-architecture-merged
       action: open-large-review
