@@ -77,6 +77,40 @@ The `lens-work` module follows a strict dogfooding pattern:
 
 **Never edit the installed copy directly** — changes will be overwritten on reinstall.
 
+### 🏗️ Module-Builder Integration for BMAD.Lens Work
+
+**CRITICAL RULE:** Any work on the **BMAD.Lens source repo itself** (this repo — `TargetProjects/BMAD/LENS/BMAD.Lens/`) MUST involve the **module-builder agent**.
+
+**Why?** BMAD.Lens contains the canonical `lens-work` module source. The module-builder agent ensures:
+- ✅ Coherent module structure and architecture
+- ✅ Correct placement of agents, workflows, templates, docs
+- ✅ Proper manifest updates (agent-manifest.csv, workflow-manifest.csv, etc.)
+- ✅ Compliance with BMAD module standards
+- ✅ Clean integration with the installation pipeline
+
+**When to use module-builder:**
+- Adding new agents to lens-work
+- Creating or modifying lens-work workflows
+- Changing module configuration (`src/modules/lens-work/config.yaml`)
+- Updating agents, adding capabilities, or architectural changes
+- Validating module coherence
+
+**How to invoke:**
+1. From this repo, run: `@module-builder` in GitHub Copilot Chat
+2. Select `[CM] Create/Edit Module` or `[VM] Validate Module`
+3. Follow the module-builder workflow for architectural coherence
+4. After changes, run the installation script to sync into the control repo:
+   ```bash
+   cd {control-repo-root}
+   powershell ./install-lens-work-relative.ps1
+   ```
+
+**What NOT to do:**
+- ❌ Edit `_bmad/lens-work/` directly from the control repo — it's the installed copy
+- ❌ Modify lens-work files without module-builder validation
+- ❌ Skip the reinstall step after source changes
+- ❌ Assume local changes will persist — they won't without proper installation
+
 ## BMAD Agent System
 
 Agents are persona-driven AI assistants with command menus, custom behaviors, and contextual expertise.

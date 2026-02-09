@@ -11,7 +11,7 @@
 ```yaml
 agent:
   metadata:
-    id: "_bmad/lens-work/agents/tracey.agent.md"
+    id: "_bmad/lens-work/agents/tracey.agent.yaml"
     name: Tracey
     title: State & Recovery Specialist
     icon: 📊

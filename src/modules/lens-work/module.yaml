@@ -157,10 +157,13 @@ workflow_categories:
   governance:
     description: "Constitutional governance and compliance"
     workflows:
-      - constitution
-      - compliance-check
-      - resolve-constitution
+      - amendment-propagation
       - ancestry
+      - compliance-check
+      - constitution
+      - cross-artifact-analysis
+      - requirements-checklist
+      - resolve-constitution
       - resolve-context
 
   includes:
