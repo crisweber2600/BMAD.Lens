@@ -53,6 +53,8 @@ Evaluates a PRD, architecture doc, story, or code file against resolved constitu
 
 **Output:** PASS/WARN/FAIL per article, with overall verdict (COMPLIANT / CONDITIONAL PASS / NON-COMPLIANT).
 
+`/review` also invokes compliance checks automatically for implementation-gate artifacts and blocks on FAIL.
+
 **Workflow:** `workflows/governance/compliance-check/workflow.md`
 **Agent:** Scribe (Cornelius)
 
@@ -89,9 +91,9 @@ Scribe presents its own governance menu with all commands.
 
 ### resolve-context
 
-Internal workflow that injects `constitutional_context` into the LENS context on demand.
+Internal workflow that injects `constitutional_context` into the LENS context for lifecycle routers and governance workflows.
 
-Not user-facing — called by other governance workflows when constitutional context is needed.
+Not user-facing — automatically called by `/pre-plan`, `/spec`, `/plan`, `/review`, and `/dev` before phase logic executes.
 
 **Workflow:** `workflows/governance/resolve-context/workflow.md`
 
@@ -111,3 +113,4 @@ All governance operations produce events in `event-log.jsonl`:
 ---
 
 _Command Reference for lens-work governance_
+

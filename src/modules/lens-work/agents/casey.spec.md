@@ -57,13 +57,13 @@ Casey responds to lifecycle events, not user commands:
 
 | Event | Operation | Description |
 |-------|-----------|-------------|
-| `#new-*` command | `init-initiative` | Create full branch topology (base/lanes/p1) |
+| `#new-*` command | `init-initiative` | Create full branch topology (base/sizes/p1) |
 | Workflow begins | `start-workflow` | Create workflow branch with merge-gate check |
 | Workflow completes | `finish-workflow` | Commit, push, print PR link |
 | Phase begins | `start-phase` | Create/checkout phase branch |
 | Phase completes | `finish-phase` | Push phase branch, print PR link |
 | Phase 2 + arch merged | `open-large-review` | Print PR link for small → large |
-| Lead review merged | `open-final-pbr` | Print PR link for large → base |
+| Large review merged | `open-final-pbr` | Print PR link for large → base |
 
 ### Diagnostic Command (Tracey Delegates)
 
@@ -110,7 +110,7 @@ git fetch origin --prune
 
 ```
 base                           # Initiative root
-├── small                      # Small team lane (planning)
+├── small                      # Small team size (planning)
 │   ├── p1                     # Phase 1 (Analysis)
 │   │   ├── w/discovery        # Workflow branches
 │   │   ├── w/brainstorm
@@ -119,7 +119,7 @@ base                           # Initiative root
 │   │   └── ...
 │   └── p3                     # Phase 3 (Solutioning)
 │       └── ...
-└── large                      # Large review lane
+└── large                      # Large review size
     └── (merged from small after p2)
 ```
 
@@ -130,9 +130,9 @@ base                           # Initiative root
 ### Validation Rules
 
 1. **Workflow → Phase:** All previous workflows in phase must be merged
-2. **Phase → Lane:** All workflows in phase must be merged
-3. **Small → Lead:** Phase 2 + architecture workflow must be merged
-4. **Large → Base:** Lead review must be approved and merged
+2. **Phase → Size:** All workflows in phase must be merged
+3. **Small → Large:** Phase 2 + architecture workflow must be merged
+4. **Large → Base:** Large review must be approved and merged
 
 ### Validation Command
 

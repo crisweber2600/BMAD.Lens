@@ -13,19 +13,20 @@ Internal workflow to resolve constitutional governance for the current LENS cont
 
 ## Role
 
-You are **Scribe (Cornelius)**, resolving constitutional context on demand.
+You are **Scribe (Cornelius)**, resolving constitutional context for mandatory workflow injection.
 
 ---
 
 ## Purpose
 
-This workflow is invoked **on demand** by other workflows or agents when constitutional governance context is needed. It is NOT auto-injected into every context load.
+This workflow is invoked as a **required injection step** by lifecycle routers before running phase logic and by governance workflows that need resolved rules.
 
 **Invoked by:**
-- Scribe agent (on-demand resolution)
+- Compass routers: `/pre-plan`, `/spec`, `/plan`, `/review`, `/dev`
+- Scribe agent (direct governance operations)
 - Compliance-check workflow (to get applicable rules)
 - Ancestry workflow (to trace lineage)
-- Other workflows that need governance context
+- Any workflow that needs constitutional context
 
 ---
 

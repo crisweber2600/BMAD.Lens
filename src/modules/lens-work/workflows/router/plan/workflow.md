@@ -10,7 +10,7 @@ phase_name: Solutioning
 
 # /plan — Solutioning Phase Router
 
-**Purpose:** Complete the Solutioning phase with Epics, Stories, and Readiness checklist.
+**Purpose:** Complete the Solutioning phase with Epics, Stories, and Readiness checklist, including mandatory adversarial and party-mode stress tests for epic quality.
 
 ---
 
@@ -128,7 +128,22 @@ else:
   invoke: casey.pull-latest
 ```
 
-### 2a. Batch Mode (Single-File Questions)
+### 2a. Constitutional Context Injection (Required)
+
+```yaml
+# Resolve constitutional governance for this context before solutioning workflows
+constitutional_context = invoke("scribe.resolve-context")
+
+if constitutional_context.status == "parse_error":
+  error: |
+    Constitutional context parse error:
+    ${constitutional_context.error_details.file}
+    ${constitutional_context.error_details.error}
+
+session.constitutional_context = constitutional_context
+```
+
+### 2b. Batch Mode (Single-File Questions)
 
 ```yaml
 if initiative.question_mode == "batch":
@@ -155,10 +170,45 @@ params:
   architecture: "_bmad-output/planning-artifacts/architecture.md"
   prd: "_bmad-output/planning-artifacts/prd.md"
   output_path: "_bmad-output/planning-artifacts/"
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```
 
+#### Epic Stress Gate (Required: Adversarial + Party Mode):
+```yaml
+# Run adversarial + party-mode teardown for EACH generated epic
+epic_ids = extract_epic_ids("_bmad-output/planning-artifacts/epics.md")
+
+for epic_id in epic_ids:
+  readiness_adversarial = invoke("bmm.check-implementation-readiness")
+  params:
+    mode: "adversarial"
+    scope: "epic"
+    epic_id: ${epic_id}
+    prd: "_bmad-output/planning-artifacts/prd.md"
+    architecture: "_bmad-output/planning-artifacts/architecture.md"
+    epics: "_bmad-output/planning-artifacts/epics.md"
+    constitutional_context: ${constitutional_context}
+
+  if readiness_adversarial.status in ["blocked", "fail"]:
+    error: |
+      Epic adversarial review failed for ${epic_id}.
+      Resolve implementation-readiness findings before continuing.
+
+  invoke: core.party-mode
+  params:
+    input_file: "_bmad-output/planning-artifacts/epics.md"
+    focus_epic: ${epic_id}
+    artifacts_path: "_bmad-output/planning-artifacts/"
+    output_file: "_bmad-output/planning-artifacts/epic-${epic_id}-party-mode-review.md"
+    constitutional_context: ${constitutional_context}
+
+  if party_mode.status not in ["pass", "complete"]:
+    error: |
+      Epic party-mode review flagged unresolved issues for ${epic_id}.
+      Address _bmad-output/planning-artifacts/epic-${epic_id}-party-mode-review.md and re-run /plan.
+```
 #### Stories — Story Breakdown Integration:
 ```yaml
 invoke: casey.start-workflow
@@ -171,6 +221,7 @@ params:
   epics: "_bmad-output/planning-artifacts/epics.md"
   architecture: "_bmad-output/planning-artifacts/architecture.md"
   output_path: "_bmad-output/planning-artifacts/"
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```
@@ -190,6 +241,7 @@ params:
     - epics.md
     - stories.md
   output_path: "_bmad-output/planning-artifacts/"
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```
@@ -268,6 +320,8 @@ params:
 | Artifact | Location |
 |----------|----------|
 | Epics | `_bmad-output/planning-artifacts/epics.md` |
+| Epic Party-Mode Review | `_bmad-output/planning-artifacts/epic-*-party-mode-review.md` |
+| Implementation Readiness Adversarial Report | `_bmad-output/planning-artifacts/implementation-readiness-report-*.md` |
 | Stories | `_bmad-output/planning-artifacts/stories.md` |
 | Readiness | `_bmad-output/planning-artifacts/readiness-checklist.md` |
 | Initiative State | `_bmad-output/lens-work/initiatives/${id}.yaml` |
@@ -279,12 +333,14 @@ params:
 | Error | Recovery |
 |-------|----------|
 | P2 not complete | Error with merge instructions |
-| Lead review not merged | Warn but allow proceeding |
+| Large review not merged | Warn but allow proceeding |
 | PRD/Architecture missing | Warn, proceeding may produce incomplete epics |
 | Dirty working directory | Prompt to stash or commit changes first |
 | Branch creation failed | Check remote connectivity, retry with backoff |
 | P2 ancestry check failed | Prompt to merge P2 PR before continuing |
 | Epic/Story generation failed | Retry or allow manual creation |
+| Epic adversarial review failed | Resolve implementation-readiness findings and re-run /plan |
+| Epic party-mode review failed | Address party-mode findings and re-run /plan |
 | State file write failed | Retry (max 3 attempts), then fail with save instructions |
 
 ---
@@ -297,5 +353,8 @@ params:
 - [ ] initiatives/{id}.yaml updated with p3 status and p2 gate passed
 - [ ] event-log.jsonl entry appended
 - [ ] Planning artifacts written (epics, stories, readiness-checklist)
+- [ ] Epic adversarial review executed and passed
+- [ ] Epic party-mode review executed and report generated
 - [ ] Final PBR PR opened (large → base)
 - [ ] All changes pushed to origin
+
