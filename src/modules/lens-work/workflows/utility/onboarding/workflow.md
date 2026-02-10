@@ -104,36 +104,13 @@ selected_role = role_map[role_choice]
 output: "Role: ${selected_role} ✓"
 ```
 
-### 1.3 Select Preferred Size
-
-```yaml
-output: |
-  🛤️ What's your preferred initiative size?
-  
-  [1] small  — Solo dev, fast iteration (1 reviewer)
-  [2] medium — Small team, structured reviews (2-3 reviewers)
-  [3] large  — Full team, formal gates (large + architect review)
-
-size_choice = prompt_user("[1-3]")
-
-size_map = {
-  "1": "small",
-  "2": "medium",
-  "3": "large"
-}
-
-selected_size = size_map[size_choice]
-output: "Size: ${selected_size} ✓"
-```
-
-### 1.4 Save Profile
+### 1.3 Save Profile
 
 ```yaml
 profile = {
   name: git_user_name,
   email: git_user_email,
   role: selected_role,
-  preferred_size: selected_size,
   created_at: now_iso(),
   preferences: {
     auto_fetch: true,
@@ -155,7 +132,6 @@ Profile file format:
 name: "Jane Smith"
 email: "jane.smith@example.com"
 role: "Developer"
-preferred_size: "small"
 created_at: "2026-02-05T14:30:00Z"
 preferences:
   auto_fetch: true
@@ -163,13 +139,13 @@ preferences:
   color_output: true
 ```
 
-> **Note:** Profile values override equivalent settings in `bmad-config.yaml`. For example, `preferred_size` in the profile takes precedence over any default size configured at the project level.
+> **Note:** Profile values override equivalent settings in `bmad-config.yaml`. For example, `role` in the profile takes precedence over any default role configured at the project level.
 
 ```yaml
 output: |
   ✅ Profile saved to _bmad-output/personal/profile.yaml
   
-  ${git_user_name} (${selected_role}) — size: ${selected_size}
+  ${git_user_name} (${selected_role})
 ```
 
 ---
@@ -267,9 +243,28 @@ if cred_choice == "Y":
     if host_type == "github":
       output: |
         🔗 ${host} (GitHub)
-        ├── Create PAT: https://github.com/settings/tokens
-        ├── Required scopes: repo, workflow
-        └── Recommended: Fine-grained token scoped to your repos
+        
+        📋 How to create a GitHub Personal Access Token:
+        
+        1. Go to https://github.com/settings/tokens
+        2. Click **"Generate new token"** → select **"Fine-grained token"** (recommended)
+        3. Give it a descriptive name (e.g., "LENS Workbench")
+        4. Set an expiration (90 days recommended, or custom)
+        5. Under **Repository access**, select **"Only select repositories"**
+           and choose the repos you work with
+        6. Under **Permissions → Repository permissions**, grant:
+           • **Contents**: Read and write
+           • **Pull requests**: Read and write
+           • **Workflows**: Read and write (if using GitHub Actions)
+        7. Click **"Generate token"** and copy it immediately
+           (you won't be able to see it again!)
+        
+        💡 Alternatively, for a classic token:
+        • Click **"Generate new token (classic)"**
+        • Select scopes: **repo**, **workflow**
+        • Generate and copy the token
+        
+        ⚠️ Store your token securely — treat it like a password.
     elif host_type == "gitlab":
       output: |
         🔗 ${host} (GitLab)
@@ -341,7 +336,6 @@ Updated profile format with credentials:
 name: "Jane Smith"
 email: "jane.smith@example.com"
 role: "Developer"
-preferred_size: "small"
 created_at: "2026-02-05T14:30:00Z"
 preferences:
   auto_fetch: true

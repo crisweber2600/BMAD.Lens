@@ -8,15 +8,15 @@ category: utility
 
 # Switch Context Workflow
 
-**Purpose:** Interactively switch between initiatives, lenses (domain/service/microservice/feature), phases (P0–P4), and sizes (small/medium/large), with branch checkout and state synchronization.
+**Purpose:** Interactively switch between initiatives, lenses (domain/service/microservice/feature), and phases (P0–P4), with branch checkout and state synchronization. Review audience size (small/medium/large) is determined automatically by the initiative's review audience map and is not configurable.
 
 ---
 
 ## Input Parameters
 
 ```yaml
-sub_command: enum | null   # initiative | lens | phase | size — if omitted, show interactive menu
-target: string | null      # Optional direct target (initiative id, phase number, size name, etc.)
+sub_command: enum | null   # initiative | lens | phase — if omitted, show interactive menu
+target: string | null      # Optional direct target (initiative id, phase number, etc.)
 ```
 
 ---
@@ -133,7 +133,7 @@ output: |
   ├── Initiative: ${initiative.name} (${initiative.id})
   ├── Layer: ${current_layer}
   ├── Phase: ${current_phase} (${current_phase_name})
-  ├── Size: ${current_size}
+  ├── Audience: ${current_size}
   └── Branch: ${current_branch}
   ${if legacy_warning}
   ⚠️  Legacy state format detected. Consider running @tracey migrate.
@@ -153,7 +153,6 @@ if sub_command == null:
     ├── [1] Switch Initiative (change active initiative)
     ├── [2] Switch Lens (domain/service/microservice/feature)
     ├── [3] Switch Phase (P0-P4)
-    ├── [4] Switch Size (small/medium/large)
     └── [0] Cancel
   
   read: menu_choice
@@ -162,12 +161,11 @@ if sub_command == null:
     "1": goto Step 3 (Switch Initiative)
     "2": goto Step 4 (Switch Lens)
     "3": goto Step 5 (Switch Phase)
-    "4": goto Step 6 (Switch Size)
     "0": |
       output: "Cancelled. No changes made."
       exit: 0
     default: |
-      output: "Invalid choice. Please select 0-4."
+      output: "Invalid choice. Please select 0-3."
       goto Step 2
 
 else:
@@ -175,9 +173,8 @@ else:
     "initiative": goto Step 3
     "lens": goto Step 4
     "phase": goto Step 5
-    "size": goto Step 6
     default: |
-      output: "Unknown sub-command: ${sub_command}. Use: initiative | lens | phase | size"
+      output: "Unknown sub-command: ${sub_command}. Use: initiative | lens | phase"
 
       exit: 1
 ```
@@ -470,122 +467,9 @@ goto: Step 7
 
 ---
 
-### Step 6: Switch Size
+### Step 6: (Reserved)
 
-```yaml
-# Available sizes
-size_map = {
-  "1": { code: "small",  description: "Small team — planning & development track" },
-  "2": { code: "medium", description: "Medium team — multi-track coordination" },
-  "3": { code: "large",  description: "Large team — review & governance" }
-}
-
-output: |
-  🛤️  Switch Size — Current: ${current_size}
-  
-  Available sizes:
-  ${for num, size in size_map}
-  ${num == current_size_idx ? "▶" : " "} [${num}] ${size.code}
-       ${size.description}
-  ${endfor}
-  
-  ⚠️  Switching size will create/checkout the size branch.
-  
-  [C] Cancel
-
-read: size_choice
-
-if size_choice == "C" or size_choice == "c" or size_choice == null:
-  output: "Cancelled. Size unchanged."
-  exit: 0
-
-selected_size = size_map[size_choice]
-
-if selected_size == null:
-  output: "Invalid choice. Please select 1-3 or C to cancel."
-  goto: Step 6
-
-if selected_size.code == current_size:
-  output: "Already on ${current_size} size. No change needed."
-  exit: 0
-
-# Determine target branch for selected size
-# New branch pattern: {Domain}/{InitiativeId}/{size}
-size_branch = "${domain_prefix}/${initiative.id}/${selected_size.code}"
-
-# If currently on a phase branch, also create the phase branch under the new size
-current_phase_num = extract_phase_number(current_phase)
-if current_phase_num != null:
-  phase_branch = "${domain_prefix}/${initiative.id}/${selected_size.code}-${current_phase_num}"
-  target_branch = phase_branch
-else:
-  target_branch = size_branch
-
-output: "🔀 Switching to ${selected_size.code} size..."
-```
-
-```bash
-# Casey integration: checkout-branch or create-branch
-target_branch="${target_branch}"
-size_branch="${size_branch}"
-
-git fetch origin
-
-# First ensure size branch exists
-if git show-ref --verify --quiet "refs/heads/${size_branch}"; then
-  : # size branch exists locally
-elif git show-ref --verify --quiet "refs/remotes/origin/${size_branch}"; then
-  git checkout -b "${size_branch}" "origin/${size_branch}"
-  git checkout -  # go back, we'll checkout target below
-else
-  # Create size branch from base
-  base_branch="${domain_prefix}/${initiative_id}/base"
-  if git show-ref --verify --quiet "refs/heads/${base_branch}"; then
-    git checkout "${base_branch}"
-  elif git show-ref --verify --quiet "refs/remotes/origin/${base_branch}"; then
-    git checkout -b "${base_branch}" "origin/${base_branch}"
-  else
-    echo "Error: Base branch '${base_branch}' not found."
-    exit 1
-  fi
-  git checkout -b "${size_branch}"
-  git push -u origin "${size_branch}"
-  echo "✅ Created size branch: ${size_branch}"
-fi
-
-# Now checkout the target branch (size or size+phase)
-if [ "${target_branch}" != "${size_branch}" ]; then
-  # Need a phase branch under the new size
-  if git show-ref --verify --quiet "refs/heads/${target_branch}"; then
-    git checkout "${target_branch}"
-    git pull origin "${target_branch}"
-  elif git show-ref --verify --quiet "refs/remotes/origin/${target_branch}"; then
-    git checkout -b "${target_branch}" "origin/${target_branch}"
-  else
-    # Create phase branch from size branch
-    git checkout "${size_branch}"
-    git checkout -b "${target_branch}"
-    git push -u origin "${target_branch}"
-    echo "✅ Created phase branch: ${target_branch}"
-  fi
-else
-  git checkout "${size_branch}"
-  git pull origin "${size_branch}" 2>/dev/null || true
-fi
-```
-
-```yaml
-# Update size in initiative config (stored in shared config, not personal state)
-initiative.size = selected_size.code
-
-# Update initiative config
-initiative.branches.active = target_branch
-
-output: "✅ Size switched: ${current_size} → ${selected_size.code}"
-
-# Continue to Step 7 for state sync
-goto: Step 7
-```
+> **Note:** Review audience size (small/medium/large) is determined automatically by the initiative's `review_audience_map` — each phase maps to its appropriate audience. Size is not user-configurable. See `init-initiative` workflow for how the audience map is defined.
 
 ---
 
@@ -599,13 +483,11 @@ state.last_switch = {
   from: {
     initiative: previous_initiative_id or initiative.id,
     phase: previous_phase or current_phase,
-    size: previous_size or current_size,
     branch: previous_branch or current_branch
   },
   to: {
     initiative: state.active_initiative or initiative.id,
     phase: state.current.phase,
-      size: initiative.size,
     branch: exec("git branch --show-current")
   }
 }

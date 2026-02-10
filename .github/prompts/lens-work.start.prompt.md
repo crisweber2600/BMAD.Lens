@@ -29,7 +29,16 @@ Execute preflight check of all lens-work systems, then activate Compass for work
 - [ ] `workflows/discovery/repo-discover/` — Repo inventory
 - [ ] `workflows/utility/bootstrap/` — Initial setup
 
-## Phase 2: State Check
+## Phase 2: Profile & State Check
+
+### 2.0 Engineer Profile Check (MANDATORY)
+- [ ] Check for profile file: `_bmad-output/personal/profile.yaml`
+- **If profile does NOT exist:**
+  - ⚠️ **STOP all other checks** — profile is required before proceeding
+  - Inform the user: "No engineer profile found. Onboarding is required before you can use LENS Workbench."
+  - **Immediately launch the onboarding workflow:** Load and execute `_bmad/lens-work/workflows/utility/onboarding/workflow.md`
+  - Do NOT proceed to Phase 3 until onboarding completes and profile is created
+  - After onboarding completes, continue with the remaining checks below
 
 ### 2.1 Active Initiative
 - [ ] Check for state file: `_bmad-output/lens-work/state.yaml`

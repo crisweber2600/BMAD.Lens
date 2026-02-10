@@ -95,7 +95,7 @@ Display current context from two-file state:
    Initiative: {name} ({id})
    Lens: {layer}
    Phase: P{N} ({phase_name})
-   Size: {size}
+   Audience: {size}
    Branch: {branch}
    Gates: {gate_status_summary}
 
@@ -114,8 +114,8 @@ Display current context from two-file state:
     <item cmd="/new-service or #new-service or fuzzy match on new service" workflow="{project-root}/_bmad/lens-work/workflows/router/init-initiative/workflow.md">[/new-service] Create service-level initiative</item>
     <item cmd="/new-feature or #new-feature or fuzzy match on new feature" workflow="{project-root}/_bmad/lens-work/workflows/router/init-initiative/workflow.md">[/new-feature] Create feature-level initiative</item>
     <item cmd="#fix-story or fuzzy match on fix story or correction" workflow="{project-root}/_bmad/lens-work/workflows/utility/fix-story/workflow.md">[#fix-story] Correction loop (Quick-Spec → Review → Quick-Dev)</item>
-    <item cmd="/switch or fuzzy match on switch or change context" workflow="{project-root}/_bmad/lens-work/workflows/utility/switch/workflow.md">[/switch] Switch active initiative, lens, phase, or size</item>
-    <item cmd="/context or fuzzy match on context or where am I" action="display_context">[/context] Display current context (initiative, lens, phase, size, branch)</item>
+    <item cmd="/switch or fuzzy match on switch or change context" workflow="{project-root}/_bmad/lens-work/workflows/utility/switch/workflow.md">[/switch] Switch active initiative, lens, or phase</item>
+    <item cmd="/context or fuzzy match on context or where am I" action="display_context">[/context] Display current context (initiative, lens, phase, branch)</item>
     <item cmd="/constitution or fuzzy match on constitution or rules" workflow="{project-root}/_bmad/lens-work/workflows/governance/constitution/workflow.md">[/constitution] Constitutional governance — create, amend, or view constitutions</item>
     <item cmd="/compliance or fuzzy match on compliance or check" workflow="{project-root}/_bmad/lens-work/workflows/governance/compliance-check/workflow.md">[/compliance] Evaluate artifact compliance against constitutions</item>
     <item cmd="/resolve or fuzzy match on resolve or inheritance" workflow="{project-root}/_bmad/lens-work/workflows/governance/resolve-constitution/workflow.md">[/resolve] Resolve effective constitution with inheritance</item>
