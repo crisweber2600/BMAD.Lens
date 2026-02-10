@@ -27,7 +27,7 @@ jobs:
             --directory "${{ github.workspace }}/release-build" \
             --modules bmm,bmb,cis,gds,tea \
             --tools cursor,github-copilot,claude-code \
-            --user-name "BMAD Release" \
+            --user-name "BMADRelease" \
             --output-folder _bmad-output \
             --yes
 
