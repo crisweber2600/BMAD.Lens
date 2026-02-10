@@ -837,6 +837,42 @@ else:
 
 ---
 
+## Section 5.3: Git Credentials Management (Post-Onboarding)
+
+For post-onboarding credential management, use the **manage-credentials** workflow:
+
+```bash
+@scout credentials
+@compass /credentials
+```
+
+This workflow provides advanced PAT management:
+- **Add new credentials** for additional git hosts
+- **Update existing credentials** when PATs expire or rotate
+- **Remove credentials** when hosts are no longer needed
+- **Re-detect hosts** from repos and service map
+- **Test credentials** for validity before use
+
+### Credentials Storage
+
+Git credentials are stored in `_bmad-output/personal/profile.yaml` under the `git_credentials` section:
+
+```yaml
+git_credentials:
+  - host: "github.com"
+    type: "github"
+    pat: "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    configured_at: "2026-02-05T14:31:00Z"
+  - host: "dev.azure.com"
+    type: "azure-devops"
+    pat: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    configured_at: "2026-02-05T14:31:30Z"
+```
+
+⚠️ **SECURITY:** This file must NEVER be committed to git. Ensure `_bmad-output/personal/` is in `.gitignore`.
+
+---
+
 ## Error Handling
 
 | Error | Recovery |
