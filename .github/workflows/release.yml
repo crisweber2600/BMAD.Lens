@@ -44,6 +44,12 @@ jobs:
           mkdir -p release-build/.codex/prompts
           cp -r release-build/.claude/commands/* release-build/.codex/prompts/
 
+      - name: Copy GitHub prompts for lens-work
+        run: |
+          # Preserve the lens-work command prompts in the release
+          mkdir -p release-build/.github
+          cp -r .github/prompts release-build/.github/prompts
+
       - name: Generate version tag
         id: version
         run: |
