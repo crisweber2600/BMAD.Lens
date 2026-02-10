@@ -3,7 +3,8 @@ name: Build & Release BMAD.Lens
 on:
   push:
     branches:
-      - 'release*'
+      - 'release/**'
+      - 'release'
 
 permissions:
   contents: write
