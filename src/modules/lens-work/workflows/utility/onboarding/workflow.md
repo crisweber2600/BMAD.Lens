@@ -174,6 +174,205 @@ output: |
 
 ---
 
+## Section 1.5: Git Credentials (PAT Onboarding)
+
+**Purpose:** Collect Personal Access Tokens (PATs) for each unique git host found in the repo inventory. These are required for creating PRs via finish-workflow and finish-phase hard gates.
+
+### 1.5.1 Detect Unique Git Hosts
+
+```yaml
+# Scan repo-inventory.yaml and service-map.yaml for unique remote URLs
+# If inventory doesn't exist yet, scan service-map.yaml remotes
+service_map_paths:
+  - "_bmad/lens-work/service-map.yaml"
+  - "_lens/domain-map.yaml"
+  - "lens/domain-map.yaml"
+
+detected_hosts = []
+remote_urls = []
+
+# First try repo-inventory (already has remotes from prior scans)
+if file_exists("_bmad-output/lens-work/repo-inventory.yaml"):
+  inventory = load("_bmad-output/lens-work/repo-inventory.yaml")
+  for repo in inventory.repos:
+    if repo.remote and repo.remote != "no-remote" and repo.remote != "unknown":
+      remote_urls.append(repo.remote)
+
+# Fall back to service map
+if remote_urls.length == 0:
+  for path in service_map_paths:
+    if file_exists(path):
+      sm = load(path)
+      for repo in sm.repos:
+        if repo.remote_url:
+          remote_urls.append(repo.remote_url)
+      break
+
+# Also check control repo remote
+control_remote = shell("git remote get-url origin 2>/dev/null") or ""
+if control_remote != "":
+  remote_urls.append(control_remote)
+
+# Extract unique hosts
+for url in remote_urls:
+  host = extract_hostname(url)  # e.g., "github.com", "gitlab.com", "dev.azure.com"
+  if host not in detected_hosts:
+    detected_hosts.append(host)
+```
+
+### 1.5.2 Classify Hosts
+
+```yaml
+# Map each host to a git provider type
+host_types = {}
+for host in detected_hosts:
+  if "github.com" in host or "github" in host:
+    host_types[host] = "github"
+  elif "gitlab.com" in host or "gitlab" in host:
+    host_types[host] = "gitlab"
+  elif "dev.azure.com" in host or "visualstudio.com" in host:
+    host_types[host] = "azure-devops"
+  elif "bitbucket.org" in host:
+    host_types[host] = "bitbucket"
+  else:
+    host_types[host] = "generic"
+```
+
+### 1.5.3 Collect PATs
+
+```yaml
+output: |
+  🔑 Git Credentials Setup
+  ═══════════════════════════
+  
+  lens-work needs Personal Access Tokens (PATs) to create PRs automatically.
+  These are stored locally in your profile — never committed to git.
+  
+  Detected ${detected_hosts.length} unique git host(s):
+  ${for host in detected_hosts}
+    - ${host} (${host_types[host]})
+  ${endfor}
+  
+  Configure PATs now? [Y]es / [S]kip (can configure later via @scout credentials)
+
+cred_choice = prompt_user("[Y]es / [S]kip")
+
+git_credentials = []
+
+if cred_choice == "Y":
+  for host in detected_hosts:
+    host_type = host_types[host]
+    
+    # Show host-specific instructions
+    if host_type == "github":
+      output: |
+        🔗 ${host} (GitHub)
+        ├── Create PAT: https://github.com/settings/tokens
+        ├── Required scopes: repo, workflow
+        └── Recommended: Fine-grained token scoped to your repos
+    elif host_type == "gitlab":
+      output: |
+        🔗 ${host} (GitLab)
+        ├── Create PAT: https://${host}/-/user_settings/personal_access_tokens
+        ├── Required scopes: api, write_repository
+        └── Recommended: Project-scoped token
+    elif host_type == "azure-devops":
+      output: |
+        🔗 ${host} (Azure DevOps)
+        ├── Create PAT: https://dev.azure.com/{org}/_usersSettings/tokens
+        ├── Required scopes: Code (Read & Write), Pull Request Contribute
+        └── Recommended: Custom defined, minimum scopes
+    elif host_type == "bitbucket":
+      output: |
+        🔗 ${host} (Bitbucket)
+        ├── Create App Password: https://bitbucket.org/account/settings/app-passwords/
+        ├── Required permissions: Repositories (Write), Pull requests (Write)
+        └── Use your Bitbucket username as the user field
+    else:
+      output: |
+        🔗 ${host} (Generic Git Host)
+        ├── Create a personal access token with PR/merge-request permissions
+        └── Consult your git host's documentation
+    
+    pat = prompt_user("Enter PAT for ${host} (or press Enter to skip):", sensitive=true)
+    
+    if pat != "":
+      git_credentials.append({
+        host: host,
+        type: host_type,
+        pat: pat,
+        configured_at: now_iso()
+      })
+      output: "  ✅ ${host} configured"
+    else:
+      output: "  ⏭️ ${host} skipped (can add later)"
+  
+  output: |
+    
+    🔑 Credentials summary:
+    ├── Configured: ${git_credentials.length} / ${detected_hosts.length} hosts
+    └── Stored in: _bmad-output/personal/profile.yaml (git_credentials section)
+
+elif cred_choice == "S":
+  output: |
+    ⏭️ PAT setup skipped. You can configure later:
+    ├── Run: @scout credentials
+    └── Or manually edit _bmad-output/personal/profile.yaml
+```
+
+### 1.5.4 Save Credentials to Profile
+
+```yaml
+# Append git_credentials to existing profile
+profile = load("_bmad-output/personal/profile.yaml")
+
+profile.git_credentials = git_credentials
+
+# Also store which hosts were detected but not configured
+profile.detected_git_hosts = detected_hosts
+
+save(profile, "_bmad-output/personal/profile.yaml")
+```
+
+Updated profile format with credentials:
+
+```yaml
+# _bmad-output/personal/profile.yaml
+name: "Jane Smith"
+email: "jane.smith@example.com"
+role: "Developer"
+preferred_size: "small"
+created_at: "2026-02-05T14:30:00Z"
+preferences:
+  auto_fetch: true
+  status_on_start: true
+  color_output: true
+
+# Git credentials for PR automation (NEVER committed to git)
+git_credentials:
+  - host: "github.com"
+    type: "github"
+    pat: "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    configured_at: "2026-02-05T14:31:00Z"
+  - host: "dev.azure.com"
+    type: "azure-devops"
+    pat: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    configured_at: "2026-02-05T14:31:30Z"
+
+detected_git_hosts:
+  - "github.com"
+  - "dev.azure.com"
+
+# Lens-work sync tracking (added by daily sync)
+lens_work:
+  last_sync_date: null
+  selected_branch: null
+```
+
+> **⚠️ SECURITY NOTE:** The profile.yaml file with PATs must NEVER be committed to git. Ensure `_bmad-output/personal/` is in `.gitignore`.
+
+---
+
 ## Section 2: Repository Reconciliation
 
 ### 2.1 Load Expected Repos (Service Map)
@@ -623,6 +822,7 @@ else:
 ```
 ✅ Onboarding complete!
 ├── Profile: _bmad-output/personal/profile.yaml
+├── Credentials: ${git_credentials.length} / ${detected_hosts.length} git hosts configured
 ├── Repos: ${repos_tracked} tracked, ${repos_healthy} healthy, ${repos_issues} issues
 ├── State: initialized
 ├── Initiatives: ${initiative_count} found
@@ -631,8 +831,45 @@ else:
 │   ├── Start a new feature: @compass /new-feature "your feature"
 │   ├── Switch context: @compass /switch
 │   ├── Check status: @compass ?
+│   ├── Configure credentials: @scout credentials
 │   └── Get help: @compass H
 ```
+
+---
+
+## Section 5.3: Git Credentials Management (Post-Onboarding)
+
+For post-onboarding credential management, use the **manage-credentials** workflow:
+
+```bash
+@scout credentials
+@compass /credentials
+```
+
+This workflow provides advanced PAT management:
+- **Add new credentials** for additional git hosts
+- **Update existing credentials** when PATs expire or rotate
+- **Remove credentials** when hosts are no longer needed
+- **Re-detect hosts** from repos and service map
+- **Test credentials** for validity before use
+
+### Credentials Storage
+
+Git credentials are stored in `_bmad-output/personal/profile.yaml` under the `git_credentials` section:
+
+```yaml
+git_credentials:
+  - host: "github.com"
+    type: "github"
+    pat: "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    configured_at: "2026-02-05T14:31:00Z"
+  - host: "dev.azure.com"
+    type: "azure-devops"
+    pat: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    configured_at: "2026-02-05T14:31:30Z"
+```
+
+⚠️ **SECURITY:** This file must NEVER be committed to git. Ensure `_bmad-output/personal/` is in `.gitignore`.
 
 ---
 
@@ -653,6 +890,8 @@ else:
 ## Post-Conditions
 
 - [ ] Profile saved to `_bmad-output/personal/profile.yaml`
+- [ ] Git credentials (PATs) collected for detected hosts and saved to profile
+- [ ] `_bmad-output/personal/` is confirmed in `.gitignore` (PATs must not be committed)
 - [ ] Service map loaded and reconciled against TargetProjects
 - [ ] Missing repos offered for cloning; extra repos offered for service-map addition
 - [ ] Repo inventory updated at `_bmad-output/lens-work/repo-inventory.yaml`
