@@ -4,3 +4,4 @@ _bmad/lens-work/_memory/
 _bmad-output/lens-work/
 tmp*
 TargetProjects/
+node_modules/
