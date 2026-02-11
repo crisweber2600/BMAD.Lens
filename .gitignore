@@ -1,9 +1,18 @@
 
+# BMAD installed modules (rebuilt from src/ via build-release)
+_bmad/
+
+# IDE configs (rebuilt by build-release from BMAD install)
+.claude/
+.codex/
+.cursor/
+.github/
+
+# BMAD runtime output
+_bmad-output/
+
 # lens-work
-_bmad/lens-work/_memory/
-_bmad-output/lens-work/
-_bmad-output/lens-work/personal/
 tmp*
 TargetProjects/
+Docs/
 node_modules/
-bmad-lens-v*
