@@ -1,47 +1,47 @@
 installation:
   version: 6.0.0-Beta.8
-  installDate: 2026-02-11T03:36:23.885Z
-  lastUpdated: 2026-02-11T03:36:23.885Z
+  installDate: 2026-02-11T03:44:14.412Z
+  lastUpdated: 2026-02-11T03:44:14.412Z
 modules:
   - name: core
     version: 6.0.0-Beta.8
-    installDate: 2026-02-11T03:36:20.183Z
-    lastUpdated: 2026-02-11T03:36:20.183Z
+    installDate: 2026-02-11T03:44:10.751Z
+    lastUpdated: 2026-02-11T03:44:10.751Z
     source: built-in
     npmPackage: null
     repoUrl: null
   - name: bmm
     version: 6.0.0-Beta.8
-    installDate: 2026-02-11T03:36:11.798Z
-    lastUpdated: 2026-02-11T03:36:20.183Z
+    installDate: 2026-02-11T03:44:03.158Z
+    lastUpdated: 2026-02-11T03:44:10.751Z
     source: built-in
     npmPackage: null
     repoUrl: null
   - name: bmb
     version: 0.1.6
-    installDate: 2026-02-11T03:36:13.835Z
-    lastUpdated: 2026-02-11T03:36:21.133Z
+    installDate: 2026-02-11T03:44:04.987Z
+    lastUpdated: 2026-02-11T03:44:11.823Z
     source: external
     npmPackage: bmad-builder
     repoUrl: https://github.com/bmad-code-org/bmad-builder
   - name: cis
     version: 0.1.6
-    installDate: 2026-02-11T03:36:15.597Z
-    lastUpdated: 2026-02-11T03:36:22.036Z
+    installDate: 2026-02-11T03:44:06.599Z
+    lastUpdated: 2026-02-11T03:44:12.630Z
     source: external
     npmPackage: bmad-creative-intelligence-suite
     repoUrl: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
   - name: gds
     version: 0.1.6
-    installDate: 2026-02-11T03:36:18.014Z
-    lastUpdated: 2026-02-11T03:36:22.848Z
+    installDate: 2026-02-11T03:44:08.736Z
+    lastUpdated: 2026-02-11T03:44:13.477Z
     source: external
     npmPackage: bmad-game-dev-studio
     repoUrl: https://github.com/bmad-code-org/bmad-module-game-dev-studio.git
   - name: tea
     version: 1.0.0
-    installDate: 2026-02-11T03:36:20.062Z
-    lastUpdated: 2026-02-11T03:36:23.885Z
+    installDate: 2026-02-11T03:44:10.649Z
+    lastUpdated: 2026-02-11T03:44:14.412Z
     source: external
     npmPackage: bmad-method-test-architecture-enterprise
     repoUrl: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
