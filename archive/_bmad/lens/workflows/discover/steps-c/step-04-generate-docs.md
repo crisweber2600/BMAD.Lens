@@ -30,15 +30,15 @@ docs/                              # NOT _bmad-output/docs
 └── README.md                      # Index of all generated docs
 ```
 
-**Example for NorthStarET:**
+**Example for Contoso:**
 ```
 docs/
-├── NextGen/
-│   ├── NorthStarET/
+├── Domain/
+│   ├── Contoso/
 │   │   ├── architecture.md
 │   │   ├── api-surface.md
 │   │   └── ...
-│   └── NorthStarET.Student/
+│   └── ContosoSvc/
 │       └── ...
 ├── OldNorthStar/
 │   └── OldNorthStar/

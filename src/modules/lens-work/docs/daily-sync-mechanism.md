@@ -19,7 +19,7 @@ The lens-work system tracks **branch synchronization per user, per day** using t
 
 ```yaml
 name: string              # User's full name (e.g., "Cris Weber")
-email: string             # User's email (e.g., "cris.weber@northstaret.com")
+email: string             # User's email (e.g., "cris.weber@Contoso.com")
 role: string              # User's role (e.g., "Architect", "Developer")
 preferred_lane: string    # Preferred initiative size (small/medium/large)
 created_at: ISO_8601      # ISO timestamp when profile was created
@@ -364,7 +364,7 @@ Old workflows without daily sync:
 ```yaml
 # Old profile.yaml
 name: "Cris Weber"
-email: "cris.weber@northstaret.com"
+email: "cris.weber@Contoso.com"
 # ... no lens_work section
 ```
 

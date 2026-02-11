@@ -46,7 +46,7 @@ The BMAD control repo manages all `{Domain}/` branches. Target repos are _consum
 > **Note:** Replace `{Domain}` with your actual domain prefix (e.g., `lens`, `payment`, `auth`). For example, `{Domain}/{initiative_id}/base` becomes `lens/rate-limit-x7k2m9/base` or `payment/checkout-0a1k2m/base`.
 
 ```
-NorthStarET.BMAD (control repo)
+Contoso.BMAD (control repo)
 ├── {Domain}/bmad-9d7732/base          ← lifecycle branches live HERE
 ├── {Domain}/bmad-9d7732/small-1
 └── {Domain}/bmad-9d7732/small-1-brainstorm
@@ -97,7 +97,7 @@ When finishing a workflow that spans multiple repos, Casey generates linked PRs:
 
 ```
 ✅ Workflow complete: dev-story/auth-flow
-├── Control repo PR: NorthStarET.BMAD#42
+├── Control repo PR: Contoso.BMAD#42
 ├── Target PRs:
 │   ├── bmad-chat#18 (auth UI components)
 │   └── bmadServer#7 (auth API endpoint)
@@ -113,7 +113,7 @@ Each target repo PR includes a reference back to the control repo:
 
 - **Phase:** p4 (Implementation)
 - **Workflow:** dev-story/auth-flow
-- **Control PR:** NorthStarET.BMAD#42
+- **Control PR:** Contoso.BMAD#42
 - **Related PRs:** bmadServer#7
 
 Part of domain initiative "BMAD" managed by lens-work.

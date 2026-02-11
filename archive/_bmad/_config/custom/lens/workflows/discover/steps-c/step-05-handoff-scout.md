@@ -135,8 +135,8 @@ For each project in domain map:
 - Documenting service responsibilities
 
 Processing:
-├─ NextGen/NorthStarET
-├─ NextGen/NorthStarET.Student
+├─ Domain/Contoso
+├─ Domain/ContosoSvc
 └─ OldNorthStar/OldNorthStar
 
 Estimated time: 10-15 minutes...
@@ -208,8 +208,8 @@ Estimated time: 10-15 minutes...
 ✅ DEEP Scan Complete: Full discovery pipeline finished!
 
 All Projects Processed:
-├─ NextGen/NorthStarET ............ ✅ Complete
-├─ NextGen/NorthStarET.Student .... ✅ Complete
+├─ Domain/Contoso ............ ✅ Complete
+├─ Domain/ContosoSvc .... ✅ Complete
 └─ OldNorthStar/OldNorthStar ...... ✅ Complete
 
 Generated artifacts:
