@@ -2,6 +2,8 @@
 # lens-work
 _bmad/lens-work/_memory/
 _bmad-output/lens-work/
+_bmad-output/lens-work/personal/
 tmp*
 TargetProjects/
 node_modules/
+bmad-lens-v*

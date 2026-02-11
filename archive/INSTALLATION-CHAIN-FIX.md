@@ -135,7 +135,7 @@ cat _bmad/_config/manifest.yaml
 ### Documentation
 - ✅ Created [LENS-INSTALLATION-GUIDE.md](LENS-INSTALLATION-GUIDE.md)
 - ✅ Updated prompt guidance in [src/modules/lens/prompts/bmad.start.prompt.md](src/modules/lens/prompts/bmad.start.prompt.md#L455)
-- ✅ Updated prompt guidance in [NorthStarET.BMAD/_bmad/lens/prompts/bmad.start.prompt.md](../../NorthStarET.BMAD/_bmad/lens/prompts/bmad.start.prompt.md#L455)
+- ✅ Updated prompt guidance in [Contoso.BMAD/_bmad/lens/prompts/bmad.start.prompt.md](../../Contoso.BMAD/_bmad/lens/prompts/bmad.start.prompt.md#L455)
 
 ## Integration with `npx bmad-method install`
 

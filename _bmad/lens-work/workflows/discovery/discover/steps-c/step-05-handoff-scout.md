@@ -13,7 +13,7 @@ description: 'Hand off to SCOUT agent for deep analysis'
 3. ONLY THEN proceed based on their choice
 
 **DO NOT:**
-- Skip directly to Navigator
+- Skip directly to Compass
 - Show "discovery complete" without the prompt
 - Assume user wants to skip
 
@@ -88,7 +88,7 @@ Discovery reports generated:
 ├──────────────────────────────────────────────────────────────┤
 │  Options:                                                    │
 │  [DEEP]  Run full deep scan pipeline (recommended)           │
-│  [SKIP]  Continue to Navigator (you can run [DEEP] anytime)  │
+│  [SKIP]  Continue to Compass (you can run [DEEP] anytime)  │
 ╰──────────────────────────────────────────────────────────────╯
 ```
 
@@ -101,7 +101,7 @@ Discovery reports generated:
 - Run the complete discovery pipeline
 
 **If user selects [SKIP]:**
-- Return to Navigator menu
+- Return to Compass menu
 - Deep scan can be triggered anytime with [DEEP] command
 - User retains access to initial discovery reports
 
@@ -135,8 +135,8 @@ For each project in domain map:
 - Documenting service responsibilities
 
 Processing:
-├─ NextGen/NorthStarET
-├─ NextGen/NorthStarET.Student
+├─ Domain/Contoso
+├─ Domain/ContosoSvc
 └─ OldNorthStar/OldNorthStar
 
 Estimated time: 10-15 minutes...
@@ -208,8 +208,8 @@ Estimated time: 10-15 minutes...
 ✅ DEEP Scan Complete: Full discovery pipeline finished!
 
 All Projects Processed:
-├─ NextGen/NorthStarET ............ ✅ Complete
-├─ NextGen/NorthStarET.Student .... ✅ Complete
+├─ Domain/Contoso ............ ✅ Complete
+├─ Domain/ContosoSvc .... ✅ Complete
 └─ OldNorthStar/OldNorthStar ...... ✅ Complete
 
 Generated artifacts:
@@ -261,7 +261,7 @@ Available actions:
 [HELP]   Show all available commands
 ```
 
-**Return to Navigator menu with full discovery context**
+**Return to Compass menu with full discovery context**
 
 ### 11. Alternative: Skip Deep Scan
 
@@ -279,10 +279,10 @@ To run the complete pipeline later:
 - Type [DEEP] to trigger the full DS → AC → GD workflow
 - Or navigate to: {project-root}/_bmad/lens-work/agents/scout
 
-Or continue with Navigator for other workflows.
+Or continue with Compass for other workflows.
 ```
 
-**Return to Navigator menu**
+**Return to Compass menu**
 
 ---
 
@@ -318,13 +318,13 @@ This prevents accidental commits of:
 - All artifacts stored in: {project-root}/docs/{Domain}/{Service}/
 
 **IF user selected [SKIP]:**
-- Return to Navigator menu with initial discovery available
+- Return to Compass menu with initial discovery available
 - Can trigger [DEEP] command anytime to start full pipeline
 - Initial reports available for reference
 
 **IF SCOUT not available:**
 - Discovery complete with basic reports
-- Return to Navigator menu
+- Return to Compass menu
 - User can manually run advanced workflows
 
 ---
