@@ -182,6 +182,7 @@ prompts:
   files:
     # System
     - lens-work.start.prompt.md
+    - lens-work.onboard.prompt.md
     - lens-work.compass.prompt.md
     # Phase Router (Compass)
     - lens-work.pre-plan.prompt.md
