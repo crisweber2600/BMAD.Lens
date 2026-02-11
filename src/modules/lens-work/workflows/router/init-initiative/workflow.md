@@ -98,6 +98,92 @@ question_mode = domain_config.question_mode
 ```
 ${endif}
 
+### 0b. Load Parent Context (Feature-Layer)
+
+${if layer == "feature"}
+```yaml
+# Feature-layer: needs a parent context (service OR domain).
+# Strategy: check active_initiative, then auto-discover, only error if zero parents exist.
+state = load("{project-root}/_bmad-output/lens-work/state.yaml")
+
+parent_config = null
+parent_layer = null
+
+# Attempt 1: Use active_initiative if set and points to a Service.yaml or Domain.yaml
+if state.active_initiative != null:
+  # Check for Service.yaml first (more specific parent)
+  service_config_path = "{project-root}/_bmad-output/lens-work/initiatives/${state.active_initiative}/Service.yaml"
+  if exists(service_config_path):
+    candidate = load(service_config_path)
+    if candidate.layer == "service":
+      parent_config = candidate
+      parent_layer = "service"
+
+  # Fall back to Domain.yaml
+  if parent_config == null:
+    domain_config_path = "{project-root}/_bmad-output/lens-work/initiatives/${state.active_initiative}/Domain.yaml"
+    if exists(domain_config_path):
+      candidate = load(domain_config_path)
+      if candidate.layer == "domain":
+        parent_config = candidate
+        parent_layer = "domain"
+
+# Attempt 2: Auto-discover by scanning initiatives/
+if parent_config == null:
+  service_yaml_files = glob("{project-root}/_bmad-output/lens-work/initiatives/*/*/Service.yaml")
+  domain_yaml_files = glob("{project-root}/_bmad-output/lens-work/initiatives/*/Domain.yaml")
+
+  all_parents = []
+  for file in service_yaml_files:
+    all_parents.append({file: file, config: load(file), type: "service"})
+  for file in domain_yaml_files:
+    all_parents.append({file: file, config: load(file), type: "domain"})
+
+  if all_parents.length == 0:
+    error: "No parent found. Create a domain (/new-domain) or service (/new-service) first."
+    exit: 1
+  elif all_parents.length == 1:
+    parent_config = all_parents[0].config
+    parent_layer = all_parents[0].type
+    # Auto-heal state
+    if parent_layer == "service":
+      state.active_initiative = "${parent_config.domain_prefix}/${parent_config.service_prefix}"
+    else:
+      state.active_initiative = parent_config.domain_prefix
+    save("{project-root}/_bmad-output/lens-work/state.yaml", state)
+    info: "Auto-selected ${parent_layer} '${parent_config[parent_layer == 'service' ? 'service' : 'domain']}' — state.yaml updated."
+  else:
+    # Multiple parents — let user pick
+    prompt: |
+      Select parent for this feature:
+      ${for parent in all_parents}
+      [${index}] [${parent.type}] ${parent.config.domain}${parent.type == "service" ? "/" + parent.config.service : ""} (${parent.type == "service" ? parent.config.domain_prefix + "/" + parent.config.service_prefix : parent.config.domain_prefix})
+      ${endfor}
+    selected = all_parents[selection]
+    parent_config = selected.config
+    parent_layer = selected.type
+    # Update state
+    if parent_layer == "service":
+      state.active_initiative = "${parent_config.domain_prefix}/${parent_config.service_prefix}"
+    else:
+      state.active_initiative = parent_config.domain_prefix
+    save("{project-root}/_bmad-output/lens-work/state.yaml", state)
+
+# Inherit from parent
+domain = parent_config.domain
+domain_prefix = parent_config.domain_prefix
+parent_target_repos = parent_config.target_repos
+question_mode = parent_config.question_mode
+
+if parent_layer == "service":
+  service = parent_config.service
+  service_prefix = parent_config.service_prefix
+else:
+  service = null
+  service_prefix = null
+```
+${endif}
+
 ### 1. Gather Initiative Details
 
 ${if layer == "service"}
@@ -118,6 +204,29 @@ ${endif}
 **Target repos:** Inherited from domain (${parent_target_repos})
 Keep all? [Y/n] (or select subset)
 ```
+${elif layer == "feature"}
+```
+🧭 New Feature Initiative
+
+${if parent_layer == "service"}
+Parent service: ${service} (${domain_prefix}/${service_prefix})
+${else}
+Parent domain: ${domain} (${domain_prefix})
+${endif}
+
+**Feature:** ${feature_from_argument || "(provide feature name)"}
+
+# Feature name is typically the command argument:
+# /new-feature Rate Limiting → feature = "Rate Limiting"
+${if !feature_from_argument}
+**Feature name:** (e.g., "Rate Limiting", "OAuth Integration")
+${endif}
+
+**Target repos:** Inherited from parent (${parent_target_repos})
+${if parent_target_repos.length > 1}
+Select repos or keep all? [A] All (default)
+${endif}
+```
 ${else}
 ```
 🧭 New Initiative Setup
@@ -136,7 +245,7 @@ ${endif}
 
 ### 1a. Choose Question Mode
 
-${if layer != "service"}
+${if layer != "service" && layer != "feature"}
 ```
 How would you like to answer phase questions?
 
@@ -151,8 +260,8 @@ question_mode = selection == "2" ? "batch" : "interactive"
 ```
 ${else}
 ```yaml
-# Service-layer: inherit question_mode from parent Domain.yaml
-# Already loaded in Step 0a
+# Service/Feature-layer: inherit question_mode from parent
+# Already loaded in Step 0a (service) or Step 0b (feature)
 ```
 ${endif}
 
@@ -198,13 +307,18 @@ elif layer == "service" || layer == "microservice":
   target_repos = parent_target_repos  # Already loaded in Step 0a
 
 elif layer == "feature":
-  # Single repo + optional dependencies from service map
-  prompt: |
-    Select primary repo:
-    ${for repo in service_map.repos}
-    [${index}] ${repo.name}
-    ${endfor}
-  target_repos = [selected_repo]
+  # Feature-layer: inherit target_repos from parent (service or domain)
+  # User can keep all or select subset
+  if parent_target_repos.length == 1:
+    target_repos = parent_target_repos  # Single repo — auto-inherit
+  else:
+    prompt: |
+      Select target repos for this feature (inherited from parent):
+      ${for repo in parent_target_repos}
+      [${index}] ${repo}
+      ${endfor}
+      [A] All repos (default)
+    target_repos = selected_repos || parent_target_repos
 ```
 
 ### 4. Resolve Domain Prefix
@@ -231,17 +345,9 @@ elif layer == "service":
   # No resolution needed — skip.
   pass
 elif layer == "feature":
-  # Feature flows resolve from explicit domain first, then repo metadata.
-  domain_prefix = normalize_domain_prefix(domain)
-  if domain_prefix == "":
-    domain_prefix = normalize_domain_prefix(selected_repo.domain_prefix)
-  if domain_prefix == "":
-    domain_prefix = normalize_domain_prefix(selected_repo.domain)
-  if domain_prefix == "":
-    # Expected local_path: TargetProjects/{Org}/{Domain}/{Repo}
-    path_parts = split_path(selected_repo.local_path)
-    domain_candidate = path_parts[2] or path_parts[1]
-    domain_prefix = normalize_domain_prefix(domain_candidate)
+  # Feature-layer: domain_prefix already inherited from parent in Step 0b.
+  # No resolution needed — skip.
+  pass
 
 if domain_prefix == "":
   error: "Unable to resolve domain prefix for ${initiative_name}. Provide domain or add repo domain metadata to service-map.yaml."
@@ -355,6 +461,7 @@ layer: ${layer}
 domain: ${domain}
 domain_prefix: ${domain_prefix}
 service: ${service}
+service_prefix: ${service_prefix}
 question_mode: ${question_mode}
 created_at: "${ISO_TIMESTAMP}"
 created_by: ${git_user}
