@@ -17,3 +17,4 @@ TargetProjects/
 Docs/
 node_modules/
 bmad-lens-v*.tar.gz
+_bmad-output/lens-work/state.yaml
