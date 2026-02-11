@@ -49,7 +49,24 @@ agent:
         - Service/feature initiatives within this domain create their own topology below
         - Branch name is just the domain prefix (e.g., `bmad`, `payment`)
         
-        ## Service/Feature Layers (full topology)
+        ## Service-Layer (service-only branch)
+        
+        Service-layer initiatives create a SINGLE organizational branch:
+        
+        {domain_prefix}/{service_prefix}                           # Service branch (only branch)
+        
+        - No base/size/phase/workflow branches for service-layer
+        - Service.yaml serves as both service descriptor and initiative config
+        - Feature initiatives within this service create their own topology below
+        - Branch name is {domain_prefix}/{service_prefix} (e.g., `bmaddomain/lens`)
+        
+        Service scaffolding (created on this branch):
+        - `_bmad-output/lens-work/initiatives/{domain_prefix}/{service_prefix}/Service.yaml`
+        - `_bmad-output/lens-work/initiatives/{domain_prefix}/{service_prefix}/.gitkeep`
+        - `TargetProjects/{domain_prefix}/{service_prefix}/.gitkeep`
+        - `Docs/{domain_prefix}/{service_prefix}/.gitkeep`
+        
+        ## Feature/Microservice Layers (full topology)
         
         Size = PR review audience. It progresses per phase:
           p1 → small (solo dev, 1 reviewer)
@@ -196,7 +213,7 @@ agent:
   hooks:
     - event: initiative-created
       action: init-initiative
-      description: "Domain-layer: create domain branch only ({domain_prefix}). Service/feature: create full branch topology (base/sizes/p1)"
+      description: "Domain-layer: create domain branch only ({domain_prefix}). Service-layer: create service branch only ({domain_prefix}/{service_prefix}). Feature: create full branch topology (base/sizes/p1)"
     
     - event: workflow-started
       action: start-workflow

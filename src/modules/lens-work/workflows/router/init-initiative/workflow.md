@@ -44,8 +44,81 @@ fi
 git fetch origin main
 ```
 
+### 0a. Load Parent Domain Context (Service-Layer)
+
+${if layer == "service"}
+```yaml
+# Service-layer MUST have a parent domain initiative.
+# Strategy: try active_initiative first, then auto-discover, only error if zero domains exist.
+state = load("{project-root}/_bmad-output/lens-work/state.yaml")
+
+domain_config = null
+
+# Attempt 1: Use active_initiative if set and points to a Domain.yaml
+if state.active_initiative != null:
+  domain_config_path = "{project-root}/_bmad-output/lens-work/initiatives/${state.active_initiative}/Domain.yaml"
+  if exists(domain_config_path):
+    candidate = load(domain_config_path)
+    if candidate.layer == "domain":
+      domain_config = candidate
+
+# Attempt 2: Auto-discover domains by scanning initiatives/*/Domain.yaml
+if domain_config == null:
+  domain_yaml_files = glob("{project-root}/_bmad-output/lens-work/initiatives/*/Domain.yaml")
+  if domain_yaml_files.length == 0:
+    error: "No domain found. Create a domain first with /new-domain."
+    exit: 1
+  elif domain_yaml_files.length == 1:
+    domain_config = load(domain_yaml_files[0])
+    # Auto-heal: set active_initiative so future commands skip scanning
+    state.active_initiative = domain_config.domain_prefix
+    save("{project-root}/_bmad-output/lens-work/state.yaml", state)
+    info: "Auto-selected domain '${domain_config.domain}' (${domain_config.domain_prefix}) — state.yaml updated."
+  else:
+    # Multiple domains — let user pick
+    prompt: |
+      Multiple domains found. Select parent domain:
+      ${for file in domain_yaml_files}
+      [${index}] ${load(file).domain} (${load(file).domain_prefix})
+      ${endfor}
+    domain_config = load(selected_file)
+    # Update state to selected domain
+    state.active_initiative = domain_config.domain_prefix
+    save("{project-root}/_bmad-output/lens-work/state.yaml", state)
+
+if domain_config.layer != "domain":
+  error: "Active initiative is not a domain. Switch to a domain first or create one with /new-domain."
+  exit: 1
+
+# Inherit from parent domain
+domain = domain_config.domain
+domain_prefix = domain_config.domain_prefix
+parent_target_repos = domain_config.target_repos
+question_mode = domain_config.question_mode
+```
+${endif}
+
 ### 1. Gather Initiative Details
 
+${if layer == "service"}
+```
+🧭 New Service Initiative
+
+Parent domain: ${domain} (${domain_prefix})
+
+**Service name:** ${service_from_argument || "(provide service name)"}
+
+# The service name is typically provided as the command argument:
+# /new-service Lens → service = "Lens"
+# If not provided, ask:
+${if !service_from_argument}
+**Service:** (service name, e.g., "Auth Service", "Payment Gateway")
+${endif}
+
+**Target repos:** Inherited from domain (${parent_target_repos})
+Keep all? [Y/n] (or select subset)
+```
+${else}
 ```
 🧭 New Initiative Setup
 
@@ -54,21 +127,16 @@ Please provide the following details:
 **Name:** (descriptive name for this initiative)
 **Layer:** [1] Domain  [2] Service  [3] Microservice  [4] Feature
 
-${if layer == "service" || layer == "microservice"}
-**Domain:** (parent domain for this ${layer})
-${endif}
-
-${if layer == "service"}
-**Service:** (service name, e.g., "Auth Service", "Payment Gateway")
-${endif}
-
 ${if layer == "microservice"}
+**Domain:** (parent domain for this ${layer})
 **Service:** (parent service for this microservice)
 ${endif}
 ```
+${endif}
 
 ### 1a. Choose Question Mode
 
+${if layer != "service"}
 ```
 How would you like to answer phase questions?
 
@@ -81,6 +149,12 @@ Select mode: [1] or [2]
 ```yaml
 question_mode = selection == "2" ? "batch" : "interactive"
 ```
+${else}
+```yaml
+# Service-layer: inherit question_mode from parent Domain.yaml
+# Already loaded in Step 0a
+```
+${endif}
 
 ### 2. Generate Initiative ID
 
@@ -93,8 +167,8 @@ elif [ "${layer}" == "service" ]; then
   # Service-layer: use {domain_prefix}/{service_prefix} as initiative ID (no random suffix).
   # The service name IS the identity — Service.yaml replaces separate initiative config.
   service_prefix=$(echo "${service}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//')
-  initiative_id="${domain_prefix}/${service_prefix}"
-else
+  initiative_id="${domain_prefix}/${service_prefix}"  # initiative_name defaults to service name if not explicitly set
+  initiative_name=\"${initiative_name:-${service}}\"else
   # Feature/microservice layers: generate random suffix
   # Format: {sanitized_name}-{random_6char}
   # Example: rate-limit-x7k2m9
@@ -119,13 +193,9 @@ if layer == "domain":
   target_repos = selected_repos
 
 elif layer == "service" || layer == "microservice":
-  # Single repo selection
-  prompt: |
-    Select target repo:
-    ${for repo in service_map.repos}
-    [${index}] ${repo.name}
-    ${endfor}
-  target_repos = [selected_repo]
+  # Service-layer: inherit target_repos from parent Domain.yaml
+  # User can keep all or select subset
+  target_repos = parent_target_repos  # Already loaded in Step 0a
 
 elif layer == "feature":
   # Single repo + optional dependencies from service map
@@ -153,9 +223,13 @@ normalize_domain_prefix(input):
 
 selected_repo = find(service_map.repos, repo => repo.name == target_repos[0])
 
-if layer == "domain" || layer == "service" || layer == "microservice":
-  # Domain/service flows must resolve from explicit domain input.
+if layer == "domain" || layer == "microservice":
+  # Domain/microservice flows must resolve from explicit domain input.
   domain_prefix = normalize_domain_prefix(domain)
+elif layer == "service":
+  # Service-layer: domain_prefix already inherited from Domain.yaml in Step 0a.
+  # No resolution needed — skip.
+  pass
 elif layer == "feature":
   # Feature flows resolve from explicit domain first, then repo metadata.
   domain_prefix = normalize_domain_prefix(domain)
@@ -714,6 +788,12 @@ ${elif layer == "service"}
 │   └── Profile selected_branch: _bmad-output/personal/profile.yaml (git-ignored)
 ├──
 └── Ready for /new-feature within this service
+
+📋 Next step — onboard target repos:
+   Clone each target repo into the service's TargetProjects folder:
+   ${for target_repo in target_repos}
+   git clone <repo-url> TargetProjects/${domain_prefix}/${service_prefix}/${target_repo}
+   ${endfor}
 
 State loading pattern:
   state = load("_bmad-output/lens-work/state.yaml")
