@@ -103,29 +103,37 @@ Copy-Item -Path "src\modules\file-transforms" -Destination "release-build\_bmad\
 Write-Host "   ✓ lens-work module copied" -ForegroundColor Green
 Write-Host "   ✓ file-transforms module copied" -ForegroundColor Green
 
-# Step 5: Configure IDE prompts
+# Step 6: Configure IDE prompts
 Write-Host ""
 Write-Host "🎨 [6/9] Configuring IDE prompts..." -ForegroundColor Yellow
 
-# Configure Codex (copy from Claude Code) - only if .claude exists
-if (Test-Path "release-build\.claude\commands") {
-    New-Item -ItemType Directory -Path "release-build\.codex\prompts" -Force | Out-Null
-    Copy-Item -Path "release-build\.claude\commands\*" -Destination "release-build\.codex\prompts\" -Recurse -Force
+# Ensure directories exist in release-build
+@('.claude/commands', '.codex/prompts', '.cursor/commands', '.github/agents') | ForEach-Object {
+    $dirPath = "release-build/$_"
+    if (-not (Test-Path $dirPath)) {
+        New-Item -ItemType Directory -Path $dirPath -Force | Out-Null
+    }
+}
+
+# Configure Codex (copy from Claude Code) - only if .claude exists and has files
+if ((Test-Path "release-build\.claude\commands") -and ((Get-ChildItem -Path "release-build\.claude\commands" -Recurse -File -ErrorAction SilentlyContinue).Count -gt 0)) {
+    Copy-Item -Path "release-build\.claude\commands\*" -Destination "release-build\.codex\prompts\" -Recurse -Force -ErrorAction SilentlyContinue
     Write-Host "   ✓ Codex prompts configured" -ForegroundColor Green
+} else {
+    Write-Host "   ✓ .codex directory created (empty)" -ForegroundColor Green
 }
 
-# Copy GitHub prompts for lens-work - only if they exist
-if (Test-Path ".github\prompts") {
-    New-Item -ItemType Directory -Path "release-build\.github" -Force | Out-Null
-    Copy-Item -Path ".github\prompts" -Destination "release-build\.github\prompts" -Recurse -Force
-    Write-Host "   ✓ GitHub prompts copied" -ForegroundColor Green
+# Copy GitHub agent prompts - only if they exist
+if ((Test-Path ".github\agents") -and ((Get-ChildItem -Path ".github\agents" -Recurse -File -ErrorAction SilentlyContinue).Count -gt 0)) {
+    Copy-Item -Path ".github\agents\*" -Destination "release-build\.github\agents\" -Recurse -Force -ErrorAction SilentlyContinue
+    Write-Host "   ✓ GitHub agent prompts copied" -ForegroundColor Green
+} else {
+    Write-Host "   ✓ .github/agents directory created (empty)" -ForegroundColor Green
 }
 
-if (-not (Test-Path "release-build\.claude\commands") -and -not (Test-Path ".github\prompts")) {
-    Write-Host "   ✓ No IDE prompts to configure (skipped installation)" -ForegroundColor Green
-}
+Write-Host "   ✓ IDE prompt directories ready" -ForegroundColor Green
 
-# Step 6: Create release archive
+# Step 7: Create release archive
 Write-Host ""
 Write-Host "📦 [7/9] Creating release archive..." -ForegroundColor Yellow
 

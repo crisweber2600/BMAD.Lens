@@ -99,29 +99,35 @@ cp -r src/modules/file-transforms release-build/_bmad/file-transforms
 echo "   ✓ lens-work module copied"
 echo "   ✓ file-transforms module copied"
 
-# Step 5: Configure IDE prompts
+# Step 6: Configure IDE prompts
 echo ""
 echo "🎨 [6/9] Configuring IDE prompts..."
 
-# Configure Codex (copy from Claude Code) - only if .claude exists
-if [ -d "release-build/.claude/commands" ]; then
-    mkdir -p release-build/.codex/prompts
-    cp -r release-build/.claude/commands/* release-build/.codex/prompts/
+# Ensure prompt directories exist in release-build
+mkdir -p release-build/.claude/commands
+mkdir -p release-build/.codex/prompts
+mkdir -p release-build/.cursor/commands
+mkdir -p release-build/.github/agents
+
+# Configure Codex (copy from Claude Code) - only if .claude exists and has files
+if [ -d "release-build/.claude/commands" ] && [ "$(ls -A release-build/.claude/commands 2>/dev/null)" ]; then
+    cp -r release-build/.claude/commands/* release-build/.codex/prompts/ 2>/dev/null || true
     echo "   ✓ Codex prompts configured"
+else
+    echo "   ✓ .codex directory created (empty)"
 fi
 
-# Copy GitHub prompts for lens-work - only if they exist
-if [ -d ".github/prompts" ]; then
-    mkdir -p release-build/.github
-    cp -r .github/prompts release-build/.github/prompts
-    echo "   ✓ GitHub prompts copied"
+# Copy GitHub agent prompts - only if they exist
+if [ -d ".github/agents" ] && [ "$(ls -A .github/agents 2>/dev/null)" ]; then
+    cp -r .github/agents/* release-build/.github/agents/ 2>/dev/null || true
+    echo "   ✓ GitHub agent prompts copied"
+else
+    echo "   ✓ .github/agents directory created (empty)"
 fi
 
-if [ ! -d "release-build/.claude/commands" ] && [ ! -d ".github/prompts" ]; then
-    echo "   ✓ No IDE prompts to configure (skipped installation)"
-fi
+echo "   ✓ IDE prompt directories ready"
 
-# Step 6: Create release archive
+# Step 7: Create release archive
 echo ""
 echo "📦 [7/9] Creating release archive..."
 
