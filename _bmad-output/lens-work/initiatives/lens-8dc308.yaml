@@ -1,0 +1,28 @@
+id: lens-8dc308
+name: "LENS"
+layer: domain
+lane: small
+domain: BMAD
+domain_prefix: lens
+service: null
+question_mode: interactive
+created_at: "2026-02-11T03:06:34Z"
+created_by: Cris Weber
+target_repos:
+  - BMAD.Lens
+docs:
+  root: "docs"
+  domain: "BMAD"
+  service: "LENS"
+  repo: ""
+  feature: "lens-8dc308"
+  path: "docs/BMAD/LENS/lens-8dc308"
+gates:
+  - name: tests-pass
+    status: open
+blocks: []
+branches:
+  base: "lens/lens-8dc308/base"
+  small: "lens/lens-8dc308/small"
+  lead: "lens/lens-8dc308/lead"
+  active: "lens/lens-8dc308/small-1"
