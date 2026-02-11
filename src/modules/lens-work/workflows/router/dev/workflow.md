@@ -88,8 +88,8 @@ if size != "small":
     └── Dev phase (P4) only runs on the small size.
 
 # Validate we're on the correct branch (or can switch)
-# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-expected_branch: "${domain_prefix}/${initiative.id}/${size}-4"
+# Branch pattern: {featureBranchRoot}-{audience}-p{N}
+expected_branch: "${initiative.featureBranchRoot}-${audience}-p4"
 current_branch = casey.get-current-branch()
 
 if current_branch != expected_branch:
@@ -105,18 +105,18 @@ if current_branch != expected_branch:
 
 ```yaml
 # Merge gate checking — verify P3 (Solutioning) is complete before allowing dev
-# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-p3_branch = "${domain_prefix}/${initiative.id}/${size}-3"
-size_branch = "${domain_prefix}/${initiative.id}/${size}"
+# Branch pattern: {featureBranchRoot}-{audience}-p{N}
+p3_branch = "${initiative.featureBranchRoot}-${audience}-p3"
+audience_branch = "${initiative.featureBranchRoot}-${audience}"
 
-# Ancestry check: P3 must be merged into size branch (or base)
-result = casey.exec("git merge-base --is-ancestor origin/${p3_branch} origin/${size_branch}")
+# Ancestry check: P3 must be merged into audience branch
+result = casey.exec("git merge-base --is-ancestor origin/${p3_branch} origin/${audience_branch}")
 
 if result.exit_code != 0:
   error: |
     ❌ Merge gate blocked
-    ├── P3 (Solutioning) not merged into size branch
-    ├── Expected: ${p3_branch} is ancestor of ${size_branch}
+    ├── P3 (Solutioning) not merged into audience branch
+    ├── Expected: ${p3_branch} is ancestor of ${audience_branch}
     └── Action: Complete /plan and merge P3 PR first
 
 # Verify implementation gate passed
@@ -143,22 +143,22 @@ session.constitutional_context = constitutional_context
 
 ```yaml
 # Casey creates P4 branch if it doesn't exist
-# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-if not branch_exists("${domain_prefix}/${initiative.id}/${size}-4"):
+# Branch pattern: {featureBranchRoot}-{audience}-p{N}
+if not branch_exists("${initiative.featureBranchRoot}-${audience}-p4"):
   invoke: casey.start-phase
   params:
     phase_number: 4
     phase_name: "Implementation"
     initiative_id: ${initiative.id}
-    size: ${size}
-    domain_prefix: ${domain_prefix}
-  # Casey creates: ${domain_prefix}/{initiative_id}/{size}-4 and pushes to remote
+    audience: ${audience}
+    featureBranchRoot: ${initiative.featureBranchRoot}
+  # Casey creates: ${featureBranchRoot}-${audience}-p4 and pushes to remote
 
   invoke: casey.pull-latest
 else:
   invoke: casey.checkout-branch
   params:
-    branch: "${domain_prefix}/${initiative.id}/${size}-4"
+    branch: "${initiative.featureBranchRoot}-${audience}-p4"
   invoke: casey.pull-latest
 ```
 
@@ -190,7 +190,7 @@ output: |
   **Technical Notes:**
   ${dev_story.technical_notes}
   
-  **Branch:** ${domain_prefix}/${initiative.id}/${size}-4
+  **Branch:** ${initiative.featureBranchRoot}-${audience}-p4
 ```
 
 ### 2a. Dev Story Constitution Check (Required)
@@ -380,7 +380,7 @@ params:
   updates:
     current_phase: "p4"
     current_phase_name: "Implementation"
-    active_branch: "${domain_prefix}/${initiative.id}/${size}-4"
+    active_branch: "${initiative.featureBranchRoot}-${audience}-p4"
     workflow_status: "in_progress"
 ```
 
@@ -396,7 +396,7 @@ params:
     - "_bmad-output/lens-work/event-log.jsonl"
     - "_bmad-output/implementation-artifacts/"
   message: "[lens-work] /dev: Phase 4 Implementation — ${initiative.id} — ${story_id}"
-  branch: "${domain_prefix}/${initiative.id}/${size}-4"
+  branch: "${initiative.featureBranchRoot}-${audience}-p4"
 ```
 
 ### 9. Log Event
@@ -489,7 +489,7 @@ Throughout `/dev`, the user may work in TargetProjects for actual coding, but al
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{size}-4`
+- [ ] On correct branch: `{featureBranchRoot}-{audience}-p4`
 - [ ] Size validated as "small" for dev phase
 - [ ] state.yaml updated with phase p4
 - [ ] initiatives/{id}.yaml updated with p4 status and gate entries

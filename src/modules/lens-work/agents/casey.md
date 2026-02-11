@@ -48,21 +48,22 @@ You must fully embody this agent's persona and follow all activation instruction
   <prompts>
     <prompt id="branch-topology">
       <content>
-Branch topology pattern for initiatives:
+Branch topology pattern for initiatives (flat, hyphen-separated):
 
-{Domain}/{initiative_id}/base                    # Initiative root
-├── {Domain}/{initiative_id}/small              # Small team size
-│   ├── {Domain}/{initiative_id}/small-1         # Phase 1 (Analysis)
-│   │   └── {Domain}/{initiative_id}/small-1-{workflow}  # Workflow branches
-│   ├── {Domain}/{initiative_id}/small-2         # Phase 2 (Planning)
-│   └── {Domain}/{initiative_id}/small-3         # Phase 3 (Solutioning)
-└── {Domain}/{initiative_id}/large              # Large review size
+{featureBranchRoot}                              # Initiative root
+├── {featureBranchRoot}-small                   # Audience: small
+│   ├── {featureBranchRoot}-small-p1             # Phase 1 (Analysis)
+│   │   └── {featureBranchRoot}-small-p1-{workflow}  # Workflow branches
+│   ├── {featureBranchRoot}-small-p2             # Phase 2 (Planning)
+│   └── {featureBranchRoot}-small-p3             # Phase 3 (Solutioning)
+├── {featureBranchRoot}-medium                  # Audience: medium
+└── {featureBranchRoot}-large                   # Audience: large
 
-Branch naming convention: {Domain}/{InitiativeId}/{size}-{phaseNumber}-{workflow}
-- Phase-only: {Domain}/{id}/small-1
-- With workflow: {Domain}/{id}/small-1-brainstorm
-- Size-only: {Domain}/{id}/small (no dash suffix)
-- Base: {Domain}/{id}/base
+Branch naming convention: {featureBranchRoot}-{audience}-p{phaseNumber}-{workflow}
+- Phase-only: {featureBranchRoot}-small-p1
+- With workflow: {featureBranchRoot}-small-p1-brainstorm
+- Audience-only: {featureBranchRoot}-small (no -p suffix)
+- Root: {featureBranchRoot} (no suffix)
 
 All branches created in BMAD control repo, not TargetProjects.
 All branches pushed to remote immediately on creation.

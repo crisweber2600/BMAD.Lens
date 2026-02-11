@@ -39,7 +39,7 @@ agent:
     - id: layer-detect
       content: |
         Detect the architectural layer using this signal hierarchy (priority order):
-        1. Branch pattern: If on {domain}/{id}/... branch, parse layer from id
+        1. Branch pattern: Parse flat branch name using initiative config's featureBranchRoot
         2. Session state: Check state.yaml for active initiative
         3. Path heuristics: Infer from current working directory structure
         4. User prompt: Extract layer keywords from command
@@ -63,13 +63,18 @@ agent:
       content: |
         Display current context from two-file state:
         1. Load state.yaml for personal position
-        2. Load initiatives/{active_initiative}.yaml for initiative config
-        3. Derive review_size from initiative.review_audience_map[state.current.phase]
+        2. Load initiative config:
+           - Domain-layer: initiatives/{active_initiative}/Domain.yaml
+           - Service-layer: initiatives/{active_initiative}/Service.yaml
+           - Feature/microservice: initiatives/{active_initiative}.yaml
+        3. If feature/microservice layer: derive review_size from initiative.review_audience_map[state.current.phase]
+           If domain-layer: no review audience (domain is organizational only)
+           If service-layer: no review audience (service is organizational only)
         4. Display:
            Initiative: {name} ({id})
            Lens: {layer}
-           Phase: P{N} ({phase_name})
-           Review audience: {review_size} (derived from phase)
+           Phase: P{N} ({phase_name})  [domain/service-layer: N/A — no phases]
+           Review audience: {review_size} (derived from phase)  [domain/service-layer: N/A]
            Branch: {branch}
            Gates: {gate_status_summary}
 

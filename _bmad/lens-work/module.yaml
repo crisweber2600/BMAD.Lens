@@ -38,6 +38,32 @@ install_questions:
     default: true
     result: "{answer}"
   
+  discovery_depth:
+    prompt: "Default discovery depth?"
+    type: single-select
+    options:
+      - shallow
+      - standard
+      - deep
+    default: standard
+    result: "{answer}"
+
+  enable_jira_integration:
+    prompt: "Enable JIRA integration during discovery?"
+    type: boolean
+    default: false
+    result: "{answer}"
+
+  lens_data_folder:
+    prompt: "Path for lens data storage"
+    default: "{project-root}/_bmad/lens-work"
+    result: "{answer}"
+
+  metadata_output_folder:
+    prompt: "Path for BMAD metadata storage"
+    default: "{project-root}/_bmad-output"
+    result: "{answer}"
+
   default_git_remote:
     prompt: "Default git remote type"
     type: single-select
@@ -70,20 +96,20 @@ agents:
     name: Scout
     role: Bootstrap & discovery manager
 
+  - id: scribe
+    file: agents/scribe.agent.yaml
+    name: Cornelius
+    role: Constitutional governance guardian
+
 # Workflow Categories
 workflow_categories:
   core:
     description: "Auto-triggered lifecycle operations"
     workflows:
-      - init-initiative
+      - init-initiative    # DEPRECATED — use router/init-initiative instead
       - start-workflow
       - finish-workflow
-      - detect-layer
-      - phase-transition
-      - start-phase
-      - finish-phase
-      - open-large-review
-      - open-final-pbr
+      - phase-lifecycle    # Consolidates: detect-layer, phase-transition, start-phase, finish-phase, open-large-review, open-final-pbr
   
   router:
     description: "Phase router commands (user-facing)"
@@ -93,6 +119,7 @@ workflow_categories:
       - plan
       - review
       - dev
+      - init-initiative
   
   discovery:
     description: "Repo discovery and documentation"
@@ -101,7 +128,13 @@ workflow_categories:
       - repo-document
       - repo-reconcile
       - repo-status
-  
+      - discover
+      - analyze-codebase
+      - generate-docs
+      - lens-sync
+      - domain-map
+      - impact-analysis
+
   utility:
     description: "Manual/support workflows"
     workflows:
@@ -112,9 +145,36 @@ workflow_categories:
       - override
       - archive
       - bootstrap
+      - batch-process
       - onboarding
       - setup-rollback
       - fix-story
+      - switch
+      - check-repos
+      - migrate-state
+      - recreate-branches
+
+  governance:
+    description: "Constitutional governance and compliance"
+    workflows:
+      - amendment-propagation
+      - ancestry
+      - compliance-check
+      - constitution
+      - cross-artifact-analysis
+      - requirements-checklist
+      - resolve-constitution
+      - resolve-context
+
+  includes:
+    description: "Shared reference files included by workflows"
+    files:
+      - size-topology
+      - jira-integration
+      - gate-event-template
+      - pr-links
+      - docs-path
+      - artifact-validator
 
 # Prompts (entry point commands)
 prompts:
@@ -141,11 +201,27 @@ prompts:
     - lens-work.fix.prompt.md
     - lens-work.override.prompt.md
     - lens-work.archive.prompt.md
+    # Context Commands (Compass)
+    - lens-work.switch.prompt.md
+    - lens-work.context.prompt.md
+    - lens-work.focus.prompt.md
+    - lens-work.lens.prompt.md
+    # Governance (Scribe)
+    - lens-work.constitution.prompt.md
+    - lens-work.compliance.prompt.md
+    - lens-work.scribe.prompt.md
+    - lens-work.ancestry.prompt.md
+    # Discovery (Scout)
+    - lens-work.domain-map.prompt.md
+    - lens-work.impact-analysis.prompt.md
+    # Utility (Casey)
+    - lens-work.recreate-branches.prompt.md
     # Bootstrap & Discovery (Scout)
     - lens-work.onboard.prompt.md
     - lens-work.bootstrap.prompt.md
     - lens-work.discover.prompt.md
     - lens-work.document.prompt.md
+    - lens-work.lens-sync.prompt.md
     - lens-work.reconcile.prompt.md
     - lens-work.repo-status.prompt.md
     - lens-work.rollback.prompt.md
@@ -158,14 +234,86 @@ outputs:
   bootstrap_report: "_bmad-output/lens-work/bootstrap-report.md"
   document_log: "_bmad-output/lens-work/repo-document-log.md"
   dashboards: "_bmad-output/lens-work/dashboards/"
+  initiatives_dir: "_bmad-output/lens-work/initiatives/"
+  constitutions_dir: "_bmad-output/lens-work/constitutions/"
+  domain_map: "_bmad-output/lens-work/domain-map.yaml"
+  personal_profile: "_bmad-output/personal/profile.yaml"
+
+# Templates
+templates:
+  constitutions:
+    directory: "templates/constitutions/"
+    files:
+      - domain-constitution.md
+      - service-constitution.md
+      - microservice-constitution.md
+      - feature-constitution.md
+
+# Documentation
+docs:
+  directory: "docs/"
+  copilot_instructions: "docs/copilot-instructions.md"
+  install_to_github: ".github/lens-work-instructions.md"
+  files:
+    # v3 operational docs
+    - copilot-instructions.md
+    - migration-guide.md
+    - branch-protection.md
+    - ci-integration.md
+    - hotfix-release-strategy.md
+    - multi-repo-initiatives.md
+    - bmad-folder-changes-quick-spec.md
+    # Reference docs (from discovery workflows)
+    - agents.md
+    - architecture.md
+    - configuration.md
+    - examples.md
+    - getting-started.md
+    - getting-started-old.md
+    - installation-testing.md
+    - migrations.md
+    - operations.md
+    - prerequisites.md
+    - review-log.md
+    - scope.md
+    - session-store.md
+    - spec-checklist.md
+    - testing.md
+    - traceability.md
+    - troubleshooting.md
+    - workflows.md
+    # Governance docs
+    - context-extension.md
+    - governance/constitution-guide.md
+    - governance/command-reference.md
+    - governance/examples.md
+    - governance/getting-started.md
+    # API Reference
+    - api-reference.md
+
+# Tests
+tests:
+  directory: "tests/"
+  files:
+    - lens-work-tests.spec.md
+
+# Validation Scripts
+scripts:
+  directory: "scripts/"
+  files:
+    - validate-lens-work.ps1
+    - sync-prompts.ps1
 
 # Git Configuration
 git:
   fetch_strategy: background
   fetch_ttl: 60
   branch_patterns:
-    base: "{domain}/{initiative_id}/base"
-    small_lane: "{domain}/{initiative_id}/small"
-    large_lane: "{domain}/{initiative_id}/large"
-    phase: "{domain}/{initiative_id}/{lane}/p{phase_number}"
-    workflow: "{domain}/{initiative_id}/{lane}/p{phase_number}/w/{workflow_name}"
+    domain: "{domain_prefix}"                                         # Domain-layer: single organizational branch
+    service: "{domain_prefix}-{service_prefix}"                       # Service-layer: single organizational branch
+    root: "{featureBranchRoot}"                                       # Feature root (final merge target)
+    audience_small: "{featureBranchRoot}-small"                       # Small review audience group
+    audience_medium: "{featureBranchRoot}-medium"                     # Medium review audience group
+    audience_large: "{featureBranchRoot}-large"                       # Large review audience group
+    phase: "{featureBranchRoot}-{audience}-p{phase_number}"           # Phase branch
+    workflow: "{featureBranchRoot}-{audience}-p{phase_number}-{workflow_name}"  # Workflow branch

@@ -75,7 +75,7 @@ installed_path: '{project-root}/_bmad/lens-work/workflows/lens-sync'
 
 ### Primary Agent
 
-Navigator
+Compass
 
 ### Other Agents
 

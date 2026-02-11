@@ -1,0 +1,25 @@
+# Domain.yaml — single source of truth for domain-layer initiatives
+domain: "BMAD"
+domain_prefix: "bmaddomain"
+layer: domain
+question_mode: interactive
+created_at: "2026-02-11T05:46:43Z"
+created_by: "Cris Weber"
+target_repos:
+  - BMAD.Lens
+folders:
+  initiatives: "_bmad-output/lens-work/initiatives/bmaddomain/"
+  target_projects: "TargetProjects/bmaddomain/"
+  docs: "Docs/bmaddomain/"
+docs:
+  root: "docs"
+  domain: "BMAD"
+  service: ""
+  repo: ""
+  feature: ""
+  path: "docs/BMAD"
+branch: "bmaddomain"
+gates:
+  - name: tests-pass
+    status: open
+blocks: []

@@ -2,29 +2,30 @@
 
 ## Overview
 
-lens-work creates a structured branch topology under the `{Domain}/` prefix. Proper branch protection rules ensure lifecycle integrity — preventing accidental pushes to size branches, enforcing review gates, and keeping the merge flow aligned with BMAD phases.
+lens-work creates a flat, hyphen-separated branch topology. Proper branch protection rules ensure lifecycle integrity — preventing accidental pushes to group branches, enforcing review gates, and keeping the merge flow aligned with BMAD phases.
 
 ## Branch Topology Recap
 
 ```
-{Domain}/{id}/base          ← Initiative root (created once, rarely touched)
-{Domain}/{id}/small         ← Small-team size (planning phases merge here)
-{Domain}/{id}/large         ← Large review size (receives from small after review)
-{Domain}/{id}/small-1       ← Phase branch (Analysis)
-{Domain}/{id}/small-1-*     ← Workflow branches (individual work)
+{featureBranchRoot}                          ← Feature root (created once)
+{featureBranchRoot}-small                    ← Small-team group (planning phases merge here)
+{featureBranchRoot}-medium                   ← Medium review group
+{featureBranchRoot}-large                    ← Large review group (receives from small/medium after review)
+{featureBranchRoot}-small-p1                 ← Phase branch (Analysis)
+{featureBranchRoot}-small-p1-*               ← Workflow branches (individual work)
 ```
 
 ## Recommended Protection Rules
 
-### Size Branches (small, large)
+### Size Branches (small, medium, large)
 
 | Rule | Value | Rationale |
 |------|-------|-----------|
-| Require PR for merge | ✅ Yes | Workflow → phase merges must be reviewable |
+| Require PR for merge | ✅ Yes | Phase → group merges must be reviewable |
 | Required reviewers | 1+ | At least one team member reviews completed phase work |
-| Dismiss stale reviews | ✅ Yes | Re-review if workflow branch changes after approval |
-| Allow force push | ❌ No | Size branches are accumulation points — never rewrite |
-| Allow deletion | ❌ No | Size branches persist for the initiative lifetime |
+| Dismiss stale reviews | ✅ Yes | Re-review if phase branch changes after approval |
+| Allow force push | ❌ No | Group branches are accumulation points — never rewrite |
+| Allow deletion | ❌ No | Group branches persist for the initiative lifetime |
 
 ### Phase Branches (p1, p2, p3, p4)
 
@@ -59,7 +60,7 @@ The `small → large` merge is a critical gate representing the **Large Review**
 ```yaml
 # .github/settings.yml (probot/settings format)
 branches:
-  - name: "{Domain}/*/small"
+  - name: "*-small"
     protection:
       required_pull_request_reviews:
         required_approving_review_count: 1
@@ -67,7 +68,7 @@ branches:
       enforce_admins: true
       restrictions: null
 
-  - name: "{Domain}/*/large"
+  - name: "*-large"
     protection:
       required_pull_request_reviews:
         required_approving_review_count: 2
@@ -75,12 +76,12 @@ branches:
       enforce_admins: true
 ```
 
-> **Note:** GitHub branch protection rules support wildcard patterns. Replace `{Domain}` with your domain prefix (e.g., `lens/*/small`).
+> **Note:** GitHub branch protection rules support wildcard patterns. The flat naming convention (e.g., `chat-spark-xyz-small`) is matched with `*-small`, `*-large`, etc.
 
 ### Azure DevOps
 
 1. Navigate to **Project Settings → Repos → Branches**
-2. Add branch policy for pattern `{Domain}/*/small` and `{Domain}/*/large`
+2. Add branch policy for pattern `*-small` and `*-large`
 3. Set minimum reviewers (1 for small, 2 for large)
 4. Enable **Check for linked work items** if using Azure Boards
 5. Add build validation policy referencing your CI pipeline
@@ -88,6 +89,6 @@ branches:
 ### GitLab
 
 1. Navigate to **Settings → Repository → Protected Branches**
-2. Add `{Domain}/*/small` — Allowed to merge: Maintainers, Allowed to push: No one
-3. Add `{Domain}/*/large` — Allowed to merge: Maintainers, Allowed to push: No one
+2. Add `*-small` — Allowed to merge: Maintainers, Allowed to push: No one
+3. Add `*-large` — Allowed to merge: Maintainers, Allowed to push: No one
 4. Configure merge request approvals under **Settings → Merge Requests**

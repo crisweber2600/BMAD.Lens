@@ -68,9 +68,14 @@ invoke: casey.verify-clean-state
 state = load("_bmad-output/lens-work/state.yaml")
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 
-# Read size from initiative config (shared, canonical)
-size = initiative.size
+# Derive audience for P1 from review_audience_map
+audience = initiative.review_audience_map.p1    # "small"
+featureBranchRoot = initiative.featureBranchRoot
 domain_prefix = initiative.domain_prefix
+
+# Compute branch names for this phase
+audience_branch = initiative.branches.audiences[audience]    # {featureBranchRoot}-small
+phase_branch = "${featureBranchRoot}-${audience}-p1"          # {featureBranchRoot}-small-p1
 
 # === Path Resolver (S01-S06: Context Enhancement) ===
 docs_path = initiative.docs.path    # e.g., "docs/BMAD/LENS/BMAD.Lens/context-enhancement-9bfe4e"
@@ -98,8 +103,8 @@ else:
   repo_context = null
 
 # Validate we're on the correct branch (or can switch)
-# New branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-expected_branch: "${domain_prefix}/${initiative.id}/${size}-1"
+# Phase branch: {featureBranchRoot}-{audience}-p1
+expected_branch = phase_branch
 current_branch = casey.get-current-branch()
 
 if current_branch != expected_branch:
@@ -177,23 +182,27 @@ params:
 # Warnings are surfaced to user but do not block workflow progression
 ```
 
-### 2. Start Phase (if needed)
+### 2. Start Phase — Create and Push P1 Branch
 
 ```yaml
-# Invoke Casey if small-1 branch doesn't exist — auto-branch creation
-# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-if not branch_exists("${domain_prefix}/${initiative.id}/${size}-1"):
+# Create {smallGroupBranchRoot}-p1 from {smallGroupBranchRoot} if it doesn't exist
+# Phase branches are created by phase routers, NOT at init.
+if not branch_exists(phase_branch):
   invoke: casey.start-phase
   params:
     phase_number: 1
     phase_name: "Analysis"
     initiative_id: ${initiative.id}
-    size: ${size}
-    domain_prefix: ${domain_prefix}
-  # Casey creates: ${domain_prefix}/{initiative_id}/{size}-1 and pushes to remote
+    audience: ${audience}
+    featureBranchRoot: ${featureBranchRoot}
+    parent_branch: ${audience_branch}    # Branch from audience group
+  # Casey creates: ${phase_branch} from ${audience_branch}
+  # Casey pushes immediately: git push -u origin ${phase_branch}
 
-  # Pull latest after branch creation
-  invoke: casey.pull-latest
+  # Checkout the new phase branch
+  invoke: casey.checkout-branch
+  params:
+    branch: ${phase_branch}
 ```
 
 ### 2a. Batch Mode (Single-File Questions)
@@ -268,16 +277,43 @@ params:
 invoke: casey.finish-workflow
 ```
 
-### 5. Phase Completion Check
+### 5. Phase Completion — PR, Delete, Checkout
 
 ```yaml
 if all_workflows_complete("p1"):
-  invoke: casey.finish-phase
-  
+  # Push final state to phase branch
+  invoke: casey.commit-and-push
+  params:
+    branch: ${phase_branch}
+    message: "finish-phase(p1): Analysis complete — ${initiative.id}"
+
+  # Create PR: {smallGroupBranchRoot}-p1 → {smallGroupBranchRoot}
+  invoke: casey.create-pr
+  params:
+    source: ${phase_branch}               # {featureBranchRoot}-small-p1
+    target: ${audience_branch}             # {featureBranchRoot}-small
+    title: "P1 Analysis: ${initiative.name}"
+    body: "Phase 1 (Analysis) complete. Review audience: small."
+  capture: pr_result
+
+  # Delete phase branch locally (PR keeps remote alive)
+  invoke: casey.delete-local-branch
+  params:
+    branch: ${phase_branch}
+
+  # Checkout the audience group branch
+  invoke: casey.checkout-branch
+  params:
+    branch: ${audience_branch}
+
   output: |
     ✅ /pre-plan complete
     ├── Phase 1 (Analysis) finished
     ├── Artifacts: product-brief.md
+    ├── PR created: ${pr_result.url}
+    │   └── ${phase_branch} → ${audience_branch}
+    ├── Phase branch deleted locally
+    ├── Now on: ${audience_branch}
     └── Next: Run /spec to continue to Planning phase
 ```
 
@@ -302,7 +338,7 @@ params:
   updates:
     current_phase: "p1"
     current_phase_name: "Analysis"
-    active_branch: "${domain_prefix}/${initiative.id}/${size}-1"
+    active_branch: "${audience_branch}"
 ```
 
 ### 7. Commit State Changes
@@ -317,7 +353,7 @@ params:
     - "_bmad-output/lens-work/event-log.jsonl"
     - "${docs_path}/"
   message: "[lens-work] /pre-plan: Phase 1 Analysis — ${initiative.id}"
-  branch: "${domain_prefix}/${initiative.id}/${size}-1"
+  branch: "${audience_branch}"
 ```
 
 ### 8. Log Event
@@ -367,7 +403,9 @@ Ready to continue?
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{size}-1`
+- [ ] PR created from `{featureBranchRoot}-small-p1` → `{featureBranchRoot}-small`
+- [ ] Phase branch `{featureBranchRoot}-small-p1` deleted locally
+- [ ] Checked out to audience branch: `{featureBranchRoot}-small`
 - [ ] state.yaml updated with phase p1
 - [ ] initiatives/{id}.yaml updated with p1 status
 - [ ] event-log.jsonl entry appended

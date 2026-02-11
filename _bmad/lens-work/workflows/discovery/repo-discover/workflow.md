@@ -15,6 +15,31 @@ mutates: false
 
 ## Execution Sequence
 
+### 0. Ensure Correct Branch
+
+```bash
+# Ensure clean working tree in BMAD control repo
+if ! git diff-index --quiet HEAD --; then
+  error "Uncommitted changes detected. Commit or stash before repo-discover."
+  exit 1
+fi
+
+# Use active branch from state if available
+active_branch=""
+if [ -f "_bmad-output/lens-work/state.yaml" ]; then
+  active_branch=$(awk -F'"' '/active:/ {print $2}' _bmad-output/lens-work/state.yaml)
+fi
+
+if [ -z "$active_branch" ]; then
+  active_branch=$(git branch --show-current)
+  echo "Warning: No active branch in state. Using current branch: $active_branch"
+fi
+
+git fetch origin
+git checkout "$active_branch"
+git pull origin "$active_branch"
+```
+
 ### 1. Determine Scope
 
 ```yaml
@@ -50,7 +75,7 @@ for path in service_map_paths:
 target_projects_path="${config.target_projects_path}"
 
 actual_repos=()
-for dir in $(find "${target_projects_path}" -maxdepth 3 -type d -name ".git" -exec dirname {} \;); do
+for dir in $(find "${target_projects_path}" -maxdepth 4 -type d -name ".git" -exec dirname {} \;); do
   repo_name=$(basename "$dir")
   remote=$(git -C "$dir" remote get-url origin 2>/dev/null || echo "no-remote")
   actual_repos+=("${repo_name}:${remote}")
@@ -136,6 +161,21 @@ ${endif}
 Inventory saved to: _bmad-output/lens-work/repo-inventory.yaml
 
 Next: Run '@scout reconcile' to clone missing repos
+```
+
+### 7. Commit Inventory Changes
+
+```bash
+# Stage inventory output
+git add _bmad-output/lens-work/repo-inventory.yaml
+
+# Commit only if there are changes
+if ! git diff-index --quiet HEAD --; then
+  git commit -m "discovery(repo-discover): Update repo inventory"
+  git push origin "$active_branch"
+else
+  echo "No inventory changes to commit."
+fi
 ```
 
 ---

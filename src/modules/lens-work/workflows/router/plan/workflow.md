@@ -76,8 +76,8 @@ else:
   repo_context = null
 
 # Validate we're on the correct branch (or can switch)
-# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-expected_branch: "${domain_prefix}/${initiative.id}/${size}-3"
+# Branch pattern: {featureBranchRoot}-{audience}-p{N}
+expected_branch: "${initiative.featureBranchRoot}-${audience}-p3"
 current_branch = casey.get-current-branch()
 
 if current_branch != expected_branch:
@@ -93,12 +93,12 @@ if current_branch != expected_branch:
 
 ```yaml
 # Gate check — verify P2 (Spec/Planning) is complete
-# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-p2_branch = "${domain_prefix}/${initiative.id}/${size}-2"
-size_branch = "${domain_prefix}/${initiative.id}/${size}"
+# Branch pattern: {featureBranchRoot}-{audience}-p{N}
+p2_branch = "${initiative.featureBranchRoot}-${audience}-p2"
+audience_branch = "${initiative.featureBranchRoot}-${audience}"
 
 # Ancestry check: P2 must be merged into size branch
-result = casey.exec("git merge-base --is-ancestor origin/${p2_branch} origin/${size_branch}")
+result = casey.exec("git merge-base --is-ancestor origin/${p2_branch} origin/${audience_branch}")
 
 if result.exit_code != 0:
   error: "Phase 2 (Planning) not complete. Run /spec first or merge pending PRs."
@@ -143,23 +143,23 @@ params:
 
 ```yaml
 # Casey creates P3 branch if it doesn't exist
-# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-if not branch_exists("${domain_prefix}/${initiative.id}/${size}-3"):
+# Branch pattern: {featureBranchRoot}-{audience}-p{N}
+if not branch_exists("${initiative.featureBranchRoot}-${audience}-p3"):
   invoke: casey.start-phase
   params:
     phase_number: 3
     phase_name: "Solutioning"
     initiative_id: ${initiative.id}
-    size: ${size}
-    domain_prefix: ${domain_prefix}
-  # Casey creates: ${domain_prefix}/{initiative_id}/{size}-3 and pushes to remote
+    audience: ${audience}
+    featureBranchRoot: ${initiative.featureBranchRoot}
+  # Casey creates: ${featureBranchRoot}-${audience}-p3 and pushes to remote
 
   invoke: casey.pull-latest
 else:
   # Branch exists, ensure we're on it
   invoke: casey.checkout-branch
   params:
-    branch: "${domain_prefix}/${initiative.id}/${size}-3"
+    branch: "${initiative.featureBranchRoot}-${audience}-p3"
   invoke: casey.pull-latest
 ```
 
@@ -324,7 +324,7 @@ params:
   updates:
     current_phase: "p3"
     current_phase_name: "Solutioning"
-    active_branch: "${domain_prefix}/${initiative.id}/${size}-3"
+    active_branch: "${initiative.featureBranchRoot}-${audience}-p3"
 ```
 
 ### 6. Commit State Changes
@@ -339,7 +339,7 @@ params:
     - "_bmad-output/lens-work/event-log.jsonl"
     - "${docs_path}/"
   message: "[lens-work] /plan: Phase 3 Solutioning — ${initiative.id}"
-  branch: "${domain_prefix}/${initiative.id}/${size}-3"
+  branch: "${initiative.featureBranchRoot}-${audience}-p3"
 ```
 
 ### 7. Log Event
@@ -383,7 +383,7 @@ params:
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{size}-3`
+- [ ] On correct branch: `{featureBranchRoot}-{audience}-p3`
 - [ ] state.yaml updated with phase p3
 - [ ] initiatives/{id}.yaml updated with p3 status and p2 gate passed
 - [ ] event-log.jsonl entry appended

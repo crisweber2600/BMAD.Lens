@@ -57,10 +57,10 @@ initiative_id: string
    review_size=$(get_review_audience ${phase_number})  # e.g., "small" for p1, "medium" for p2
    
    # Phase branch created from review audience branch
-   git checkout "${domain_prefix}/${initiative_id}-${review_size}"
-   git pull origin "${domain_prefix}/${initiative_id}-${review_size}"
-   git checkout -b "${domain_prefix}/${initiative_id}-${review_size}-p${phase_number}"
-   git push -u origin "${domain_prefix}/${initiative_id}-${review_size}-p${phase_number}"
+   git checkout "${featureBranchRoot}-${review_size}"
+   git pull origin "${featureBranchRoot}-${review_size}"
+   git checkout -b "${featureBranchRoot}-${review_size}-p${phase_number}"
+   git push -u origin "${featureBranchRoot}-${review_size}-p${phase_number}"
    ```
 
 3. **Update State**
@@ -78,7 +78,7 @@ initiative_id: string
 5. **Commit Phase Start**
     ```bash
     # Ensure we're on the new phase branch
-    git checkout "${domain_prefix}/${initiative_id}-${review_size}-p${phase_number}"
+    git checkout "${featureBranchRoot}-${review_size}-p${phase_number}"
 
     # Stage state + event log
     git add _bmad-output/lens-work/state.yaml _bmad-output/lens-work/event-log.jsonl
@@ -86,7 +86,7 @@ initiative_id: string
     # Commit only if there are changes
     if ! git diff-index --quiet HEAD --; then
        git commit -m "phase(p${phase_number}): Start ${phase_name} (${initiative_id})"
-       git push origin "${domain_prefix}/${initiative_id}-${review_size}-p${phase_number}"
+       git push origin "${featureBranchRoot}-${review_size}-p${phase_number}"
     else
        echo "No phase-start changes to commit."
     fi
@@ -122,7 +122,7 @@ initiative_id: string
 2. **Push Phase Branch**
    ```bash
    review_size=$(get_review_audience ${phase_number})  # e.g., "small" for p1
-   git push origin "${domain_prefix}/${initiative_id}-${review_size}-${phase}"
+   git push origin "${featureBranchRoot}-${review_size}-${phase}"
    ```
 
 3. **Load PAT & Create PR (HARD GATE)**
@@ -151,8 +151,8 @@ initiative_id: string
 
    ```bash
    # Create PR: phase branch → review audience branch
-   source_branch="${domain_prefix}/${initiative_id}-${review_size}-${phase}"
-   target_branch="${domain_prefix}/${initiative_id}-${review_size}"
+   source_branch="${featureBranchRoot}-${review_size}-${phase}"
+   target_branch="${featureBranchRoot}-${review_size}"
    pr_title="phase(${phase}): Complete ${phase_name} for ${initiative_id} [${review_size} review]"
    
    if [[ "$remote_url" == *"github.com"* ]]; then
@@ -237,7 +237,7 @@ initiative_id: string
 5. **Commit Phase Finish**
    ```bash
    # Ensure we're on the phase branch
-   git checkout "${domain_prefix}/${initiative_id}-${review_size}-${phase}"
+   git checkout "${featureBranchRoot}-${review_size}-${phase}"
 
    # Stage state + event log
    git add _bmad-output/lens-work/state.yaml _bmad-output/lens-work/event-log.jsonl
@@ -245,7 +245,7 @@ initiative_id: string
    # Commit only if there are changes
    if ! git diff-index --quiet HEAD --; then
      git commit -m "phase(${phase}): Finish ${initiative_id} phase [${review_size} review]"
-     git push origin "${domain_prefix}/${initiative_id}-${review_size}-${phase}"
+     git push origin "${featureBranchRoot}-${review_size}-${phase}"
    else
      echo "No phase-finish changes to commit."
    fi
@@ -282,7 +282,7 @@ large (p3+p4 merged) → base gets everything via final review PR
 ```bash
 # Validate all phases complete
 if all_phases_complete; then
-  pr_link="${remote}/compare/base...${domain_prefix}/${initiative_id}-large"
+  pr_link="${remote}/compare/base...${featureBranchRoot}-large"
   echo "📋 Final Review Ready"
   echo "├── PR: ${pr_link}"
   echo "├── All phases complete (p1-p4)"

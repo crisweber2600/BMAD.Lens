@@ -62,7 +62,7 @@ You must fully embody this agent's persona and follow all activation instruction
     <prompt id="layer-detect">
       <content>
 Detect the architectural layer using this signal hierarchy (priority order):
-1. Branch pattern: If on {domain}/{id}/... branch, parse layer from id
+1. Branch pattern: If on {featureBranchRoot}[-{audience}[-p{N}]] branch, parse layer from branch name
 2. Session state: Check state.yaml for active initiative
 3. Path heuristics: Infer from current working directory structure
 4. User prompt: Extract layer keywords from command
@@ -95,7 +95,7 @@ Display current context from two-file state:
    Initiative: {name} ({id})
    Lens: {layer}
    Phase: P{N} ({phase_name})
-   Lane: {lane}
+   Size: {size}
    Branch: {branch}
    Gates: {gate_status_summary}
 
@@ -114,16 +114,21 @@ Display current context from two-file state:
     <item cmd="/new-service or #new-service or fuzzy match on new service" workflow="{project-root}/_bmad/lens-work/workflows/router/init-initiative/workflow.md">[/new-service] Create service-level initiative</item>
     <item cmd="/new-feature or #new-feature or fuzzy match on new feature" workflow="{project-root}/_bmad/lens-work/workflows/router/init-initiative/workflow.md">[/new-feature] Create feature-level initiative</item>
     <item cmd="#fix-story or fuzzy match on fix story or correction" workflow="{project-root}/_bmad/lens-work/workflows/utility/fix-story/workflow.md">[#fix-story] Correction loop (Quick-Spec → Review → Quick-Dev)</item>
-    <item cmd="/switch or fuzzy match on switch or change context" workflow="{project-root}/_bmad/lens-work/workflows/utility/switch/workflow.md">[/switch] Switch active initiative, lens, phase, or lane</item>
-    <item cmd="/context or fuzzy match on context or where am I" action="display_context">[/context] Display current context (initiative, lens, phase, lane, branch)</item>
-    <item cmd="/constitution or fuzzy match on constitution or rules" action="display_constitution">[/constitution] Display lens-work constitution and operating rules</item>
+    <item cmd="/switch or fuzzy match on switch or change context" workflow="{project-root}/_bmad/lens-work/workflows/utility/switch/workflow.md">[/switch] Switch active initiative, lens, phase, or size</item>
+    <item cmd="/context or fuzzy match on context or where am I" action="display_context">[/context] Display current context (initiative, lens, phase, size, branch)</item>
+    <item cmd="/constitution or fuzzy match on constitution or rules" workflow="{project-root}/_bmad/lens-work/workflows/governance/constitution/workflow.md">[/constitution] Constitutional governance — create, amend, or view constitutions</item>
+    <item cmd="/compliance or fuzzy match on compliance or check" workflow="{project-root}/_bmad/lens-work/workflows/governance/compliance-check/workflow.md">[/compliance] Evaluate artifact compliance against constitutions</item>
+    <item cmd="/resolve or fuzzy match on resolve or inheritance" workflow="{project-root}/_bmad/lens-work/workflows/governance/resolve-constitution/workflow.md">[/resolve] Resolve effective constitution with inheritance</item>
+    <item cmd="/ancestry or fuzzy match on ancestry or lineage or tree" workflow="{project-root}/_bmad/lens-work/workflows/governance/ancestry/workflow.md">[/ancestry] Walk governance ancestry chain</item>
+    <item cmd="/domain-map or fuzzy match on domain map" workflow="{project-root}/_bmad/lens-work/workflows/discovery/domain-map/workflow.md">[/domain-map] Discover and map domain boundaries</item>
+    <item cmd="/impact or fuzzy match on impact analysis" workflow="{project-root}/_bmad/lens-work/workflows/discovery/impact-analysis/workflow.md">[/impact] Run cross-initiative impact analysis</item>
+    <item cmd="/recreate-branches or fuzzy match on recreate branches" workflow="{project-root}/_bmad/lens-work/workflows/utility/recreate-branches/workflow.md">[/recreate-branches] Recreate worktree branches from initiatives</item>
     <item cmd="/lens or fuzzy match on lens or layer or scope" action="display_lens">[/lens] Show/change current lens focus (domain/service/microservice/feature)</item>
     <item cmd="H or fuzzy match on help or menu" action="display_menu">[H] Display menu and guidance</item>
     <item cmd="? or fuzzy match on status or where" action="@tracey ST">[?] Quick status check (delegates to Tracey)</item>
     <item cmd="CH or fuzzy match on chat" action="chat_mode">[CH] Chat with Compass about lifecycle navigation</item>
     <item cmd="DA or fuzzy match on dismiss or exit" action="exit">[DA] Dismiss Compass agent</item>
     <item cmd="PM or fuzzy match on party-mode" exec="{project-root}/_bmad/core/workflows/party-mode/workflow.md">[PM] Start Party Mode</item>
-    <item cmd="DA or fuzzy match on exit, leave, goodbye or dismiss agent">[DA] Dismiss Agent</item>
   </menu>
 </agent>
 ```

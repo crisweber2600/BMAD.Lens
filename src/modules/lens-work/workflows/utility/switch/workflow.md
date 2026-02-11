@@ -120,7 +120,7 @@ if domain_prefix == "":
   domain_prefix = normalize_domain_prefix(initiative.domain)
 
 if domain_prefix == "":
-  parsed = parse_branch(current_branch)  # {domain_prefix}/{initiative_id}/{segment}
+  parsed = parse_branch(current_branch)  # flat hyphen-separated: {domain}-{service}-{feature}[-{audience}[-p{N}]]
   domain_prefix = normalize_domain_prefix(parsed.domain_prefix)
 
 if domain_prefix == "":
@@ -271,7 +271,7 @@ else
   else
     error "Branch '${target_branch}' not found locally or on remote."
     echo "Available branches for this initiative:"
-    git branch -a | grep "${selected.id}/"
+    git branch -a | grep "${selected.id}"
     exit 1
   fi
 fi
@@ -408,8 +408,9 @@ if phase_choice == current_phase_num:
   exit: 0
 
 # Determine target branch for selected phase
-# New branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-target_branch = "${domain_prefix}/${initiative.id}/${current_size}-${phase_choice}"
+# Branch pattern: {featureBranchRoot}-{audience}-p{phaseNumber}
+# featureBranchRoot is stored in initiative.featureBranchRoot (e.g., domain-service-feature)
+target_branch = "${initiative.featureBranchRoot}-${current_size}-p${phase_choice}"
 
 output: "🔀 Switching to phase P${phase_choice} (${selected_phase.name})..."
 ```
@@ -433,15 +434,16 @@ else
   # Branch doesn't exist — create it from current size branch
   echo "Branch '${target_branch}' does not exist. Creating..."
   
-  size_branch="${domain_prefix}/${initiative_id}/${current_size}"
+  # Audience branch is the parent for phase branches
+  audience_branch="${initiative.featureBranchRoot}-${current_size}"
   
-  # Ensure size branch exists
-  if git show-ref --verify --quiet "refs/heads/${size_branch}"; then
-    git checkout "${size_branch}"
-  elif git show-ref --verify --quiet "refs/remotes/origin/${size_branch}"; then
-    git checkout -b "${size_branch}" "origin/${size_branch}"
+  # Ensure audience branch exists
+  if git show-ref --verify --quiet "refs/heads/${audience_branch}"; then
+    git checkout "${audience_branch}"
+  elif git show-ref --verify --quiet "refs/remotes/origin/${audience_branch}"; then
+    git checkout -b "${audience_branch}" "origin/${audience_branch}"
   else
-    echo "Error: Size branch '${size_branch}' not found."
+    echo "Error: Audience branch '${audience_branch}' not found."
     exit 1
   fi
   
@@ -509,14 +511,14 @@ if selected_size.code == current_size:
   output: "Already on ${current_size} size. No change needed."
   exit: 0
 
-# Determine target branch for selected size
-# New branch pattern: {Domain}/{InitiativeId}/{size}
-size_branch = "${domain_prefix}/${initiative.id}/${selected_size.code}"
+# Determine target branch for selected size (audience)
+# Branch pattern: {featureBranchRoot}-{audience}
+size_branch = "${initiative.featureBranchRoot}-${selected_size.code}"
 
-# If currently on a phase branch, also create the phase branch under the new size
+# If currently on a phase branch, also create the phase branch under the new audience
 current_phase_num = extract_phase_number(current_phase)
 if current_phase_num != null:
-  phase_branch = "${domain_prefix}/${initiative.id}/${selected_size.code}-${current_phase_num}"
+  phase_branch = "${initiative.featureBranchRoot}-${selected_size.code}-p${current_phase_num}"
   target_branch = phase_branch
 else:
   target_branch = size_branch
@@ -538,19 +540,19 @@ elif git show-ref --verify --quiet "refs/remotes/origin/${size_branch}"; then
   git checkout -b "${size_branch}" "origin/${size_branch}"
   git checkout -  # go back, we'll checkout target below
 else
-  # Create size branch from base
-  base_branch="${domain_prefix}/${initiative_id}/base"
-  if git show-ref --verify --quiet "refs/heads/${base_branch}"; then
-    git checkout "${base_branch}"
-  elif git show-ref --verify --quiet "refs/remotes/origin/${base_branch}"; then
-    git checkout -b "${base_branch}" "origin/${base_branch}"
+  # Create audience branch from featureBranchRoot
+  root_branch="${initiative.featureBranchRoot}"
+  if git show-ref --verify --quiet "refs/heads/${root_branch}"; then
+    git checkout "${root_branch}"
+  elif git show-ref --verify --quiet "refs/remotes/origin/${root_branch}"; then
+    git checkout -b "${root_branch}" "origin/${root_branch}"
   else
-    echo "Error: Base branch '${base_branch}' not found."
+    echo "Error: Root branch '${root_branch}' not found."
     exit 1
   fi
   git checkout -b "${size_branch}"
   git push -u origin "${size_branch}"
-  echo "✅ Created size branch: ${size_branch}"
+  echo "✅ Created audience branch: ${size_branch}"
 fi
 
 # Now checkout the target branch (size or size+phase)

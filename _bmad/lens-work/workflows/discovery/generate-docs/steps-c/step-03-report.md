@@ -7,12 +7,13 @@ outputFiles:
   - '{docs_output_path}/{domain}/{service}/data-model.md'
   - '{docs_output_path}/{domain}/{service}/integration-map.md'
   - '{docs_output_path}/{domain}/{service}/onboarding.md'
+  - '{docs_output_path}/{domain}/{service}/migration-map.md'
 ---
 
 # Step 3: Write Outputs
 
 ## Goal
-Persist documentation outputs to the docs folder, validate written files, and generate a completion report with metrics and recommendations.
+Persist **six** documentation outputs to the docs folder, validate written files, and generate a completion report with metrics and recommendations.
 
 ## Instructions
 
@@ -20,7 +21,7 @@ Persist documentation outputs to the docs folder, validate written files, and ge
 ```yaml
 output_resolution:
   base_path: lens_config.sync.docs_output_path
-  target_path: "{base_path}/lens-sync/{target.name}/"
+  target_path: "{base_path}/{domain}/{service}/"
   
   files:
     - source: doc_outputs.architecture
@@ -37,6 +38,9 @@ output_resolution:
       
     - source: doc_outputs.onboarding
       dest: "{target_path}/onboarding.md"
+      
+    - source: doc_outputs.migration_map
+      dest: "{target_path}/migration-map.md"
 ```
 
 ### 2. Create Output Directory

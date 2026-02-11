@@ -20,7 +20,7 @@ Create a workflow branch with merge-gate validation.
 ### Sequence
 
 1. Validate merge gate (previous workflow must be merged)
-2. Create branch: `{domain}/{id}/{size}/p{phase}/w/{workflow_name}`
+2. Create branch: `{featureBranchRoot}-{audience}-p{phase}-{workflow_name}`
 3. Checkout to new branch
 4. Update state.yaml
 5. Log to event-log.jsonl
@@ -69,7 +69,7 @@ Create phase branch from size.
 ### Sequence
 
 1. Validate previous phase complete (all workflows merged)
-2. Create branch: `{domain}/{id}/{size}/p{phase_number}`
+2. Create branch: `{featureBranchRoot}-{audience}-p{phase_number}`
 3. Checkout to new branch
 4. Update state.yaml
 5. Log to event-log.jsonl

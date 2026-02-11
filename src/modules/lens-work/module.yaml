@@ -309,8 +309,11 @@ git:
   fetch_strategy: background
   fetch_ttl: 60
   branch_patterns:
-    base: "{domain}/{initiative_id}/base"
-    small_lane: "{domain}/{initiative_id}/small"
-    large_lane: "{domain}/{initiative_id}/large"
-    phase: "{domain}/{initiative_id}/{size}-{phase_number}"
-    workflow: "{domain}/{initiative_id}/{size}-{phase_number}-{workflow_name}"
+    domain: "{domain_prefix}"                                         # Domain-layer: single organizational branch
+    service: "{domain_prefix}-{service_prefix}"                       # Service-layer: single organizational branch
+    root: "{featureBranchRoot}"                                       # Feature root (final merge target)
+    audience_small: "{featureBranchRoot}-small"                       # Small review audience group
+    audience_medium: "{featureBranchRoot}-medium"                     # Medium review audience group
+    audience_large: "{featureBranchRoot}-large"                       # Large review audience group
+    phase: "{featureBranchRoot}-{audience}-p{phase_number}"           # Phase branch
+    workflow: "{featureBranchRoot}-{audience}-p{phase_number}-{workflow_name}"  # Workflow branch

@@ -1,22 +1,59 @@
 ```prompt
 ---
-description: Create new service-level initiative with branch topology
+description: Create new service-level initiative with service-only branch and folder scaffolding
 ---
 
-Activate Compass agent and execute #new-service:
+Activate Compass agent and execute /new-service:
 
 1. Load agent: `_bmad/lens-work/agents/compass.agent.yaml`
-2. Execute `#new-service` command to create service initiative
-3. Casey creates branch topology, Scout runs discovery
-4. Route to `/pre-plan` phase
+2. Execute `/new-service` command to create service initiative
+3. The argument IS the service name (e.g., `/new-service Lens` → service = "Lens")
+4. Router dispatches to `workflows/router/init-initiative/` workflow
+
+**Context inheritance — service inherits from active domain:**
+- Load `_bmad-output/lens-work/state.yaml` → `active_initiative`
+- Load `_bmad-output/lens-work/initiatives/{active_initiative}/Domain.yaml`
+- Inherit: `domain`, `domain_prefix`, `target_repos`, `question_mode`
+- If no active domain initiative exists, error: "Create a domain first with /new-domain"
+
+**Minimal user input required:**
+- Service name (the command argument)
+- Confirm target repos (default: inherit all from Domain.yaml)
+- That's it — everything else is derived
+
+**Process mirrors /new-domain:**
+1. Casey creates service branch ONLY (no base/size/phase branches)
+2. Scaffold service folders under domain: `{domain}/{service}`
+3. Create Service.yaml (service descriptor + initiative config)
+4. Route to `/new-feature` within this service
 
 Use `#think` before defining service boundaries or naming.
 
 **Creates:**
-- Initiative ID: `{sanitized_name}-{random}`
-- Branch: `lens/{id}/base` → `small/p1`
-- State file: `_bmad-output/lens-work/state.yaml`
+- Branch: `{domain_prefix}/{service_prefix}` (single organizational branch — no audience/phase topology)
+- Service folders (nested under domain):
+  - `_bmad-output/lens-work/initiatives/{domain_prefix}/{service_prefix}/` (initiative configs)
+  - `TargetProjects/{domain_prefix}/{service_prefix}/` (target project repos)
+  - `Docs/{domain_prefix}/{service_prefix}/` (service documentation)
+- Service.yaml: `_bmad-output/lens-work/initiatives/{domain_prefix}/{service_prefix}/Service.yaml`
+  - Serves as BOTH service descriptor AND initiative config (single source of truth)
+  - Contains: folder locations, target_repos, docs, gates, blocks
+- State file: `_bmad-output/lens-work/state.yaml` (active initiative = {domain_prefix}/{service_prefix})
 
-**In-Scope Repos:** All repos in service
+**Service-layer identity:**
+- `initiative_id` = `{domain_prefix}/{service_prefix}` (no random suffix generated)
+- No separate `{initiative_id}.yaml` file — Service.yaml IS the initiative config
+
+**In-Scope Repos:** Inherited from parent Domain.yaml (or subset if specified)
+
+**Repo Onboarding:**
+After service creation, instruct the user to clone each target repo into the service folder:
+```
+git clone <repo-url> TargetProjects/{domain_prefix}/{service_prefix}/{repo_name}
+```
+Repos must be cloned into the service's TargetProjects folder to be onboarded for discovery and planning.
+
+**Note:** Service-layer does NOT create base/small/medium/large/p1 branches.
+Feature initiatives within this service will create their own branch topology.
 
 ```

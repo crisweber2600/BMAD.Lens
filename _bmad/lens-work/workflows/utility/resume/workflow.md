@@ -14,13 +14,30 @@ category: utility
 
 ## Execution Sequence
 
-### 1. Load State
+### 1. Load State (Two-File Architecture)
 
 ```yaml
+# Load personal state
 state = load("_bmad-output/lens-work/state.yaml")
 
 if state == null:
   output: "No state found. Nothing to resume."
+  exit: 0
+
+# Detect state format (legacy single-file vs two-file)
+if state.active_initiative != null:
+  # NEW two-file format — load initiative config separately
+  initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
+  if initiative == null:
+    error: "Initiative config not found: initiatives/${state.active_initiative}.yaml"
+    hint: "Run @tracey migrate to convert legacy state, or check initiatives/ directory."
+    exit: 1
+else if state.initiative != null:
+  # LEGACY single-file format — use inline initiative data
+  initiative = state.initiative
+  legacy_warning: true
+else:
+  output: "No initiative data in state. Nothing to resume."
   exit: 0
 ```
 
@@ -35,28 +52,46 @@ last_event = events[0]
 
 ```yaml
 context:
-  initiative: state.initiative.name
-  layer: state.initiative.layer
+  initiative: initiative.name
+  initiative_id: initiative.id
+  layer: initiative.layer
+  target_repos: initiative.target_repos || [initiative.target_repo]
   current_phase: state.current.phase_name
   current_workflow: state.current.workflow
   last_action: last_event.event
   last_action_time: last_event.ts
   time_since: calculate_duration(last_event.ts, now())
+  gates: initiative.gates || []
+  blocks: initiative.blocks || []
 ```
 
 ### 4. Output Context Summary
 
 ```
 🔄 Resuming lens-work Session
+${if legacy_warning}
+⚠️  Legacy state format detected. Run @tracey migrate to upgrade to two-file architecture.
+${endif}
 
-**Initiative:** ${context.initiative}
+**Initiative:** ${context.initiative} (${context.initiative_id})
 **Layer:** ${context.layer}
+**Target Repos:** ${context.target_repos}
 
 **Where you left off:**
 ├── Phase: ${context.current_phase}
 ├── Workflow: ${context.current_workflow}
 ├── Last action: ${context.last_action}
 └── Time since: ${context.time_since}
+
+**Gate Status:**
+${for gate in context.gates}
+├── ${gate_icon(gate.status)} ${gate.name} — ${gate.status}
+${endfor}
+${if context.gates.length == 0}
+├── No gates configured
+${endif}
+
+**Blocks:** ${context.blocks.length > 0 ? context.blocks : "None"}
 
 **What was happening:**
 ${describe_last_action(last_event)}
@@ -70,6 +105,10 @@ ${else}
 ├── Check full status with: @tracey ST
 ${endif}
 └── Get help with: @compass H
+
+State files:
+├── Personal: _bmad-output/lens-work/state.yaml
+└── Initiative: _bmad-output/lens-work/initiatives/${context.initiative_id}.yaml
 
 Ready to continue?
 ```

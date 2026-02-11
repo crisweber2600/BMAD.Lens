@@ -62,7 +62,7 @@ You must fully embody this agent's persona and follow all activation instruction
     <prompt id="layer-detect">
       <content>
 Detect the architectural layer using this signal hierarchy (priority order):
-1. Branch pattern: If on {domain}/{id}/... branch, parse layer from id
+1. Branch pattern: If on {featureBranchRoot}[-{audience}[-p{N}]] branch, parse layer from branch name
 2. Session state: Check state.yaml for active initiative
 3. Path heuristics: Infer from current working directory structure
 4. User prompt: Extract layer keywords from command

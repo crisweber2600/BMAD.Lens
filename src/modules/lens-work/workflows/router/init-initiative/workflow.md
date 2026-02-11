@@ -44,8 +44,190 @@ fi
 git fetch origin main
 ```
 
+### 0a. Load Parent Domain Context (Service-Layer)
+
+${if layer == "service"}
+```yaml
+# Service-layer MUST have a parent domain initiative.
+# Strategy: try active_initiative first, then auto-discover, only error if zero domains exist.
+state = load("{project-root}/_bmad-output/lens-work/state.yaml")
+
+domain_config = null
+
+# Attempt 1: Use active_initiative if set and points to a Domain.yaml
+if state.active_initiative != null:
+  domain_config_path = "{project-root}/_bmad-output/lens-work/initiatives/${state.active_initiative}/Domain.yaml"
+  if exists(domain_config_path):
+    candidate = load(domain_config_path)
+    if candidate.layer == "domain":
+      domain_config = candidate
+
+# Attempt 2: Auto-discover domains by scanning initiatives/*/Domain.yaml
+if domain_config == null:
+  domain_yaml_files = glob("{project-root}/_bmad-output/lens-work/initiatives/*/Domain.yaml")
+  if domain_yaml_files.length == 0:
+    error: "No domain found. Create a domain first with /new-domain."
+    exit: 1
+  elif domain_yaml_files.length == 1:
+    domain_config = load(domain_yaml_files[0])
+    # Auto-heal: set active_initiative so future commands skip scanning
+    state.active_initiative = domain_config.domain_prefix
+    save("{project-root}/_bmad-output/lens-work/state.yaml", state)
+    info: "Auto-selected domain '${domain_config.domain}' (${domain_config.domain_prefix}) — state.yaml updated."
+  else:
+    # Multiple domains — let user pick
+    prompt: |
+      Multiple domains found. Select parent domain:
+      ${for file in domain_yaml_files}
+      [${index}] ${load(file).domain} (${load(file).domain_prefix})
+      ${endfor}
+    domain_config = load(selected_file)
+    # Update state to selected domain
+    state.active_initiative = domain_config.domain_prefix
+    save("{project-root}/_bmad-output/lens-work/state.yaml", state)
+
+if domain_config.layer != "domain":
+  error: "Active initiative is not a domain. Switch to a domain first or create one with /new-domain."
+  exit: 1
+
+# Inherit from parent domain
+domain = domain_config.domain
+domain_prefix = domain_config.domain_prefix
+parent_target_repos = domain_config.target_repos
+question_mode = domain_config.question_mode
+```
+${endif}
+
+### 0b. Load Parent Context (Feature-Layer)
+
+${if layer == "feature"}
+```yaml
+# Feature-layer: needs a parent context (service OR domain).
+# Strategy: check active_initiative, then auto-discover, only error if zero parents exist.
+state = load("{project-root}/_bmad-output/lens-work/state.yaml")
+
+parent_config = null
+parent_layer = null
+
+# Attempt 1: Use active_initiative if set and points to a Service.yaml or Domain.yaml
+if state.active_initiative != null:
+  # Check for Service.yaml first (more specific parent)
+  service_config_path = "{project-root}/_bmad-output/lens-work/initiatives/${state.active_initiative}/Service.yaml"
+  if exists(service_config_path):
+    candidate = load(service_config_path)
+    if candidate.layer == "service":
+      parent_config = candidate
+      parent_layer = "service"
+
+  # Fall back to Domain.yaml
+  if parent_config == null:
+    domain_config_path = "{project-root}/_bmad-output/lens-work/initiatives/${state.active_initiative}/Domain.yaml"
+    if exists(domain_config_path):
+      candidate = load(domain_config_path)
+      if candidate.layer == "domain":
+        parent_config = candidate
+        parent_layer = "domain"
+
+# Attempt 2: Auto-discover by scanning initiatives/
+if parent_config == null:
+  service_yaml_files = glob("{project-root}/_bmad-output/lens-work/initiatives/*/*/Service.yaml")
+  domain_yaml_files = glob("{project-root}/_bmad-output/lens-work/initiatives/*/Domain.yaml")
+
+  all_parents = []
+  for file in service_yaml_files:
+    all_parents.append({file: file, config: load(file), type: "service"})
+  for file in domain_yaml_files:
+    all_parents.append({file: file, config: load(file), type: "domain"})
+
+  if all_parents.length == 0:
+    error: "No parent found. Create a domain (/new-domain) or service (/new-service) first."
+    exit: 1
+  elif all_parents.length == 1:
+    parent_config = all_parents[0].config
+    parent_layer = all_parents[0].type
+    # Auto-heal state
+    if parent_layer == "service":
+      state.active_initiative = "${parent_config.domain_prefix}/${parent_config.service_prefix}"
+    else:
+      state.active_initiative = parent_config.domain_prefix
+    save("{project-root}/_bmad-output/lens-work/state.yaml", state)
+    info: "Auto-selected ${parent_layer} '${parent_config[parent_layer == 'service' ? 'service' : 'domain']}' — state.yaml updated."
+  else:
+    # Multiple parents — let user pick
+    prompt: |
+      Select parent for this feature:
+      ${for parent in all_parents}
+      [${index}] [${parent.type}] ${parent.config.domain}${parent.type == "service" ? "/" + parent.config.service : ""} (${parent.type == "service" ? parent.config.domain_prefix + "/" + parent.config.service_prefix : parent.config.domain_prefix})
+      ${endfor}
+    selected = all_parents[selection]
+    parent_config = selected.config
+    parent_layer = selected.type
+    # Update state
+    if parent_layer == "service":
+      state.active_initiative = "${parent_config.domain_prefix}/${parent_config.service_prefix}"
+    else:
+      state.active_initiative = parent_config.domain_prefix
+    save("{project-root}/_bmad-output/lens-work/state.yaml", state)
+
+# Inherit from parent
+domain = parent_config.domain
+domain_prefix = parent_config.domain_prefix
+parent_target_repos = parent_config.target_repos
+question_mode = parent_config.question_mode
+
+if parent_layer == "service":
+  service = parent_config.service
+  service_prefix = parent_config.service_prefix
+else:
+  service = null
+  service_prefix = null
+```
+${endif}
+
 ### 1. Gather Initiative Details
 
+${if layer == "service"}
+```
+🧭 New Service Initiative
+
+Parent domain: ${domain} (${domain_prefix})
+
+**Service name:** ${service_from_argument || "(provide service name)"}
+
+# The service name is typically provided as the command argument:
+# /new-service Lens → service = "Lens"
+# If not provided, ask:
+${if !service_from_argument}
+**Service:** (service name, e.g., "Auth Service", "Payment Gateway")
+${endif}
+
+**Target repos:** Inherited from domain (${parent_target_repos})
+Keep all? [Y/n] (or select subset)
+```
+${elif layer == "feature"}
+```
+🧭 New Feature Initiative
+
+${if parent_layer == "service"}
+Parent service: ${service} (${domain_prefix}/${service_prefix})
+${else}
+Parent domain: ${domain} (${domain_prefix})
+${endif}
+
+**Feature:** ${feature_from_argument || "(provide feature name)"}
+
+# Feature name is typically the command argument:
+# /new-feature Rate Limiting → feature = "Rate Limiting"
+${if !feature_from_argument}
+**Feature name:** (e.g., "Rate Limiting", "OAuth Integration")
+${endif}
+
+**Target repos:** Inherited from parent (${parent_target_repos})
+${if parent_target_repos.length > 1}
+Select repos or keep all? [A] All (default)
+${endif}
+```
+${else}
 ```
 🧭 New Initiative Setup
 
@@ -54,17 +236,16 @@ Please provide the following details:
 **Name:** (descriptive name for this initiative)
 **Layer:** [1] Domain  [2] Service  [3] Microservice  [4] Feature
 
-${if layer == "service" || layer == "microservice"}
-**Domain:** (parent domain for this ${layer})
-${endif}
-
 ${if layer == "microservice"}
+**Domain:** (parent domain for this ${layer})
 **Service:** (parent service for this microservice)
 ${endif}
 ```
+${endif}
 
 ### 1a. Choose Question Mode
 
+${if layer != "service" && layer != "feature"}
 ```
 How would you like to answer phase questions?
 
@@ -77,13 +258,31 @@ Select mode: [1] or [2]
 ```yaml
 question_mode = selection == "2" ? "batch" : "interactive"
 ```
+${else}
+```yaml
+# Service/Feature-layer: inherit question_mode from parent
+# Already loaded in Step 0a (service) or Step 0b (feature)
+```
+${endif}
 
 ### 2. Generate Initiative ID
 
 ```bash
-# Format: {sanitized_name}-{random_6char}
-# Example: rate-limit-x7k2m9
-initiative_id=$(echo "${initiative_name}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | cut -c1-20)-$(openssl rand -hex 3)
+if [ "${layer}" == "domain" ]; then
+  # Domain-layer: use domain_prefix as the initiative ID (no random suffix).
+  # The domain name IS the identity — no separate initiative config file needed.
+  initiative_id="${domain_prefix}"
+elif [ "${layer}" == "service" ]; then
+  # Service-layer: use {domain_prefix}/{service_prefix} as initiative ID (no random suffix).
+  # The service name IS the identity — Service.yaml replaces separate initiative config.
+  service_prefix=$(echo "${service}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//')
+  initiative_id="${domain_prefix}/${service_prefix}"  # initiative_id uses / for file paths; branch name uses -
+  initiative_name="${initiative_name:-${service}}"else
+  # Feature/microservice layers: generate random suffix
+  # Format: {sanitized_name}-{random_6char}
+  # Example: rate-limit-x7k2m9
+  initiative_id=$(echo "${initiative_name}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | cut -c1-20)-$(openssl rand -hex 3)
+fi
 ```
 
 ### 3. Resolve Target Repos
@@ -103,29 +302,30 @@ if layer == "domain":
   target_repos = selected_repos
 
 elif layer == "service" || layer == "microservice":
-  # Single repo selection
-  prompt: |
-    Select target repo:
-    ${for repo in service_map.repos}
-    [${index}] ${repo.name}
-    ${endfor}
-  target_repos = [selected_repo]
+  # Service-layer: inherit target_repos from parent Domain.yaml
+  # User can keep all or select subset
+  target_repos = parent_target_repos  # Already loaded in Step 0a
 
 elif layer == "feature":
-  # Single repo + optional dependencies from service map
-  prompt: |
-    Select primary repo:
-    ${for repo in service_map.repos}
-    [${index}] ${repo.name}
-    ${endfor}
-  target_repos = [selected_repo]
+  # Feature-layer: inherit target_repos from parent (service or domain)
+  # User can keep all or select subset
+  if parent_target_repos.length == 1:
+    target_repos = parent_target_repos  # Single repo — auto-inherit
+  else:
+    prompt: |
+      Select target repos for this feature (inherited from parent):
+      ${for repo in parent_target_repos}
+      [${index}] ${repo}
+      ${endfor}
+      [A] All repos (default)
+    target_repos = selected_repos || parent_target_repos
 ```
 
 ### 4. Resolve Domain Prefix
 
 ```yaml
 # Domain prefix for branch naming
-# Determines the {Domain} segment of branch names: {Domain}/{InitiativeId}-{audience}-p{N}-{workflow}
+# Used as first segment of branch names: {domain_prefix}-{service_prefix}-{initiative_id}-{audience}-p{N}-{workflow}
 normalize_domain_prefix(input):
   token = input or ""
   if token contains "/":
@@ -137,21 +337,17 @@ normalize_domain_prefix(input):
 
 selected_repo = find(service_map.repos, repo => repo.name == target_repos[0])
 
-if layer == "domain" || layer == "service" || layer == "microservice":
-  # Domain/service flows must resolve from explicit domain input.
+if layer == "domain" || layer == "microservice":
+  # Domain/microservice flows must resolve from explicit domain input.
   domain_prefix = normalize_domain_prefix(domain)
+elif layer == "service":
+  # Service-layer: domain_prefix already inherited from Domain.yaml in Step 0a.
+  # No resolution needed — skip.
+  pass
 elif layer == "feature":
-  # Feature flows resolve from explicit domain first, then repo metadata.
-  domain_prefix = normalize_domain_prefix(domain)
-  if domain_prefix == "":
-    domain_prefix = normalize_domain_prefix(selected_repo.domain_prefix)
-  if domain_prefix == "":
-    domain_prefix = normalize_domain_prefix(selected_repo.domain)
-  if domain_prefix == "":
-    # Expected local_path: TargetProjects/{Org}/{Domain}/{Repo}
-    path_parts = split_path(selected_repo.local_path)
-    domain_candidate = path_parts[2] or path_parts[1]
-    domain_prefix = normalize_domain_prefix(domain_candidate)
+  # Feature-layer: domain_prefix already inherited from parent in Step 0b.
+  # No resolution needed — skip.
+  pass
 
 if domain_prefix == "":
   error: "Unable to resolve domain prefix for ${initiative_name}. Provide domain or add repo domain metadata to service-map.yaml."
@@ -186,8 +382,54 @@ if layer == "domain":
   docs_service = ""
   docs_repo = ""
 
+if layer == "service":
+  docs_repo = ""
+  docs_feature = ""
+
 docs_segments = [docs_domain, docs_service, docs_repo, docs_feature].filter(seg => seg != "")
 docs_path = "docs/" + docs_segments.join("/")
+```
+
+### 4b. Resolve Service Prefix (Service-Layer)
+
+```yaml
+${if layer == "service"}
+normalize_service_prefix(input):
+  token = input or ""
+  if token contains "/":
+    token = token.split("/").last_non_empty()
+  token = token.to_lower()
+  token = token.replace(/[^a-z0-9-]/g, "-")
+  token = token.replace(/-+/g, "-").trim("-")
+  return token
+
+service_prefix = normalize_service_prefix(service)
+${endif}
+```
+
+### 4c. Compute Feature Branch Root (Feature-Layer)
+
+```yaml
+${if layer == "feature" || layer == "microservice"}
+# Build {featureBranchRoot} from parent context + initiative_id
+# The root branch is the initiative's home — replaces the old /base branch.
+
+if service_prefix != null && service_prefix != "":
+  if target_repos.length > 1:
+    # Multi-repo: include repo name for disambiguation
+    repo_name = normalize_domain_prefix(target_repos[0])
+    featureBranchRoot = "${domain_prefix}-${service_prefix}-${repo_name}-${initiative_id}"
+  else:
+    featureBranchRoot = "${domain_prefix}-${service_prefix}-${initiative_id}"
+else:
+  # Domain-parent (repo-level feature, no service)
+  featureBranchRoot = "${domain_prefix}-${initiative_id}"
+
+# Derived group branch roots (aliases used by phase routers)
+smallGroupBranchRoot  = "${featureBranchRoot}-small"
+mediumGroupBranchRoot = "${featureBranchRoot}-medium"
+largeGroupBranchRoot  = "${featureBranchRoot}-large"
+${endif}
 ```
 
 ### 5. Delegate Branch Creation to Casey
@@ -201,17 +443,52 @@ params:
   layer: ${layer}
   domain_prefix: ${domain_prefix}
   target_repos: ${target_repos}
-  
-# Casey creates (ALL pushed immediately to remote):
-# - ${domain_prefix}/${initiative_id}/base
-# - ${domain_prefix}/${initiative_id}-small    (review audience: small — p1 PRs target here)
-# - ${domain_prefix}/${initiative_id}-medium   (review audience: medium — p2 PRs target here)
-# - ${domain_prefix}/${initiative_id}-large    (review audience: large — p3/p4 PRs target here)
-# - ${domain_prefix}/${initiative_id}-small-p1 (phase 1 branch, first working branch)
+
+${if layer == "domain"}
+# Domain-layer: Casey creates ONLY the domain branch (pushed immediately to remote):
+# - ${domain_prefix}
+#
+# Domain branches are organizational — no audience/phase branches needed.
+# Service/feature initiatives within this domain will create their own topology.
+# PUSH: git push -u origin ${domain_prefix}
+${elif layer == "service"}
+# Service-layer: Casey creates ONLY the service branch (pushed immediately to remote):
+# - ${domain_prefix}-${service_prefix}  (hyphen-separated, e.g., bmaddomain-lens)
+#
+# Service branches are organizational — no audience/phase branches needed.
+# Feature initiatives within this service will create their own topology.
+# PUSH: git push -u origin ${domain_prefix}-${service_prefix}
+${else}
+# Feature-layer: Compute {featureBranchRoot} from parent context:
+#
+# If parent is service:
+#   featureBranchRoot = ${domain_prefix}-${service_prefix}-${initiative_id}
+#   (or ${domain_prefix}-${service_prefix}-${repo_name}-${initiative_id} for multi-repo)
+# If parent is domain (repo-level):
+#   featureBranchRoot = ${domain_prefix}-${initiative_id}
+#
+# Casey creates 4 branches (ALL pushed immediately to remote):
+# - ${featureBranchRoot}          (initiative root — replaces old /base)
+# - ${featureBranchRoot}-small    AKA {smallGroupBranchRoot}  (review audience: small)
+# - ${featureBranchRoot}-medium   AKA {mediumGroupBranchRoot} (review audience: medium)
+# - ${featureBranchRoot}-large    AKA {largeGroupBranchRoot}  (review audience: large)
+#
+# NOTE: No -small-p1 branch created at init. Phase branches are created by
+# the phase router workflows (e.g., /pre-plan creates {smallGroupBranchRoot}-p1).
+${endif}
 ```
 
 ### 6. Write Initiative Config (Git-Committed)
 
+${if layer == "domain"}
+**Domain-layer: SKIP this step.** Domain.yaml (created in Step 6a) serves as
+both the domain descriptor AND the initiative config. No separate
+`{initiative_id}.yaml` file is created for domain-layer.
+${elif layer == "service"}
+**Service-layer: SKIP this step.** Service.yaml (created in Step 6a) serves as
+both the service descriptor AND the initiative config. No separate
+`{initiative_id}.yaml` file is created for service-layer.
+${else}
 Create directory and file at `{project-root}/_bmad-output/lens-work/initiatives/${initiative_id}.yaml`:
 
 ```yaml
@@ -221,6 +498,7 @@ layer: ${layer}
 domain: ${domain}
 domain_prefix: ${domain_prefix}
 service: ${service}
+service_prefix: ${service_prefix}
 question_mode: ${question_mode}
 created_at: "${ISO_TIMESTAMP}"
 created_by: ${git_user}
@@ -244,16 +522,143 @@ gates:
   - name: tests-pass
     status: open
 blocks: []
+featureBranchRoot: "${featureBranchRoot}"
 branches:
-  base: "${domain_prefix}/${initiative_id}/base"
+  root: "${featureBranchRoot}"
   audiences:
-    small: "${domain_prefix}/${initiative_id}-small"
-    medium: "${domain_prefix}/${initiative_id}-medium"
-    large: "${domain_prefix}/${initiative_id}-large"
-  active: "${domain_prefix}/${initiative_id}-small-p1"
+    small: "${featureBranchRoot}-small"
+    medium: "${featureBranchRoot}-medium"
+    large: "${featureBranchRoot}-large"
+  active: "${featureBranchRoot}"
 ```
 
-> **Note:** This file is committed to the repo and shared across collaborators. It holds the canonical initiative definition, the **review audience map** (phase → audience size), and branch topology. The audience map determines which review branch each phase's PR targets.
+> **Note:** This file is committed to the repo and shared across collaborators. It holds the canonical initiative definition, the **review audience map** (phase → audience size), and branch topology. The audience map determines which review branch each phase's PR targets. The `featureBranchRoot` is computed from parent context: `{domain_prefix}-{service_prefix}-{initiative_id}` (service parent) or `{domain_prefix}-{initiative_id}` (domain parent). Phase branches (e.g., `-small-p1`) are created by phase router workflows, NOT at init.
+${endif}
+
+### 6a. Scaffold Domain/Service Folders (Domain/Service-Layer)
+
+${if layer == "domain"}
+
+Create domain folder structure with `.gitkeep` files and a `Domain.yaml` descriptor:
+
+```bash
+# Scaffold domain folders
+DOMAIN_NAME="${domain_prefix}"
+
+# Create domain folders with .gitkeep
+mkdir -p "_bmad-output/lens-work/initiatives/${DOMAIN_NAME}"
+touch "_bmad-output/lens-work/initiatives/${DOMAIN_NAME}/.gitkeep"
+
+mkdir -p "TargetProjects/${DOMAIN_NAME}"
+touch "TargetProjects/${DOMAIN_NAME}/.gitkeep"
+
+mkdir -p "Docs/${DOMAIN_NAME}"
+touch "Docs/${DOMAIN_NAME}/.gitkeep"
+```
+
+Create `{project-root}/_bmad-output/lens-work/initiatives/${DOMAIN_NAME}/Domain.yaml`.
+This file serves as BOTH the domain descriptor AND the initiative config for domain-layer.
+No separate `{initiative_id}.yaml` is created.
+
+```yaml
+# Domain.yaml — single source of truth for domain-layer initiatives
+domain: "${domain}"
+domain_prefix: "${domain_prefix}"
+layer: domain
+question_mode: ${question_mode}
+created_at: "${ISO_TIMESTAMP}"
+created_by: "${git_user}"
+target_repos:
+${for repo in target_repos}
+  - ${repo}
+${endfor}
+folders:
+  initiatives: "_bmad-output/lens-work/initiatives/${domain_prefix}/"
+  target_projects: "TargetProjects/${domain_prefix}/"
+  docs: "Docs/${domain_prefix}/"
+docs:
+  root: "docs"
+  domain: "${docs_domain}"
+  service: ""
+  repo: ""
+  feature: ""
+  path: "${docs_path}"
+branch: "${domain_prefix}"
+gates:
+  - name: tests-pass
+    status: open
+blocks: []
+```
+
+> **Note:** Domain.yaml is both the domain anchor and the initiative config for domain-layer.
+> It contains target_repos, docs, gates, and blocks — the same fields other layers
+> store in `{initiative_id}.yaml`. Service and feature initiatives within this domain
+> will be created as separate files in the initiatives folder.
+> The `.gitkeep` files ensure empty directories are committed.
+
+${elif layer == "service"}
+
+Create service folder structure under the parent domain with `.gitkeep` files and a `Service.yaml` descriptor:
+
+```bash
+# Scaffold service folders under domain
+DOMAIN_NAME="${domain_prefix}"
+SERVICE_NAME="${service_prefix}"
+
+# Create service folders with .gitkeep (nested under domain)
+mkdir -p "_bmad-output/lens-work/initiatives/${DOMAIN_NAME}/${SERVICE_NAME}"
+touch "_bmad-output/lens-work/initiatives/${DOMAIN_NAME}/${SERVICE_NAME}/.gitkeep"
+
+mkdir -p "TargetProjects/${DOMAIN_NAME}/${SERVICE_NAME}"
+touch "TargetProjects/${DOMAIN_NAME}/${SERVICE_NAME}/.gitkeep"
+
+mkdir -p "Docs/${DOMAIN_NAME}/${SERVICE_NAME}"
+touch "Docs/${DOMAIN_NAME}/${SERVICE_NAME}/.gitkeep"
+```
+
+Create `{project-root}/_bmad-output/lens-work/initiatives/${DOMAIN_NAME}/${SERVICE_NAME}/Service.yaml`.
+This file serves as BOTH the service descriptor AND the initiative config for service-layer.
+No separate `{initiative_id}.yaml` is created.
+
+```yaml
+# Service.yaml — single source of truth for service-layer initiatives
+domain: "${domain}"
+domain_prefix: "${domain_prefix}"
+service: "${service}"
+service_prefix: "${service_prefix}"
+layer: service
+question_mode: ${question_mode}
+created_at: "${ISO_TIMESTAMP}"
+created_by: "${git_user}"
+target_repos:
+${for repo in target_repos}
+  - ${repo}
+${endfor}
+folders:
+  initiatives: "_bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/"
+  target_projects: "TargetProjects/${domain_prefix}/${service_prefix}/"
+  docs: "Docs/${domain_prefix}/${service_prefix}/"
+docs:
+  root: "docs"
+  domain: "${docs_domain}"
+  service: "${docs_service}"
+  repo: ""
+  feature: ""
+  path: "${docs_path}"
+branch: "${domain_prefix}-${service_prefix}"
+gates:
+  - name: tests-pass
+    status: open
+blocks: []
+```
+
+> **Note:** Service.yaml is both the service anchor and the initiative config for service-layer.
+> It contains target_repos, docs, gates, and blocks — the same fields other layers
+> store in `{initiative_id}.yaml`. Feature initiatives within this service
+> will be created as separate files in the initiatives folder.
+> The `.gitkeep` files ensure empty directories are committed.
+
+${endif}
 
 ### 7. Write Personal State (Git-Ignored)
 
@@ -261,11 +666,33 @@ Write to `{project-root}/_bmad-output/lens-work/state.yaml`:
 
 ```yaml
 active_initiative: ${initiative_id}
+${if layer == "domain"}
+# For domain-layer: active_initiative = domain_prefix (e.g., "bmad")
+# Load via: initiatives/${active_initiative}/Domain.yaml
+${elif layer == "service"}
+# For service-layer: active_initiative = {domain_prefix}/{service_prefix} (e.g., "bmaddomain/lens")
+# Load via: initiatives/${active_initiative}/Service.yaml
+${else}
+# For feature/microservice: active_initiative = generated ID (e.g., "rate-limit-x7k2m9")
+# Load via: initiatives/${active_initiative}.yaml
+${endif}
 current:
-  phase: p1
-  phase_name: "Analysis"
+${if layer == "domain"}
+  phase: null
+  phase_name: null
+  workflow: null
+  workflow_status: null
+${elif layer == "service"}
+  phase: null
+  phase_name: null
+  workflow: null
+  workflow_status: null
+${else}
+  phase: null
+  phase_name: null
   workflow: null
   workflow_status: pending
+${endif}
 ```
 
 > **Note:** This file is git-ignored. It tracks the individual user's current position in the initiative. Each collaborator has their own local copy. Review audience is NOT stored here — derived from phase via initiative config's review_audience_map.
@@ -280,9 +707,71 @@ Append to `{project-root}/_bmad-output/lens-work/event-log.jsonl`:
 
 ### 9. Commit Initiative Config
 
+${if layer == "domain"}
 ```bash
-# Ensure on small-p1 branch (phase 1)
-git checkout "${domain_prefix}/${initiative_id}-small-p1"
+# Domain-layer: checkout the domain branch
+git checkout "${domain_prefix}"
+
+# Stage domain scaffolding and event log (NO separate initiative config — Domain.yaml IS the config)
+git add "_bmad-output/lens-work/initiatives/${domain_prefix}/Domain.yaml"
+git add "_bmad-output/lens-work/initiatives/${domain_prefix}/.gitkeep"
+git add "TargetProjects/${domain_prefix}/.gitkeep"
+git add "Docs/${domain_prefix}/.gitkeep"
+git add "_bmad-output/lens-work/event-log.jsonl"
+
+# Create targeted commit
+git commit -m "init(${domain_prefix}): Create domain '${initiative_name}'
+
+Domain: ${domain}
+Layer: domain
+
+Creates:
+- Domain branch: ${domain_prefix}
+- Domain.yaml: initiatives/${domain_prefix}/Domain.yaml (domain config + initiative config)
+- Domain folders: initiatives/${domain_prefix}/, TargetProjects/${domain_prefix}/, Docs/${domain_prefix}/
+- Event log entry
+
+Domain-layer: organizational branch only, no audience/phase topology.
+Service and feature initiatives within this domain create their own branches."
+
+# Push domain branch
+git push -u origin "${domain_prefix}"
+```
+${elif layer == "service"}
+```bash
+# Service-layer: checkout the service branch
+git checkout "${domain_prefix}-${service_prefix}"
+
+# Stage service scaffolding and event log (NO separate initiative config — Service.yaml IS the config)
+git add "_bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/Service.yaml"
+git add "_bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/.gitkeep"
+git add "TargetProjects/${domain_prefix}/${service_prefix}/.gitkeep"
+git add "Docs/${domain_prefix}/${service_prefix}/.gitkeep"
+git add "_bmad-output/lens-work/event-log.jsonl"
+
+# Create targeted commit
+git commit -m "init(${domain_prefix}-${service_prefix}): Create service '${initiative_name}'
+
+Domain: ${domain}
+Service: ${service}
+Layer: service
+
+Creates:
+- Service branch: ${domain_prefix}-${service_prefix}
+- Service.yaml: initiatives/${domain_prefix}/${service_prefix}/Service.yaml (service config + initiative config)
+- Service folders: initiatives/${domain_prefix}/${service_prefix}/, TargetProjects/${domain_prefix}/${service_prefix}/, Docs/${domain_prefix}/${service_prefix}/
+- Event log entry
+
+Service-layer: organizational branch only, no audience/phase topology.
+Feature initiatives within this service create their own branches."
+
+# Push service branch
+git push -u origin "${domain_prefix}-${service_prefix}"
+```
+${else}
+```bash
+# Feature-layer: checkout the feature root branch
+git checkout "${featureBranchRoot}"
 
 # Stage initiative config and event log (NOT state.yaml — it's git-ignored)
 git add "_bmad-output/lens-work/initiatives/${initiative_id}.yaml"
@@ -300,27 +789,36 @@ Review audience progression:
   p1 → small | p2 → medium | p3 → large | p4 → large
 
 Creates:
-- Branch topology: base, -small, -medium, -large, -small-p1
+- Branch topology: ${featureBranchRoot}, -small, -medium, -large
 - Initiative config: initiatives/${initiative_id}.yaml (includes review_audience_map)
 - Event log entry
 
-Branch pattern: {Domain}/{id}-{audience}-p{N}-{workflow}
+Branch pattern: {featureBranchRoot}-{audience}-p{N}-{workflow}
 State architecture: two-file (personal state + shared initiative config)
 Ready for /pre-plan workflow."
 
-# Push to small-p1 branch
-git push -u origin "${domain_prefix}/${initiative_id}-small-p1"
+# Push to feature root branch
+git push -u origin "${featureBranchRoot}"
 ```
+${endif}
 
 ### 10. Ensure .gitignore for Personal State
 
 ```bash
+${if layer == "domain"}
+PUSH_BRANCH="${domain_prefix}"
+${elif layer == "service"}
+PUSH_BRANCH="${domain_prefix}-${service_prefix}"
+${else}
+PUSH_BRANCH="${featureBranchRoot}"
+${endif}
+
 # Ensure state.yaml is git-ignored (personal state should not be committed)
 if ! grep -q "_bmad-output/lens-work/state.yaml" .gitignore 2>/dev/null; then
   echo "_bmad-output/lens-work/state.yaml" >> .gitignore
   git add .gitignore
   git commit -m "chore: gitignore personal lens-work state"
-  git push origin "${domain_prefix}/${initiative_id}-small-p1"
+  git push origin "${PUSH_BRANCH}"
 fi
 ```
 
@@ -365,6 +863,90 @@ done
 
 Output to Compass:
 
+${if layer == "domain"}
+```
+✅ Domain created: ${domain_prefix}
+├── Name: ${initiative_name}
+├── Layer: domain
+├── Domain: ${domain}
+├── Question mode: ${question_mode}
+├── Docs path: ${docs_path}
+├── Target repos: ${target_repos}
+├──
+├── Branch: ${domain_prefix} (domain-only, committed & pushed)
+├──
+├── Domain Folders:
+│   ├── Initiatives: _bmad-output/lens-work/initiatives/${domain_prefix}/
+│   ├── TargetProjects: TargetProjects/${domain_prefix}/
+│   └── Docs: Docs/${domain_prefix}/
+├──
+├── Domain Config: _bmad-output/lens-work/initiatives/${domain_prefix}/Domain.yaml
+├──
+├── Branch Selection:
+│   ${for target_repo in target_repos}
+│   ├── ${target_repo}: ${branch_selection_result[target_repo].branch}
+│   │  └── Synced: ${branch_selection_result[target_repo].timestamp}
+│   ${endfor}
+├──
+├── State Architecture:
+│   ├── Personal state: _bmad-output/lens-work/state.yaml (git-ignored)
+│   ├── Domain.yaml: _bmad-output/lens-work/initiatives/${domain_prefix}/Domain.yaml (committed, includes initiative config)
+│   └── Profile selected_branch: _bmad-output/personal/profile.yaml (git-ignored)
+├──
+└── Ready for /new-service or /new-feature within this domain
+
+State loading pattern:
+  state = load("_bmad-output/lens-work/state.yaml")
+  # active_initiative = domain_prefix for domain-layer
+  initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}/Domain.yaml")
+  profile = load("_bmad-output/personal/profile.yaml")
+```
+${elif layer == "service"}
+```
+✅ Service created: ${domain_prefix}-${service_prefix}
+├── Name: ${initiative_name}
+├── Layer: service
+├── Domain: ${domain}
+├── Service: ${service}
+├── Question mode: ${question_mode}
+├── Docs path: ${docs_path}
+├── Target repos: ${target_repos}
+├──
+├── Branch: ${domain_prefix}-${service_prefix} (service-only, committed & pushed)
+├──
+├── Service Folders:
+│   ├── Initiatives: _bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/
+│   ├── TargetProjects: TargetProjects/${domain_prefix}/${service_prefix}/
+│   └── Docs: Docs/${domain_prefix}/${service_prefix}/
+├──
+├── Service Config: _bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/Service.yaml
+├──
+├── Branch Selection:
+│   ${for target_repo in target_repos}
+│   ├── ${target_repo}: ${branch_selection_result[target_repo].branch}
+│   │  └── Synced: ${branch_selection_result[target_repo].timestamp}
+│   ${endfor}
+├──
+├── State Architecture:
+│   ├── Personal state: _bmad-output/lens-work/state.yaml (git-ignored)
+│   ├── Service.yaml: _bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/Service.yaml (committed, includes initiative config)
+│   └── Profile selected_branch: _bmad-output/personal/profile.yaml (git-ignored)
+├──
+└── Ready for /new-feature within this service
+
+📋 Next step — onboard target repos:
+   Clone each target repo into the service's TargetProjects folder:
+   ${for target_repo in target_repos}
+   git clone <repo-url> TargetProjects/${domain_prefix}/${service_prefix}/${target_repo}
+   ${endfor}
+
+State loading pattern:
+  state = load("_bmad-output/lens-work/state.yaml")
+  # active_initiative = {domain_prefix}/{service_prefix} for service-layer
+  initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}/Service.yaml")
+  profile = load("_bmad-output/personal/profile.yaml")
+```
+${else}
 ```
 ✅ Initiative created: ${initiative_id}
 ├── Name: ${initiative_name}
@@ -381,11 +963,11 @@ Output to Compass:
 │   └── p4 (Implementation) → large  (full team, formal gates)
 ├──
 ├── Branch Topology:
-│   ├── Base: ${domain_prefix}/${initiative_id}/base
-│   ├── Small audience:  ${domain_prefix}/${initiative_id}-small
-│   ├── Medium audience: ${domain_prefix}/${initiative_id}-medium
-│   ├── Large audience:  ${domain_prefix}/${initiative_id}-large
-│   └── Phase: ${domain_prefix}/${initiative_id}-small-p1 (committed & pushed)
+│   ├── Root: ${featureBranchRoot} (committed & pushed)
+│   ├── Small audience:  ${featureBranchRoot}-small
+│   ├── Medium audience: ${featureBranchRoot}-medium
+│   └── Large audience:  ${featureBranchRoot}-large
+│      (Phase branches created by phase routers, e.g., /pre-plan creates -small-p1)
 ├──
 ├── Branch Selection:
 │   ${for target_repo in target_repos}
@@ -408,6 +990,7 @@ State loading pattern:
   review_size = initiative.review_audience_map[state.current.phase]   # Phase determines audience
   selected_branch = profile.lens_work.selected_branch.branch  # Cached branch selection
 ```
+${endif}
 
 ---
 
@@ -419,6 +1002,8 @@ The three-part state architecture:
 |------|-------|------------|----------|
 | `state.yaml` | Personal | git-ignored | Active initiative pointer, current phase/workflow position |
 | `initiatives/{id}.yaml` | Shared | committed | Initiative definition, **review_audience_map**, gates, blocks, branches, target repos |
+| `initiatives/{domain}/Domain.yaml` | Shared | committed | Domain-layer: domain descriptor + initiative config (replaces `{id}.yaml` for domain-layer) |
+| `initiatives/{domain}/{service}/Service.yaml` | Shared | committed | Service-layer: service descriptor + initiative config (replaces `{id}.yaml` for service-layer) |
 | `personal/profile.yaml` | Personal | git-ignored | User preferences, **branch selection + last sync timestamp** (per initiative) |
 
 **Loading pattern used by all downstream workflows:**
@@ -428,7 +1013,17 @@ The three-part state architecture:
 state = load("_bmad-output/lens-work/state.yaml")
 
 # Step 2: Load initiative config using the active_initiative pointer
+${if layer == "domain"}
+# Domain-layer: active_initiative = domain_prefix (e.g., "bmad")
+# Domain.yaml IS the initiative config — no separate {id}.yaml
+initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}/Domain.yaml")
+${elif layer == "service"}
+# Service-layer: active_initiative = {domain_prefix}/{service_prefix} (e.g., "bmaddomain/lens")
+# Service.yaml IS the initiative config — no separate {id}.yaml
+initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}/Service.yaml")
+${else}
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
+${endif}
 
 # Step 3: Load personal profile for branch selection and user preferences
 profile = load("_bmad-output/personal/profile.yaml")
@@ -436,7 +1031,9 @@ profile = load("_bmad-output/personal/profile.yaml")
 # Step 4: Use all three for workflow logic
 current_phase = state.current.phase
 initiative_layer = initiative.layer
+${if layer != "domain" && layer != "service"}
 review_size = initiative.review_audience_map[current_phase]  # Phase determines review audience
+${endif}
 target_repos = initiative.target_repos
 selected_branch = profile.lens_work.selected_branch.branch
 last_sync_date = profile.lens_work.last_sync.date
@@ -460,12 +1057,35 @@ last_sync_date = profile.lens_work.last_sync.date
 
 ## Post-Conditions
 
+### All Layers
 - [ ] Initiative ID generated and unique
-- [ ] All 5 branches created and pushed (via Casey: base, -small, -medium, -large, -small-p1)
-- [ ] `initiatives/{id}.yaml` created and committed
+- [ ] Initiative config created and committed (for domain: Domain.yaml; for service: Service.yaml; for others: `initiatives/{id}.yaml`)
 - [ ] `state.yaml` written locally (git-ignored)
 - [ ] `.gitignore` updated for `state.yaml`
 - [ ] `event-log.jsonl` entry appended and committed
 - [ ] **Target repos synced and branches selected** (via sync-and-select-branch)
 - [ ] `profile.lens_work.selected_branch` and `last_sync.date` updated
+- [ ] Control returned to Compass
+
+### Domain-Layer Specific
+- [ ] `initiative_id` = `domain_prefix` (no random suffix)
+- [ ] Single `${domain_prefix}` branch created and pushed
+- [ ] Domain folders scaffolded: `initiatives/{domain}/`, `TargetProjects/{domain}/`, `Docs/{domain}/`
+- [ ] `.gitkeep` files created in all domain folders
+- [ ] `Domain.yaml` created in `initiatives/{domain}/` with initiative config fields (target_repos, docs, gates, blocks)
+- [ ] **No separate `{initiative_id}.yaml` file** — Domain.yaml is the single source of truth
+- [ ] Ready for /new-service or /new-feature within this domain
+
+### Service-Layer Specific
+- [ ] `initiative_id` = `{domain_prefix}/{service_prefix}` (no random suffix)
+- [ ] Single `${domain_prefix}-${service_prefix}` branch created and pushed
+- [ ] Service folders scaffolded: `initiatives/{domain}/{service}/`, `TargetProjects/{domain}/{service}/`, `Docs/{domain}/{service}/`
+- [ ] `.gitkeep` files created in all service folders
+- [ ] `Service.yaml` created in `initiatives/{domain}/{service}/` with initiative config fields (target_repos, docs, gates, blocks)
+- [ ] **No separate `{initiative_id}.yaml` file** — Service.yaml is the single source of truth
+- [ ] Ready for /new-feature within this service
+
+### Microservice/Feature Layers
+- [ ] All 4 branches created and pushed (via Casey: {featureBranchRoot}, -small, -medium, -large)
+- [ ] Phase branches NOT created at init (created by phase routers, e.g., /pre-plan creates -small-p1)
 - [ ] Control returned to Compass for /pre-plan routing

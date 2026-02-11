@@ -135,7 +135,7 @@ phase_authorization:
 
 ### Signal Hierarchy (Priority Order)
 
-1. **Branch pattern** — If on `{domain}/{id}/...` branch, parse layer from id
+1. **Branch pattern** — If on `{featureBranchRoot}[-{audience}[-p{N}]]` branch, parse layer from branch name
 2. **Session state** — Check `state.yaml` for active initiative
 3. **Path heuristics** — Infer from current working directory
 4. **User prompt** — Extract layer keywords from command
