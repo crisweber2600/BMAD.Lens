@@ -58,6 +58,10 @@ ${if layer == "service" || layer == "microservice"}
 **Domain:** (parent domain for this ${layer})
 ${endif}
 
+${if layer == "service"}
+**Service:** (service name, e.g., "Auth Service", "Payment Gateway")
+${endif}
+
 ${if layer == "microservice"}
 **Service:** (parent service for this microservice)
 ${endif}
@@ -85,8 +89,13 @@ if [ "${layer}" == "domain" ]; then
   # Domain-layer: use domain_prefix as the initiative ID (no random suffix).
   # The domain name IS the identity — no separate initiative config file needed.
   initiative_id="${domain_prefix}"
+elif [ "${layer}" == "service" ]; then
+  # Service-layer: use {domain_prefix}/{service_prefix} as initiative ID (no random suffix).
+  # The service name IS the identity — Service.yaml replaces separate initiative config.
+  service_prefix=$(echo "${service}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//')
+  initiative_id="${domain_prefix}/${service_prefix}"
 else
-  # Service/feature layers: generate random suffix
+  # Feature/microservice layers: generate random suffix
   # Format: {sanitized_name}-{random_6char}
   # Example: rate-limit-x7k2m9
   initiative_id=$(echo "${initiative_name}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | cut -c1-20)-$(openssl rand -hex 3)
@@ -193,8 +202,29 @@ if layer == "domain":
   docs_service = ""
   docs_repo = ""
 
+if layer == "service":
+  docs_repo = ""
+  docs_feature = ""
+
 docs_segments = [docs_domain, docs_service, docs_repo, docs_feature].filter(seg => seg != "")
 docs_path = "docs/" + docs_segments.join("/")
+```
+
+### 4b. Resolve Service Prefix (Service-Layer)
+
+```yaml
+${if layer == "service"}
+normalize_service_prefix(input):
+  token = input or ""
+  if token contains "/":
+    token = token.split("/").last_non_empty()
+  token = token.to_lower()
+  token = token.replace(/[^a-z0-9-]/g, "-")
+  token = token.replace(/-+/g, "-").trim("-")
+  return token
+
+service_prefix = normalize_service_prefix(service)
+${endif}
 ```
 
 ### 5. Delegate Branch Creation to Casey
@@ -215,6 +245,12 @@ ${if layer == "domain"}
 #
 # Domain branches are organizational — no audience/phase branches needed.
 # Service/feature initiatives within this domain will create their own topology.
+${elif layer == "service"}
+# Service-layer: Casey creates ONLY the service branch (pushed immediately to remote):
+# - ${domain_prefix}/${service_prefix}
+#
+# Service branches are organizational — no audience/phase branches needed.
+# Feature initiatives within this service will create their own topology.
 ${else}
 # Casey creates (ALL pushed immediately to remote):
 # - ${domain_prefix}/${initiative_id}/base
@@ -231,6 +267,10 @@ ${if layer == "domain"}
 **Domain-layer: SKIP this step.** Domain.yaml (created in Step 6a) serves as
 both the domain descriptor AND the initiative config. No separate
 `{initiative_id}.yaml` file is created for domain-layer.
+${elif layer == "service"}
+**Service-layer: SKIP this step.** Service.yaml (created in Step 6a) serves as
+both the service descriptor AND the initiative config. No separate
+`{initiative_id}.yaml` file is created for service-layer.
 ${else}
 Create directory and file at `{project-root}/_bmad-output/lens-work/initiatives/${initiative_id}.yaml`:
 
@@ -276,7 +316,7 @@ branches:
 > **Note:** This file is committed to the repo and shared across collaborators. It holds the canonical initiative definition, the **review audience map** (phase → audience size), and branch topology. The audience map determines which review branch each phase's PR targets.
 ${endif}
 
-### 6a. Scaffold Domain Folders (Domain-Layer Only)
+### 6a. Scaffold Domain/Service Folders (Domain/Service-Layer)
 
 ${if layer == "domain"}
 
@@ -337,6 +377,68 @@ blocks: []
 > will be created as separate files in the initiatives folder.
 > The `.gitkeep` files ensure empty directories are committed.
 
+${elif layer == "service"}
+
+Create service folder structure under the parent domain with `.gitkeep` files and a `Service.yaml` descriptor:
+
+```bash
+# Scaffold service folders under domain
+DOMAIN_NAME="${domain_prefix}"
+SERVICE_NAME="${service_prefix}"
+
+# Create service folders with .gitkeep (nested under domain)
+mkdir -p "_bmad-output/lens-work/initiatives/${DOMAIN_NAME}/${SERVICE_NAME}"
+touch "_bmad-output/lens-work/initiatives/${DOMAIN_NAME}/${SERVICE_NAME}/.gitkeep"
+
+mkdir -p "TargetProjects/${DOMAIN_NAME}/${SERVICE_NAME}"
+touch "TargetProjects/${DOMAIN_NAME}/${SERVICE_NAME}/.gitkeep"
+
+mkdir -p "Docs/${DOMAIN_NAME}/${SERVICE_NAME}"
+touch "Docs/${DOMAIN_NAME}/${SERVICE_NAME}/.gitkeep"
+```
+
+Create `{project-root}/_bmad-output/lens-work/initiatives/${DOMAIN_NAME}/${SERVICE_NAME}/Service.yaml`.
+This file serves as BOTH the service descriptor AND the initiative config for service-layer.
+No separate `{initiative_id}.yaml` is created.
+
+```yaml
+# Service.yaml — single source of truth for service-layer initiatives
+domain: "${domain}"
+domain_prefix: "${domain_prefix}"
+service: "${service}"
+service_prefix: "${service_prefix}"
+layer: service
+question_mode: ${question_mode}
+created_at: "${ISO_TIMESTAMP}"
+created_by: "${git_user}"
+target_repos:
+${for repo in target_repos}
+  - ${repo}
+${endfor}
+folders:
+  initiatives: "_bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/"
+  target_projects: "TargetProjects/${domain_prefix}/${service_prefix}/"
+  docs: "Docs/${domain_prefix}/${service_prefix}/"
+docs:
+  root: "docs"
+  domain: "${docs_domain}"
+  service: "${docs_service}"
+  repo: ""
+  feature: ""
+  path: "${docs_path}"
+branch: "${domain_prefix}/${service_prefix}"
+gates:
+  - name: tests-pass
+    status: open
+blocks: []
+```
+
+> **Note:** Service.yaml is both the service anchor and the initiative config for service-layer.
+> It contains target_repos, docs, gates, and blocks — the same fields other layers
+> store in `{initiative_id}.yaml`. Feature initiatives within this service
+> will be created as separate files in the initiatives folder.
+> The `.gitkeep` files ensure empty directories are committed.
+
 ${endif}
 
 ### 7. Write Personal State (Git-Ignored)
@@ -348,12 +450,20 @@ active_initiative: ${initiative_id}
 ${if layer == "domain"}
 # For domain-layer: active_initiative = domain_prefix (e.g., "bmad")
 # Load via: initiatives/${active_initiative}/Domain.yaml
+${elif layer == "service"}
+# For service-layer: active_initiative = {domain_prefix}/{service_prefix} (e.g., "bmaddomain/lens")
+# Load via: initiatives/${active_initiative}/Service.yaml
 ${else}
-# For service/feature: active_initiative = generated ID (e.g., "rate-limit-x7k2m9")
+# For feature/microservice: active_initiative = generated ID (e.g., "rate-limit-x7k2m9")
 # Load via: initiatives/${active_initiative}.yaml
 ${endif}
 current:
 ${if layer == "domain"}
+  phase: null
+  phase_name: null
+  workflow: null
+  workflow_status: null
+${elif layer == "service"}
   phase: null
   phase_name: null
   workflow: null
@@ -408,6 +518,37 @@ Service and feature initiatives within this domain create their own branches."
 # Push domain branch
 git push -u origin "${domain_prefix}"
 ```
+${elif layer == "service"}
+```bash
+# Service-layer: checkout the service branch
+git checkout "${domain_prefix}/${service_prefix}"
+
+# Stage service scaffolding and event log (NO separate initiative config — Service.yaml IS the config)
+git add "_bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/Service.yaml"
+git add "_bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/.gitkeep"
+git add "TargetProjects/${domain_prefix}/${service_prefix}/.gitkeep"
+git add "Docs/${domain_prefix}/${service_prefix}/.gitkeep"
+git add "_bmad-output/lens-work/event-log.jsonl"
+
+# Create targeted commit
+git commit -m "init(${domain_prefix}/${service_prefix}): Create service '${initiative_name}'
+
+Domain: ${domain}
+Service: ${service}
+Layer: service
+
+Creates:
+- Service branch: ${domain_prefix}/${service_prefix}
+- Service.yaml: initiatives/${domain_prefix}/${service_prefix}/Service.yaml (service config + initiative config)
+- Service folders: initiatives/${domain_prefix}/${service_prefix}/, TargetProjects/${domain_prefix}/${service_prefix}/, Docs/${domain_prefix}/${service_prefix}/
+- Event log entry
+
+Service-layer: organizational branch only, no audience/phase topology.
+Feature initiatives within this service create their own branches."
+
+# Push service branch
+git push -u origin "${domain_prefix}/${service_prefix}"
+```
 ${else}
 ```bash
 # Ensure on small-p1 branch (phase 1)
@@ -447,6 +588,8 @@ ${endif}
 ```bash
 ${if layer == "domain"}
 PUSH_BRANCH="${domain_prefix}"
+${elif layer == "service"}
+PUSH_BRANCH="${domain_prefix}/${service_prefix}"
 ${else}
 PUSH_BRANCH="${domain_prefix}/${initiative_id}-small-p1"
 ${endif}
@@ -539,6 +682,45 @@ State loading pattern:
   initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}/Domain.yaml")
   profile = load("_bmad-output/personal/profile.yaml")
 ```
+${elif layer == "service"}
+```
+✅ Service created: ${domain_prefix}/${service_prefix}
+├── Name: ${initiative_name}
+├── Layer: service
+├── Domain: ${domain}
+├── Service: ${service}
+├── Question mode: ${question_mode}
+├── Docs path: ${docs_path}
+├── Target repos: ${target_repos}
+├──
+├── Branch: ${domain_prefix}/${service_prefix} (service-only, committed & pushed)
+├──
+├── Service Folders:
+│   ├── Initiatives: _bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/
+│   ├── TargetProjects: TargetProjects/${domain_prefix}/${service_prefix}/
+│   └── Docs: Docs/${domain_prefix}/${service_prefix}/
+├──
+├── Service Config: _bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/Service.yaml
+├──
+├── Branch Selection:
+│   ${for target_repo in target_repos}
+│   ├── ${target_repo}: ${branch_selection_result[target_repo].branch}
+│   │  └── Synced: ${branch_selection_result[target_repo].timestamp}
+│   ${endfor}
+├──
+├── State Architecture:
+│   ├── Personal state: _bmad-output/lens-work/state.yaml (git-ignored)
+│   ├── Service.yaml: _bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/Service.yaml (committed, includes initiative config)
+│   └── Profile selected_branch: _bmad-output/personal/profile.yaml (git-ignored)
+├──
+└── Ready for /new-feature within this service
+
+State loading pattern:
+  state = load("_bmad-output/lens-work/state.yaml")
+  # active_initiative = {domain_prefix}/{service_prefix} for service-layer
+  initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}/Service.yaml")
+  profile = load("_bmad-output/personal/profile.yaml")
+```
 ${else}
 ```
 ✅ Initiative created: ${initiative_id}
@@ -596,6 +778,7 @@ The three-part state architecture:
 | `state.yaml` | Personal | git-ignored | Active initiative pointer, current phase/workflow position |
 | `initiatives/{id}.yaml` | Shared | committed | Initiative definition, **review_audience_map**, gates, blocks, branches, target repos |
 | `initiatives/{domain}/Domain.yaml` | Shared | committed | Domain-layer: domain descriptor + initiative config (replaces `{id}.yaml` for domain-layer) |
+| `initiatives/{domain}/{service}/Service.yaml` | Shared | committed | Service-layer: service descriptor + initiative config (replaces `{id}.yaml` for service-layer) |
 | `personal/profile.yaml` | Personal | git-ignored | User preferences, **branch selection + last sync timestamp** (per initiative) |
 
 **Loading pattern used by all downstream workflows:**
@@ -609,6 +792,10 @@ ${if layer == "domain"}
 # Domain-layer: active_initiative = domain_prefix (e.g., "bmad")
 # Domain.yaml IS the initiative config — no separate {id}.yaml
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}/Domain.yaml")
+${elif layer == "service"}
+# Service-layer: active_initiative = {domain_prefix}/{service_prefix} (e.g., "bmaddomain/lens")
+# Service.yaml IS the initiative config — no separate {id}.yaml
+initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}/Service.yaml")
 ${else}
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 ${endif}
@@ -619,7 +806,7 @@ profile = load("_bmad-output/personal/profile.yaml")
 # Step 4: Use all three for workflow logic
 current_phase = state.current.phase
 initiative_layer = initiative.layer
-${if layer != "domain"}
+${if layer != "domain" && layer != "service"}
 review_size = initiative.review_audience_map[current_phase]  # Phase determines review audience
 ${endif}
 target_repos = initiative.target_repos
@@ -647,7 +834,7 @@ last_sync_date = profile.lens_work.last_sync.date
 
 ### All Layers
 - [ ] Initiative ID generated and unique
-- [ ] Initiative config created and committed (for domain: Domain.yaml; for others: `initiatives/{id}.yaml`)
+- [ ] Initiative config created and committed (for domain: Domain.yaml; for service: Service.yaml; for others: `initiatives/{id}.yaml`)
 - [ ] `state.yaml` written locally (git-ignored)
 - [ ] `.gitignore` updated for `state.yaml`
 - [ ] `event-log.jsonl` entry appended and committed
@@ -664,6 +851,15 @@ last_sync_date = profile.lens_work.last_sync.date
 - [ ] **No separate `{initiative_id}.yaml` file** — Domain.yaml is the single source of truth
 - [ ] Ready for /new-service or /new-feature within this domain
 
-### Service/Microservice/Feature Layers
+### Service-Layer Specific
+- [ ] `initiative_id` = `{domain_prefix}/{service_prefix}` (no random suffix)
+- [ ] Single `${domain_prefix}/${service_prefix}` branch created and pushed
+- [ ] Service folders scaffolded: `initiatives/{domain}/{service}/`, `TargetProjects/{domain}/{service}/`, `Docs/{domain}/{service}/`
+- [ ] `.gitkeep` files created in all service folders
+- [ ] `Service.yaml` created in `initiatives/{domain}/{service}/` with initiative config fields (target_repos, docs, gates, blocks)
+- [ ] **No separate `{initiative_id}.yaml` file** — Service.yaml is the single source of truth
+- [ ] Ready for /new-feature within this service
+
+### Microservice/Feature Layers
 - [ ] All 5 branches created and pushed (via Casey: base, -small, -medium, -large, -small-p1)
 - [ ] Control returned to Compass for /pre-plan routing
