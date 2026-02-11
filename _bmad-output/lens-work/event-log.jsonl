@@ -1,1 +1,2 @@
 {"ts":"2026-02-11T03:06:34Z","event":"init-initiative","id":"lens-8dc308","layer":"domain","target":"BMAD.Lens","created_by":"Cris Weber"}
+{"ts":"2026-02-10T15:40:00Z","event":"init-initiative","id":"bmad-031bd2","layer":"domain","target_repos":["BMAD.Lens"],"domain":"BMAD","service":null,"question_mode":"interactive","docs_path":"docs/BMAD"}
