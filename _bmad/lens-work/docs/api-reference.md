@@ -54,10 +54,10 @@ initiative:
     - bmad-chat
 
 branches:
-  base: "chat/chat-spark-backend-alignment-50cf37/base"
-  small: "chat/chat-spark-backend-alignment-50cf37/small"
-  large: "chat/chat-spark-backend-alignment-50cf37/large"
-  active: "chat/chat-spark-backend-alignment-50cf37/small-3"
+  base: "chat-chat-spark-backend-alignment-50cf37"
+  small: "chat-chat-spark-backend-alignment-50cf37-small"
+  large: "chat-chat-spark-backend-alignment-50cf37-large"
+  active: "chat-chat-spark-backend-alignment-50cf37-small"
 
 gates: []
 blocks: []
@@ -167,13 +167,13 @@ gates:
     dev_story_ready: true
 blocks: []
 branches:
-  base: "chat/chat-spark-backend-alignment-50cf37/base"
-  small: "chat/chat-spark-backend-alignment-50cf37/small"
-  large: "chat/chat-spark-backend-alignment-50cf37/large"
-  p1: "chat/chat-spark-backend-alignment-50cf37/small-1"
-  p2: "chat/chat-spark-backend-alignment-50cf37/small-2"
-  p3: "chat/chat-spark-backend-alignment-50cf37/small-3"
-  active: "chat/chat-spark-backend-alignment-50cf37/small-3"
+  base: "chat-chat-spark-backend-alignment-50cf37"
+  small: "chat-chat-spark-backend-alignment-50cf37-small"
+  large: "chat-chat-spark-backend-alignment-50cf37-large"
+  p1: "chat-chat-spark-backend-alignment-50cf37-small-p1"
+  p2: "chat-chat-spark-backend-alignment-50cf37-medium-p2"
+  p3: "chat-chat-spark-backend-alignment-50cf37-large-p3"
+  active: "chat-chat-spark-backend-alignment-50cf37-large-p3"
 ```
 
 ### Field Reference
@@ -207,16 +207,15 @@ branches:
 
 ## Branch Naming Pattern
 
-### Service/Feature Layers
+All branches use flat, hyphen-separated naming (no `/` separators):
 
 ```
-{domain}/{initiative_id}/{size}-{phase_number}
-```
-
-### Domain Layer
-
-```
-{domain_prefix}
+Domain:  {domain_prefix}
+Service: {domain_prefix}-{service_prefix}
+Feature: {featureBranchRoot}  (e.g., {domain}-{service}-{feature_id})
+Group:   {featureBranchRoot}-small | -medium | -large
+Phase:   {featureBranchRoot}-{audience}-p{N}
+Workflow:{featureBranchRoot}-{audience}-p{N}-{workflow}
 ```
 
 Domain-layer initiatives create a single organizational branch using just the domain prefix. No base, size, phase, or workflow branches. Service/feature initiatives within the domain create their own full branch topology.
@@ -241,27 +240,28 @@ main
 **Service/Feature (full topology):**
 ```
 main
-  └── {domain}/{initiative_id}/base
-        ├── {domain}/{initiative_id}/small
-        │     ├── {domain}/{initiative_id}/small-1    (phase 1 = Analysis)
-        │     ├── {domain}/{initiative_id}/small-2    (phase 2 = Planning)
-        │     ├── {domain}/{initiative_id}/small-3    (phase 3 = Solutioning)
-        │     └── {domain}/{initiative_id}/small-4    (phase 4 = Implementation)
-        └── {domain}/{initiative_id}/large
+  └── {featureBranchRoot}                              (initiative root)
+        ├── {featureBranchRoot}-small                   (audience: small)
+        │     ├── {featureBranchRoot}-small-p1           (phase 1 = Analysis)
+        │     ├── {featureBranchRoot}-small-p2           (phase 2 = Planning)
+        │     ├── {featureBranchRoot}-small-p3           (phase 3 = Solutioning)
+        │     └── {featureBranchRoot}-small-p4           (phase 4 = Implementation)
+        ├── {featureBranchRoot}-medium                  (audience: medium)
+        └── {featureBranchRoot}-large                   (audience: large)
 ```
 
 ### Examples
 
 | Branch | Purpose |
 |--------|---------|
-| `chat/chat-spark-backend-alignment-50cf37/base` | Initiative base branch |
-| `chat/chat-spark-backend-alignment-50cf37/small` | Small size branch |
-| `chat/chat-spark-backend-alignment-50cf37/large` | Large size review branch |
-| `chat/chat-spark-backend-alignment-50cf37/small-1` | Phase 1 (Analysis) |
-| `chat/chat-spark-backend-alignment-50cf37/small-2` | Phase 2 (Planning) |
-| `chat/chat-spark-backend-alignment-50cf37/small-3` | Phase 3 (Solutioning) |
+| `chat-spark-backend-alignment-50cf37` | Initiative root branch |
+| `chat-spark-backend-alignment-50cf37-small` | Small audience branch |
+| `chat-spark-backend-alignment-50cf37-large` | Large audience review branch |
+| `chat-spark-backend-alignment-50cf37-small-p1` | Phase 1 (Analysis) |
+| `chat-spark-backend-alignment-50cf37-small-p2` | Phase 2 (Planning) |
+| `chat-spark-backend-alignment-50cf37-small-p3` | Phase 3 (Solutioning) |
 
-> **Migration note:** The old pattern `lens/{slug}/{lane}/...` is obsolete. All `lead` references are now `large`. All `lane` references are now `size`.
+> **Migration note:** The old pattern `lens/{slug}/{lane}/...` is obsolete. All `lead` references are now `large`. All `lane`/`size` references are now `audience`. Branch names use flat hyphen-separated format.
 
 ---
 
@@ -431,10 +431,11 @@ The following terminology changes apply throughout lens-work:
 
 | Old Term | New Term | Context |
 |----------|----------|---------|
-| `size` | `size` | Branch topology (small/large) |
+| `size` | `audience` | Branch topology (small/medium/large) |
 | `lead` | `large` | The review/integration branch |
 | `Navigator` | `Compass` / `Scout` | Agent roles |
-| `lens/{slug}/...` | `{domain}/{id}/...` | Branch naming prefix |
+| `{domain}/{id}/base` | `{featureBranchRoot}` | Branch root (flat, hyphen-separated) |
+| `{domain}/{id}/{size}-{N}-{wf}` | `{featureBranchRoot}-{audience}-p{N}-{workflow}` | Workflow branch |
 | `.lens/` | `_bmad-output/lens-work/` | Storage location |
 | `_bmad/lens/` | `_bmad-output/lens-work/` | Output folder |
 | `state_folder` | `_bmad-output/lens-work/` | Configuration |

@@ -129,7 +129,7 @@
 
 **Sequence:**
 1. Load existing initiative context
-2. Create fix branch: `{domain}/{id}/fix/{fix_id}`
+2. Create fix branch: `{featureBranchRoot}-fix-{fix_id}`
 3. Run Quick-Spec (minimal)
 4. Run Adversarial Review
 5. Run Quick-Dev (implementation)

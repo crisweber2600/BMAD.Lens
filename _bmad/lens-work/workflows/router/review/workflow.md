@@ -77,12 +77,12 @@ invoke: casey.pull-latest
 
 ```yaml
 # Gate check — verify P3 (Solutioning) is complete
-# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
-p3_branch = "${domain_prefix}/${initiative.id}/${size}-3"
-size_branch = "${domain_prefix}/${initiative.id}/${size}"
+# Branch pattern: {featureBranchRoot}-{audience}-p{N}
+p3_branch = "${initiative.featureBranchRoot}-${audience}-p3"
+audience_branch = "${initiative.featureBranchRoot}-${audience}"
 
-# Ancestry check: P3 must be merged into size branch
-result = casey.exec("git merge-base --is-ancestor origin/${p3_branch} origin/${size_branch}")
+# Ancestry check: P3 must be merged into audience branch
+result = casey.exec("git merge-base --is-ancestor origin/${p3_branch} origin/${audience_branch}")
 
 if result.exit_code != 0:
   error: "Phase 3 (Solutioning) not complete. Run /plan first or merge pending PRs."
@@ -245,11 +245,11 @@ output: |
 ### 5. PR Validation — Generate PR Link
 
 ```yaml
-# Casey generates PR link for current phase branch → size branch
+# Casey generates PR link for current phase branch → audience branch
 invoke: casey.generate-pr-link
 params:
-  source_branch: "${domain_prefix}/${initiative.id}/${size}-3"
-  target_branch: "${domain_prefix}/${initiative.id}/${size}"
+  source_branch: "${initiative.featureBranchRoot}-${audience}-p3"
+  target_branch: "${initiative.featureBranchRoot}-${audience}"
   title: "[Review] Implementation Gate — ${initiative.name}"
   
 output: |

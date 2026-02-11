@@ -88,12 +88,12 @@ Casey responds to lifecycle events, not user commands:
 ### Git Operations
 
 ```bash
-# Branch creation
-git checkout -b {domain_prefix}/{id}/base
-git checkout -b {domain}/{id}/small
-git checkout -b {domain}/{id}/large
-git checkout -b {domain}/{id}/small/p1
-git checkout -b {domain}/{id}/small/p1/w/{workflow}
+# Branch creation (flat, hyphen-separated)
+git checkout -b {featureBranchRoot}            # initiative root
+git checkout -b {featureBranchRoot}-small       # audience: small
+git checkout -b {featureBranchRoot}-medium      # audience: medium
+git checkout -b {featureBranchRoot}-large       # audience: large
+git checkout -b {featureBranchRoot}-small-p1    # phase branch
 
 # Merge validation
 git merge-base --is-ancestor {parent} {child}

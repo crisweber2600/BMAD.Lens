@@ -92,7 +92,7 @@ created: 2026-02-05
 |---|------|-----------------|
 | 2.1.1 | Lists all initiatives from `initiatives/*.yaml` and `initiatives/*/Domain.yaml` | Menu shows all initiative files with name, ID, layer |
 | 2.1.2 | Updates `state.yaml` `active_initiative` | After switch, `active_initiative` matches selected ID |
-| 2.1.3 | Casey checks out correct branch | `git branch --show-current` matches `{Domain}/{id}/...` pattern |
+| 2.1.3 | Casey checks out correct branch | `git branch --show-current` matches expected flat branch name pattern |
 | 2.1.4 | Handles non-existent initiative gracefully | Error: "Initiative '{id}' not found" with available options listed |
 | 2.1.5 | Switching to already-active initiative is a no-op | Message: "Already on initiative {id}" |
 
@@ -104,25 +104,25 @@ created: 2026-02-05
 
 | # | Test | Expected Result |
 |---|------|-----------------|
-| 2.2.1 | Creates phase branch via Casey if missing | New branch created matching `{Domain}/{id}/{size}-{N}` |
+| 2.2.1 | Creates phase branch via Casey if missing | New branch created matching `{featureBranchRoot}-{audience}-p{N}` |
 | 2.2.2 | Validates phase ordering (can't skip phases) | Attempting to skip from p1 to p3 shows gate violation error |
 | 2.2.3 | Updates `state.yaml` `current.phase` | Phase field updated to target phase number |
-| 2.2.4 | Branch pattern matches `{Domain}/{id}/{size}-{N}` | Regex validation passes for created branch name |
+| 2.2.4 | Branch pattern matches `{featureBranchRoot}-{audience}-p{N}` | Regex validation passes for created branch name |
 | 2.2.5 | Cannot switch to phase without passing previous gate | Gate check blocks advancement; shows required artifacts |
 | 2.2.6 | Switching to current phase is a no-op | Message: "Already on phase {N}" |
 
-### 2.3 Switch Size
+### 2.3 Switch Audience
 
 **Priority:** P1  
-**Category:** Branch / Size  
+**Category:** Branch / Audience  
 **Automation:** Git-verifiable
 
 | # | Test | Expected Result |
 |---|------|-----------------|
-| 2.3.1 | Creates size branch if missing | New branch created for size |
-| 2.3.2 | Updates initiative config `size` | `initiatives/{id}.yaml` size updated to target size |
-| 2.3.3 | Validates size name against allowed values | Invalid size names rejected with list of valid options |
-| 2.3.4 | Size switch preserves phase context | Phase doesn't reset when switching sizes |
+| 2.3.1 | Creates audience branch if missing | New branch created for audience group |
+| 2.3.2 | Updates initiative config review_audience_map | `initiatives/{id}.yaml` review_audience_map reflects correct phase-audience mapping |
+| 2.3.3 | Validates audience name against allowed values | Invalid audience names rejected with list of valid options (small, medium, large) |
+| 2.3.4 | Audience switch preserves phase context | Phase doesn't reset when switching audience groups |
 
 ---
 
@@ -136,19 +136,22 @@ created: 2026-02-05
 
 | # | Test | Expected Result |
 |---|------|-----------------|
-| 3.1.1 | Generates valid initiative ID (service/feature) | Format: `{sanitized-name}-{6-random-chars}`, no spaces/special chars |
-| 3.1.2 | Creates base branch (service/feature) | `{Domain}/{id}/base` branch exists |
-| 3.1.3 | Creates small branch (service/feature) | `{Domain}/{id}/small` branch exists |
-| 3.1.4 | Creates large branch (service/feature) | `{Domain}/{id}/large` branch exists |
-| 3.1.5 | Creates p1 branch (service/feature) | `{Domain}/{id}/{size}-1` branch exists |
-| 3.1.6 | Writes initiative config with required fields (service/feature) | `initiatives/{id}.yaml` contains: `id`, `name`, `layer`, `target_repos`, `gates`, `blocks` |
-| 3.1.7 | Logs init event to `event-log.jsonl` | Last entry has `event: init-initiative`, matching `initiative_id` |
-| 3.1.8 | Returns control to Compass | After init, Compass menu is displayed |
-| 3.1.9 | Duplicate initiative name generates unique ID (service/feature) | Two inits with same name produce different IDs (random suffix differs) |
-| 3.1.10 | Domain-layer uses `domain_prefix` as initiative ID | `initiative_id` equals `domain_prefix` (no random suffix) |
-| 3.1.11 | Domain-layer creates only `{domain_prefix}` branch | Only one branch created — no base, small, large, or p1 branches |
-| 3.1.12 | Domain-layer creates Domain.yaml | `initiatives/{domain_prefix}/Domain.yaml` exists with initiative config fields |
-| 3.1.13 | Domain-layer scaffolds domain folders | `initiatives/{domain_prefix}/.gitkeep`, `TargetProjects/{domain_prefix}/.gitkeep`, `Docs/{domain_prefix}/.gitkeep` all exist |
+| 3.1.1 | Generates valid initiative ID (feature) | Format: `{sanitized-name}-{6-random-chars}`, no spaces/special chars |
+| 3.1.2 | Creates root branch (feature) | `{featureBranchRoot}` branch exists and pushed |
+| 3.1.3 | Creates small audience branch (feature) | `{featureBranchRoot}-small` branch exists and pushed |
+| 3.1.4 | Creates medium audience branch (feature) | `{featureBranchRoot}-medium` branch exists and pushed |
+| 3.1.5 | Creates large audience branch (feature) | `{featureBranchRoot}-large` branch exists and pushed |
+| 3.1.6 | No phase branches created at init (feature) | No `-small-p1` or other phase branches exist after init |
+| 3.1.7 | Writes initiative config with required fields (feature) | `initiatives/{id}.yaml` contains: `id`, `name`, `layer`, `target_repos`, `featureBranchRoot`, `branches`, `review_audience_map`, `gates`, `blocks` |
+| 3.1.8 | Logs init event to `event-log.jsonl` | Last entry has `event: init-initiative`, matching `initiative_id` |
+| 3.1.9 | Returns control to Compass | After init, Compass menu is displayed |
+| 3.1.10 | Duplicate initiative name generates unique ID (feature) | Two inits with same name produce different IDs (random suffix differs) |
+| 3.1.11 | Domain-layer uses `domain_prefix` as initiative ID | `initiative_id` equals `domain_prefix` (no random suffix) |
+| 3.1.12 | Domain-layer creates only `{domain_prefix}` branch | Only one branch created and pushed — no audience/phase branches |
+| 3.1.13 | Domain-layer creates Domain.yaml | `initiatives/{domain_prefix}/Domain.yaml` exists with initiative config fields |
+| 3.1.14 | Domain-layer scaffolds domain folders | `initiatives/{domain_prefix}/.gitkeep`, `TargetProjects/{domain_prefix}/.gitkeep`, `Docs/{domain_prefix}/.gitkeep` all exist |
+| 3.1.15 | Service-layer creates `{domain_prefix}-{service_prefix}` branch | Single branch with hyphen separator, pushed immediately |
+| 3.1.16 | All branches pushed immediately after creation | `git branch -r` shows all created branches on remote |
 
 ### 3.2 Layer-Specific Init
 
@@ -161,7 +164,7 @@ created: 2026-02-05
 | 3.2.1 | Domain layer creates domain folder structure | `TargetProjects/{DOMAIN}/`, `initiatives/{DOMAIN}/`, `Docs/{DOMAIN}/` directories created with `.gitkeep` files |
 | 3.2.2 | Domain layer creates Domain.yaml with initiative config | `initiatives/{DOMAIN}/Domain.yaml` contains: `id`, `name`, `layer`, `domain`, `docs`, `branch`, `gates`, `blocks` |
 | 3.2.3 | Domain layer prompts for domain name | Interactive prompt asks for domain identifier |
-| 3.2.4 | Domain layer creates only domain branch | Only `{domain_prefix}` branch — no base/small/large/p1 |
+| 3.2.4 | Domain layer creates only domain branch | Only `{domain_prefix}` branch — no audience/phase branches |
 | 3.2.5 | Service layer resolves target repo | Target repo resolved from `service-map.yaml` |
 | 3.2.6 | Service layer creates service subfolder | `TargetProjects/{DOMAIN}/{SERVICE}/{REPO}` structure created |
 | 3.2.7 | Feature layer validates parent initiative | Error if referenced parent initiative doesn't exist |
@@ -184,7 +187,7 @@ created: 2026-02-05
 |---|------|-----------------|
 | 4.1.1.1 | Loads two-file state | Both `state.yaml` and active initiative file read |
 | 4.1.1.2 | Gate check allows entry at p1 | Pre-plan available when on phase 1 |
-| 4.1.1.3 | Auto-creates phase branch if missing | Branch `{Domain}/{id}/{size}-1` created if not present |
+| 4.1.1.3 | Auto-creates phase branch if missing | Branch `{featureBranchRoot}-{audience}-p1` created if not present |
 | 4.1.1.4 | State updates persist after execution | `state.yaml` updated with workflow progress |
 | 4.1.1.5 | Git discipline validates clean state | Dirty working directory blocks workflow start |
 | 4.1.1.6 | Constitutional context is injected | `constitutional_context` is resolved and available before analysis workflow calls |
@@ -195,7 +198,7 @@ created: 2026-02-05
 |---|------|-----------------|
 | 4.1.2.1 | Loads two-file state | Both files read successfully |
 | 4.1.2.2 | Gate check requires p1 completion | Cannot enter spec without pre-plan artifacts |
-| 4.1.2.3 | Creates p2 branch via Casey | Branch `{Domain}/{id}/{size}-2` created |
+| 4.1.2.3 | Creates p2 branch via Casey | Branch `{featureBranchRoot}-{audience}-p2` created |
 | 4.1.2.4 | State updates persist | Phase advanced to p2 in state |
 | 4.1.2.5 | Git discipline validates clean state | Blocks on dirty working directory |
 | 4.1.2.6 | Constitutional context is injected | `constitutional_context` is resolved before PRD/UX/architecture workflows run |
@@ -206,7 +209,7 @@ created: 2026-02-05
 |---|------|-----------------|
 | 4.1.3.1 | Loads two-file state | Both files read successfully |
 | 4.1.3.2 | Gate check requires p2 completion | Cannot enter plan without spec artifacts |
-| 4.1.3.3 | Creates p3 branch via Casey | Branch `{Domain}/{id}/{size}-3` created |
+| 4.1.3.3 | Creates p3 branch via Casey | Branch `{featureBranchRoot}-{audience}-p3` created |
 | 4.1.3.4 | State updates persist | Phase advanced to p3 in state |
 | 4.1.3.5 | Git discipline validates clean state | Blocks on dirty working directory |
 | 4.1.3.6 | Constitutional context is injected | `constitutional_context` is resolved before epics/stories/readiness workflows run |
@@ -231,7 +234,7 @@ created: 2026-02-05
 |---|------|-----------------|
 | 4.1.5.1 | Loads two-file state | Both files read successfully |
 | 4.1.5.2 | Gate check requires review completion | Cannot enter dev without review pass |
-| 4.1.5.3 | Creates p4 branch via Casey | Branch `{Domain}/{id}/{size}-4` created |
+| 4.1.5.3 | Creates p4 branch via Casey | Branch `{featureBranchRoot}-{audience}-p4` created |
 | 4.1.5.4 | State updates persist | Phase advanced to p4 in state |
 | 4.1.5.5 | Git discipline validates clean state | Blocks on dirty working directory |
 | 4.1.5.6 | Constitutional context is injected | `constitutional_context` is resolved before implementation guidance and review loops |
@@ -301,7 +304,7 @@ created: 2026-02-05
 | 5.2.3 | `create-branch-if-missing` sets upstream | New branch tracks remote after creation |
 | 5.2.4 | `fetch-and-checkout` fetches then checks out | Remote fetched first, then local checkout |
 | 5.2.5 | `show-branch` displays tracking info | Branch name, remote tracking, commit info shown |
-| 5.2.6 | Branch naming follows convention | All created branches match `{Domain}/{id}/...` pattern |
+| 5.2.6 | Branch naming follows convention | All created branches match `{featureBranchRoot}[-{audience}[-p{N}]]` pattern |
 | 5.2.7 | Handles detached HEAD state | Clear error with recovery instructions |
 | 5.2.8 | Handles merge conflicts | Conflict detected, user prompted for resolution |
 
@@ -411,7 +414,7 @@ created: 2026-02-05
 | 7.5 | Final step creates targeted commit | init-initiative, finish-workflow | Commit message includes initiative_id, phase, and workflow context |
 | 7.6 | Final step pushes to remote | init-initiative, finish-workflow | `git push` executed after commit |
 | 7.7 | Commit message format consistent | All committing workflows | Format: `lens-work: {workflow} [{initiative_id}] {description}` |
-| 7.8 | Branch name parsed correctly (service/feature) | finish-workflow | Initiative ID, size, phase extracted from `{Domain}/{id}/{size}-{N}-{workflow}` |
+| 7.8 | Branch name parsed correctly (service/feature) | finish-workflow | Initiative ID, audience, phase extracted from `{featureBranchRoot}-{audience}-p{N}-{workflow}` |
 | 7.9 | Branch name parsed correctly (domain-layer) | init-initiative (domain) | Domain prefix extracted from `{domain_prefix}` (no subpath) |
 | 7.10 | Non-mutating workflows skip commit | repo-discover, repo-document, repo-status | No git commits created by read-only workflows |
 | 7.11 | Utility workflows commit state changes | bootstrap, reconcile | State file changes committed with context |

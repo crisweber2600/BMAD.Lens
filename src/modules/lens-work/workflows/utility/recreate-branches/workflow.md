@@ -25,16 +25,17 @@ initiative_config_path: "_bmad-output/lens-work/initiatives/{id}.yaml"
 state_path: "_bmad-output/lens-work/state.yaml"
 
 # Branch naming pattern (CRITICAL)
-branch_pattern: "{domain}/{initiative_id}/{size}-{phase_number}"
+# Flat, hyphen-separated: {featureBranchRoot}[-{audience}[-p{N}]]
+# featureBranchRoot = {domain}-{service}-{feature} or {domain}-{service}-{repo}-{feature}
 # Examples:
-#   chat/chat-spark-backend-alignment-50cf37/base
-#   chat/chat-spark-backend-alignment-50cf37/small
-#   chat/chat-spark-backend-alignment-50cf37/large
-#   chat/chat-spark-backend-alignment-50cf37/small-1
-#   chat/chat-spark-backend-alignment-50cf37/small-2
+#   chat-spark-backend-alignment-50cf37                    (root)
+#   chat-spark-backend-alignment-50cf37-small              (audience: small)
+#   chat-spark-backend-alignment-50cf37-large              (audience: large)
+#   chat-spark-backend-alignment-50cf37-small-p1           (phase 1)
+#   chat-spark-backend-alignment-50cf37-small-p2           (phase 2)
 ```
 
-> **CRITICAL:** Branch names use `{domain}/{initiative_id}/{size}-{phase_number}`. The old `lens/{id}/{lane}` pattern is obsolete. `lead` is now `large`. `lane` is now `size`.
+> **CRITICAL:** Branch names use flat hyphen-separated format `{featureBranchRoot}-{audience}-p{N}`. The old `{domain}/{id}/{size}-{N}` pattern is obsolete. `lead` is now `large`. `lane` is now audience.
 
 ---
 
@@ -74,17 +75,20 @@ initiative = load("_bmad-output/lens-work/initiatives/${initiative_id}.yaml")
 # Build the expected branch list from initiative config
 expected_branches = {}
 
-# Structural branches (always expected)
-if initiative.branches.base:
-  expected_branches.base = initiative.branches.base
+# Root branch (always expected)
+if initiative.branches.root:
+  expected_branches.root = initiative.branches.root
 
-# Size branches
-if initiative.branches.small:
-  expected_branches.small = initiative.branches.small
-if initiative.branches.large:
-  expected_branches.large = initiative.branches.large
+# Audience branches
+if initiative.branches.audiences:
+  if initiative.branches.audiences.small:
+    expected_branches.small = initiative.branches.audiences.small
+  if initiative.branches.audiences.medium:
+    expected_branches.medium = initiative.branches.audiences.medium
+  if initiative.branches.audiences.large:
+    expected_branches.large = initiative.branches.audiences.large
 
-# Phase branches
+# Phase branches (e.g., -small-p1, -small-p2)
 for phase_key in [p1, p2, p3, p4, p5]:
   if initiative.branches[phase_key]:
     expected_branches[phase_key] = initiative.branches[phase_key]
@@ -151,8 +155,9 @@ output: |
 
 ```yaml
 # Branch hierarchy for recreation:
-#   base -> small -> small-{N} (phase branches)
-#   base -> large
+#   root -> small -> small-p{N} (phase branches)
+#   root -> medium
+#   root -> large
 #
 # Each missing branch is created from its logical parent.
 
@@ -190,19 +195,21 @@ for local_only in scan_results.local_only:
 ```yaml
 # Parent resolution rules:
 resolve_parent(branch_name, topology):
-  if branch_name == "base":
-    return { branch: "main" }           # Base branches come from main
+  if branch_name == "root":
+    return { branch: "main" }                # Root branch comes from main
   elif branch_name == "small":
-    return { branch: topology.base }    # Size branches come from base
+    return { branch: topology.root }          # Audience branches come from root
+  elif branch_name == "medium":
+    return { branch: topology.root }          # Audience branches come from root
   elif branch_name == "large":
-    return { branch: topology.base }    # Large branch comes from base
+    return { branch: topology.root }          # Large branch comes from root
   elif branch_name matches /^p\d+$/:
-    return { branch: topology.small }   # Phase branches come from small
+    return { branch: topology.audiences.small }  # Phase branches come from small
   elif branch_name == "active":
     # Active is typically a phase branch alias - skip recreation
     return null
   else:
-    return { branch: topology.base }    # Default fallback
+    return { branch: topology.root }          # Default fallback
 ```
 
 #### 3c. Execute Recreation
@@ -260,8 +267,8 @@ active_branch="${initiative.branches.active}"
 if git rev-parse --verify "${active_branch}" 2>/dev/null; then
   git checkout "${active_branch}"
 else
-  # Fallback to base if active doesn't exist
-  git checkout "${initiative.branches.base}"
+  # Fallback to root if active doesn't exist
+  git checkout "${initiative.branches.root}"
 fi
 ```
 
@@ -312,19 +319,20 @@ The branch hierarchy for a lens-work initiative follows this pattern:
 
 ```
 main
-  └── {domain}/{id}/base
-        ├── {domain}/{id}/small
-        │     ├── {domain}/{id}/small-1    (phase 1)
-        │     ├── {domain}/{id}/small-2    (phase 2)
-        │     └── {domain}/{id}/small-3    (phase 3)
-        └── {domain}/{id}/large
+  └── {featureBranchRoot}                              (initiative root)
+        ├── {featureBranchRoot}-small                   (audience: small)
+        │     ├── {featureBranchRoot}-small-p1           (phase 1)
+        │     ├── {featureBranchRoot}-small-p2           (phase 2)
+        │     └── {featureBranchRoot}-small-p3           (phase 3)
+        ├── {featureBranchRoot}-medium                  (audience: medium)
+        └── {featureBranchRoot}-large                   (audience: large)
 ```
 
 **Naming rules:**
-- `{domain}` = domain prefix from initiative config (e.g., `chat`)
-- `{id}` = initiative ID (e.g., `chat-spark-backend-alignment-50cf37`)
-- `small` / `large` = size branches (old naming `lane` / `lead` is obsolete)
-- `small-{N}` = phase branches (e.g., `small-1`, `small-2`)
+- `{featureBranchRoot}` = flat hyphen-separated root (e.g., `chat-spark-backend-alignment-50cf37`)
+- Built from: `{domain}-{service}-{feature}` or `{domain}-{service}-{repo}-{feature}`
+- `-small` / `-medium` / `-large` = audience branches (old naming `lane` / `lead` is obsolete)
+- `-small-p{N}` = phase branches (e.g., `-small-p1`, `-small-p2`)
 
 ---
 

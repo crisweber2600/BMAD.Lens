@@ -33,12 +33,16 @@ Activate Compass agent and execute /new-feature:
 
 **Creates:**
 - Initiative ID: `{sanitized_name}-{random_6char}` (always random suffix)
-- Branch topology (full 5 branches):
-  - `{domain_prefix}/{id}/base`
-  - `{domain_prefix}/{id}-small` (review audience: small)
-  - `{domain_prefix}/{id}-medium` (review audience: medium)
-  - `{domain_prefix}/{id}-large` (review audience: large)
-  - `{domain_prefix}/{id}-small-p1` (phase 1, first working branch)
+- Feature branch root (`{featureBranchRoot}`) computed from parent context:
+  - Service parent: `{domain_prefix}-{service_prefix}-{initiative_id}`
+  - Service parent + multi-repo: `{domain_prefix}-{service_prefix}-{repo}-{initiative_id}`
+  - Domain parent: `{domain_prefix}-{initiative_id}`
+- Branch topology (4 branches, ALL pushed immediately):
+  - `{featureBranchRoot}` (initiative root — final merge target)
+  - `{featureBranchRoot}-small` AKA `{smallGroupBranchRoot}` (review audience: small)
+  - `{featureBranchRoot}-medium` AKA `{mediumGroupBranchRoot}` (review audience: medium)
+  - `{featureBranchRoot}-large` AKA `{largeGroupBranchRoot}` (review audience: large)
+- NOTE: No phase branches at init. Phase branches (e.g., `-small-p1`) created by phase routers.
 - Two-file state:
   - `_bmad-output/lens-work/state.yaml` (active initiative = initiative_id)
   - `_bmad-output/lens-work/initiatives/{initiative_id}.yaml` (initiative config with parent lineage)

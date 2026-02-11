@@ -36,8 +36,8 @@ Determine the current LENS context using this priority:
    - Extract: `domain`, `service`, `layer`, `name`, `microservice` (optional)
 
 2. **Branch pattern** (fallback):
-   - If current branch matches `{domain}/{initiative_id}/{size}-{phase_number}`:
-   - Load initiative by ID, recurse with loaded context
+   - If current branch matches `{featureBranchRoot}-{audience}-p{N}-{workflow}` (flat, hyphen-separated):
+   - Parse featureBranchRoot, load initiative by ID, recurse with loaded context
 
 3. **User input** (last resort):
    - Prompt: "Which layer? [domain/service/microservice/feature]"

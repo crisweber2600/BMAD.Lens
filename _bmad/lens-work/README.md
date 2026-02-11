@@ -59,20 +59,32 @@ main
     (Domain.yaml, .gitkeep in initiatives/, TargetProjects/, Docs/)
 ```
 
-Domain-layer initiatives create only the `{domain_prefix}` branch. No base, size, phase, or workflow branches. Service/feature initiatives within this domain create their own full topology.
+Domain-layer initiatives create only the `{domain_prefix}` branch. No audience, phase, or workflow branches. Service/feature initiatives within this domain create their own topology.
 
-**Service/Feature Layers (full topology):**
+**Service-Layer (single branch):**
 ```
 main
-└── {domain_prefix}/{initiative_id}/base      ← Initiative baseline
-    ├── {domain_prefix}/{initiative_id}/small ← Small size
-    │   ├── .../small-1                       ← Phase 1 (Analysis)
-    │   │   └── .../small-1-{workflow}        ← Workflow branch
-    │   ├── .../small-2                       ← Phase 2 (Planning)
-    │   ├── .../small-3                       ← Phase 3 (Solutioning)
-    │   └── .../small-4                       ← Phase 4 (Implementation)
-    └── {domain_prefix}/{initiative_id}/large ← Large review size
+└── {domain_prefix}-{service_prefix}              ← Service organizational branch (only branch)
+    (Service.yaml, .gitkeep in initiatives/, TargetProjects/, Docs/)
 ```
+
+**Feature/Microservice Layers (full topology):**
+```
+main
+└── {featureBranchRoot}                           ← Initiative root (final merge target)
+    ├── {featureBranchRoot}-small                 ← Small audience group
+    │   └── {featureBranchRoot}-small-p1          ← Phase 1 (Analysis)
+    │       └── ...-small-p1-{workflow}           ← Workflow branch
+    ├── {featureBranchRoot}-medium                ← Medium audience group
+    │   └── {featureBranchRoot}-medium-p2         ← Phase 2 (Planning)
+    └── {featureBranchRoot}-large                 ← Large audience group
+        ├── {featureBranchRoot}-large-p3          ← Phase 3 (Solutioning)
+        └── {featureBranchRoot}-large-p4          ← Phase 4 (Implementation)
+```
+
+Where `{featureBranchRoot}` = `{domain_prefix}-{service_prefix}-{initiative_id}` (service parent) or `{domain_prefix}-{initiative_id}` (domain parent).
+
+All branches use flat hyphen-separated names (no `/` separators). All branches pushed to remote immediately on creation. Phase branches (e.g., `-small-p1`) created by phase routers, not at init.
 
 **Key design principle:** You can reconstruct the entire project lifecycle from the git log alone.
 
@@ -116,16 +128,17 @@ Gates enforce quality and authorization between phases:
 2. **Final PBR** (`open-final-pbr`) — Full team review at solutioning completion
 3. **Phase Transition** (`phase-transition`) — Automated state update when gate passes
 
-### Size Management
+### Review Audience Groups
 
-| Size | Use Case | Branch Pattern |
-|------|----------|----------------|
-| **small** | Solo developer, small features | `{domain}/{id}/small-{n}` |
-| **large** | Team work, requires reviews | `{domain}/{id}/large-{n}` |
+| Audience | Phase | Branch Pattern | Reviewers |
+|----------|-------|----------------|-----------|
+| **small** | P1 (Analysis) | `{featureBranchRoot}-small` | Solo dev, 1 reviewer |
+| **medium** | P2 (Planning) | `{featureBranchRoot}-medium` | Small team, 2-3 reviewers |
+| **large** | P3/P4 (Solutioning/Implementation) | `{featureBranchRoot}-large` | Full team, formal gates |
 
-Size is selected during `init-initiative` based on initiative complexity and team size.
+Audience groups are created at `init-initiative` for feature/microservice layers. Phase branches (e.g., `-small-p1`) are created by phase routers.
 
-> **Note:** Domain-layer initiatives do not use sizes. They create only the `{domain_prefix}` branch as an organizational container.
+> **Note:** Domain and service layers do not use audience groups. Domain creates only `{domain_prefix}`, service creates only `{domain_prefix}-{service_prefix}`.
 
 ---
 
@@ -202,13 +215,17 @@ Size is selected during `init-initiative` based on initiative complexity and tea
 # 1. Create the initiative
 #new-feature "rate-limiting"
 
-# Compass auto-detects layer, Casey creates branches:
-#   lens/rate-limit-x7k2m9/base
-#   lens/rate-limit-x7k2m9/small/p1
+# Compass auto-detects layer, Casey creates and pushes 4 branches:
+#   bmaddomain-lens-rate-limit-x7k2m9         (root)
+#   bmaddomain-lens-rate-limit-x7k2m9-small   (small audience)
+#   bmaddomain-lens-rate-limit-x7k2m9-medium  (medium audience)
+#   bmaddomain-lens-rate-limit-x7k2m9-large   (large audience)
 
 # 2. Begin analysis
 /pre-plan
+# → Creates and pushes -small-p1 phase branch
 # → Guided through brainstorming, research, product brief
+# → At end: PR from -small-p1 → -small, delete -small-p1, checkout -small
 
 # 3. Move to planning
 /spec

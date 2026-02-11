@@ -8,19 +8,24 @@ type: include
 
 This document defines the branch hierarchy used by lens-work to manage initiative lifecycle branches. All branch operations are orchestrated by Casey and triggered through Compass phase commands.
 
-**Branch naming convention:** `{Domain}/{InitiativeId}/{size}-{phaseNumber}-{workflow}`
+**Branch naming convention:** `{featureBranchRoot}-{audience}-p{phaseNumber}-{workflow}`
 
 ---
 
 ## Branch Hierarchy (5 Levels)
 
 ```
-Level 0: Domain              {domain_prefix}                              (domain-layer only)
-Level 1: Initiative Base     {Domain}/{id}/base                           (service/feature layers)
-Level 2: Sizes              {Domain}/{id}/small, {Domain}/{id}/large
-Level 3: Phases             {Domain}/{id}/{size}-{N}
-Level 4: Workflows          {Domain}/{id}/{size}-{N}-{workflow}
+Level 0: Domain              {domain_prefix}                                            (domain-layer only)
+Level 0s: Service            {domain_prefix}-{service_prefix}                            (service-layer only)
+Level 1: Feature Root        {featureBranchRoot}                                          (feature/microservice layers)
+Level 2: Audience Groups     {featureBranchRoot}-small, -medium, -large
+Level 3: Phases              {featureBranchRoot}-{audience}-p{N}
+Level 4: Workflows           {featureBranchRoot}-{audience}-p{N}-{workflow}
 ```
+
+Where `{featureBranchRoot}` = `{domain_prefix}-{service_prefix}-{initiative_id}` (service parent)
+  or `{domain_prefix}-{service_prefix}-{repo}-{initiative_id}` (multi-repo)
+  or `{domain_prefix}-{initiative_id}` (domain parent, no service)
 
 ### Level 0: Domain (domain-layer only)
 
@@ -28,14 +33,14 @@ Level 4: Workflows          {Domain}/{id}/{size}-{N}-{workflow}
 {domain_prefix}
 ```
 
-Organizational branch for domain-layer initiatives. Created at domain onboarding via `init-initiative` with `layer=domain`. This is the **only** branch created for domain-layer — no base, size, phase, or workflow branches exist.
+Organizational branch for domain-layer initiatives. Created at domain onboarding via `init-initiative` with `layer=domain`. This is the **only** branch created for domain-layer — no audience/phase/workflow branches exist.
 
 **Rules:**
 - Created from `main` (or current HEAD) at domain init
 - Branch name is just the domain prefix (e.g., `bmad`, `payment`, `auth`)
 - No audience/phase/workflow topology — domain is an organizational container
 - Domain.yaml is both the domain descriptor AND the initiative config
-- Service and feature initiatives within this domain create their own branches at Levels 1–4
+- Service and feature initiatives within this domain create their own branches
 - Pushed to remote immediately on creation
 
 **Domain scaffolding (created on this branch):**
@@ -46,78 +51,102 @@ Organizational branch for domain-layer initiatives. Created at domain onboarding
 
 ---
 
-### Level 1: Initiative Base
+### Level 0s: Service (service-layer only)
 
 ```
-{Domain}/{initiative_id}/base
+{domain_prefix}-{service_prefix}
 ```
 
-Root branch for the initiative. Created at init via `init-initiative` workflow. All work merges here eventually through the size → base PR flow. This branch represents the "done" state of the initiative.
+Organizational branch for service-layer initiatives. Created via `init-initiative` with `layer=service`. This is the **only** branch created for service-layer — no audience/phase/workflow branches exist.
+
+**Rules:**
+- Created from `main` (or current HEAD) at service init
+- Branch name is `{domain_prefix}-{service_prefix}` (hyphen-separated, e.g., `bmaddomain-lens`)
+- No audience/phase/workflow topology — service is an organizational container
+- Service.yaml is both the service descriptor AND the initiative config
+- Feature initiatives within this service create their own branches at Levels 1–4
+- Pushed to remote immediately on creation
+
+**Service scaffolding (created on this branch):**
+- `_bmad-output/lens-work/initiatives/{domain_prefix}/{service_prefix}/Service.yaml`
+- `_bmad-output/lens-work/initiatives/{domain_prefix}/{service_prefix}/.gitkeep`
+- `TargetProjects/{domain_prefix}/{service_prefix}/.gitkeep`
+- `Docs/{domain_prefix}/{service_prefix}/.gitkeep`
+
+---
+
+### Level 1: Feature Root
+
+```
+{featureBranchRoot}
+```
+
+Root branch for the initiative. Created at init via `init-initiative` workflow. All work merges here eventually through the audience → root PR flow. This branch represents the "done" state of the initiative. **Replaces the old `/base` branch concept.**
 
 **Rules:**
 - Created from `main` (or current HEAD) at initiative start
-- Never worked on directly — only receives merges from sizes
+- Never worked on directly — only receives merges from audience branches
 - Protected: requires PR review for final PBR merge
-- One base branch per initiative
+- One root branch per initiative
 - Pushed to remote immediately on creation
 
 ---
 
-### Level 2: Sizes
+### Level 2: Audience Groups
 
 ```
-{Domain}/{initiative_id}/small     # Small team (planning + implementation)
-{Domain}/{initiative_id}/medium    # Medium team (future)
-{Domain}/{initiative_id}/large     # Large review (gate reviews)
+{featureBranchRoot}-small     # Small group (planning + implementation)
+{featureBranchRoot}-medium    # Medium group (future)
+{featureBranchRoot}-large     # Large group (gate reviews)
 ```
 
-Sizes represent team-size-based workflow paths. Each size has its own lifecycle and phase progression. **Size is stored in the shared initiative config** (`initiatives/{id}.yaml`) — never in personal state.
+Audience groups represent team-size-based workflow paths. Each group has its own lifecycle and phase progression. **Size is stored in the shared initiative config** (`initiatives/{id}.yaml`) — never in personal state.
 
-#### Size Definitions
+#### Group Definitions
 
-| Size | Purpose | Typical Team Size | Phases | Created At |
-|------|---------|-------------------|--------|------------|
-| `small` | Single developer or small team doing end-to-end work | 1–3 | P0–P4 | `init-initiative` |
-| `medium` | Medium team with parallel streams (reserved) | 4–8 | P0–P4 | Future |
-| `large` | Large review size for gate reviews | 1–2 | Review gates only | `init-initiative` |
+| Group | Purpose | Typical Team Size | Phases | Created At |
+|-------|---------|-------------------|--------|------------|
+| `small` | Single developer or small team doing end-to-end work | 1–3 | P1–P4 | `init-initiative` |
+| `medium` | Medium team with parallel streams (reserved) | 4–8 | P1–P4 | Future |
+| `large` | Large review group for gate reviews | 1–2 | Review gates only | `init-initiative` |
 
-#### Size Behaviors
+#### Group Behaviors
 
-**small size:**
-- Primary working size for most initiatives
-- Phases P1–P4 branch from and merge back to this size
+**small group ({smallGroupBranchRoot}):**
+- Primary working group for most initiatives
+- Phase branches (e.g., `-small-p1`) branch from and merge back to this group
 - All planning and implementation happens here
 - After P2 complete → opens PR to `large` for review
 
-**large size:**
+**large group ({largeGroupBranchRoot}):**
 - Receives PR from `small` after architecture review gate
-- Large-size reviewers approve the planning artifacts
-- After approval → opens PR to `base` for final PBR
+- Large-group reviewers approve the planning artifacts
+- After approval → opens PR to feature root for final PBR
 
-**medium size (future):**
+**medium group ({mediumGroupBranchRoot}, future):**
 - Reserved for multi-team initiatives
 - Will support parallel phase execution
-- Not yet implemented — Compass will reject medium size requests
+- Not yet implemented — Compass will reject medium group requests
 
 ---
 
 ### Level 3: Phases
 
 ```
-{Domain}/{initiative_id}/{size}-0    # Pre-Plan (optional prep)
-{Domain}/{initiative_id}/{size}-1    # Analysis
-{Domain}/{initiative_id}/{size}-2    # Planning
-{Domain}/{initiative_id}/{size}-3    # Solutioning
-{Domain}/{initiative_id}/{size}-4    # Implementation
+{featureBranchRoot}-{audience}-p1    # Analysis
+{featureBranchRoot}-{audience}-p2    # Planning
+{featureBranchRoot}-{audience}-p3    # Solutioning
+{featureBranchRoot}-{audience}-p4    # Implementation
 ```
 
-Phases are sequential workflow stages within a size. Each phase branch is created from the size branch when its first workflow begins. **All phase branches are pushed to remote immediately on creation.**
+Phases are sequential workflow stages within an audience group. Each phase branch is created by the corresponding phase router workflow (e.g., `/pre-plan` creates `-small-p1`). **All phase branches are pushed to remote immediately on creation.**
+
+**Phase lifecycle:** At the START of a phase router, the phase branch is created from the audience group branch and pushed. At the END of the phase, a PR is created from the phase branch into the audience group branch, then the phase branch is deleted locally and the audience group branch is checked out.
 
 #### Phase Definitions
 
 | Phase | Name | Purpose | Key Artifacts | Trigger Command |
 |-------|------|---------|---------------|-----------------|
-| P0 | Pre-Plan | Constitution, discovery prep | `constitution.md` | `/pre-plan` |
 | P1 | Analysis | Brainstorm, research, product brief | `p1-product-brief.md`, `p1-research-notes.md` | `/pre-plan` |
 | P2 | Planning | PRD, UX design, architecture | `p2-prd.md`, `p2-ux-design.md`, `p2-architecture.md` | `/spec` |
 | P3 | Solutioning | Epics, stories, readiness check | `p3-epics.md`, `p3-stories/`, `p3-readiness-checklist.md` | `/plan` |
@@ -126,38 +155,39 @@ Phases are sequential workflow stages within a size. Each phase branch is create
 #### Phase Progression Rules
 
 1. **Sequential only:** P{N} must complete before P{N+1} can start
-2. **Completion = merged:** A phase is complete when its branch is merged into the size
-3. **Ancestry check:** `git merge-base --is-ancestor origin/{phase_branch} origin/{size_branch}`
-4. **P1 auto-created:** `init-initiative` creates P1 branch automatically
-5. **P2–P4 lazy-created:** Created by router workflows on first access
+2. **Completion = PR merged:** A phase is complete when its PR into the audience group is merged
+3. **Ancestry check:** `git merge-base --is-ancestor origin/{phase_branch} origin/{audience_branch}`
+4. **P1 created by /pre-plan:** Phase branches are NOT created at init — they are created by phase router workflows
+5. **P2–P4 lazy-created:** Created by their respective router workflows on first access
 6. **Immediate push:** All phase branches pushed to remote on creation
+7. **PR + delete:** At phase end, PR into audience group, delete phase branch, checkout audience
 
 ---
 
 ### Level 4: Workflows
 
 ```
-{Domain}/{initiative_id}/{size}-{N}-{workflow_name}
+{featureBranchRoot}-{audience}-p{N}-{workflow_name}
 ```
 
 Workflow branches represent individual units of work within a phase. They are created by `start-workflow` and merged back to the phase branch by `finish-workflow`. **All workflow branches are pushed to remote immediately on creation.**
 
 #### Workflow Naming
 
-| Phase | Workflow Name | Full Branch |
-|-------|---------------|-------------|
-| P1 | `brainstorm` | `{Domain}/{id}/small-1-brainstorm` |
-| P1 | `research` | `{Domain}/{id}/small-1-research` |
-| P1 | `product-brief` | `{Domain}/{id}/small-1-product-brief` |
-| P2 | `prd` | `{Domain}/{id}/small-2-prd` |
-| P2 | `ux-design` | `{Domain}/{id}/small-2-ux-design` |
-| P2 | `architecture` | `{Domain}/{id}/small-2-architecture` |
-| P3 | `epics` | `{Domain}/{id}/small-3-epics` |
-| P3 | `stories` | `{Domain}/{id}/small-3-stories` |
-| P3 | `readiness-check` | `{Domain}/{id}/small-3-readiness-check` |
-| P4 | `dev-story` | `{Domain}/{id}/small-4-dev-story` |
-| P4 | `code-review` | `{Domain}/{id}/small-4-code-review` |
-| P4 | `retro` | `{Domain}/{id}/small-4-retro` |
+| Phase | Workflow Name | Full Branch Example |
+|-------|---------------|---------------------|
+| P1 | `brainstorm` | `{featureBranchRoot}-small-p1-brainstorm` |
+| P1 | `research` | `{featureBranchRoot}-small-p1-research` |
+| P1 | `product-brief` | `{featureBranchRoot}-small-p1-product-brief` |
+| P2 | `prd` | `{featureBranchRoot}-medium-p2-prd` |
+| P2 | `ux-design` | `{featureBranchRoot}-medium-p2-ux-design` |
+| P2 | `architecture` | `{featureBranchRoot}-medium-p2-architecture` |
+| P3 | `epics` | `{featureBranchRoot}-large-p3-epics` |
+| P3 | `stories` | `{featureBranchRoot}-large-p3-stories` |
+| P3 | `readiness-check` | `{featureBranchRoot}-large-p3-readiness-check` |
+| P4 | `dev-story` | `{featureBranchRoot}-large-p4-dev-story` |
+| P4 | `code-review` | `{featureBranchRoot}-large-p4-code-review` |
+| P4 | `retro` | `{featureBranchRoot}-large-p4-retro` |
 
 #### Workflow Rules
 
@@ -174,23 +204,23 @@ Workflow branches represent individual units of work within a phase. They are cr
 ### Merge Flow Diagram
 
 ```
-Workflow ──squash──► Phase ──merge──► Size ──PR──► Size ──PR──► Base
- ({size}-{N}-{wf})  ({size}-{N})     (small)      (large)      (base)
+Workflow ──squash──► Phase ──PR+delete──► Audience ──PR──► Audience ──PR──► Root
+ (-{aud}-p{N}-{wf})  (-{aud}-p{N})       (small)         (large)         ({featureBranchRoot})
 ```
 
 ### Detailed Merge Table
 
 | From → To | Branch Pattern | Strategy | Gate Required | Automation |
 |-----------|----------------|----------|---------------|------------|
-| workflow → phase | `{size}-{N}-{wf}` → `{size}-{N}` | Squash merge | No (auto) | `finish-workflow` |
-| phase → size | `{size}-{N}` → `{size}` | Merge commit | Phase gate | `finish-phase` PR |
-| small → large | `small` → `large` | PR merge | Review gate | `open-large-review` |
-| large → base | `large` → `base` | PR merge | Final PBR | `open-final-pbr` |
+| workflow → phase | `-{aud}-p{N}-{wf}` → `-{aud}-p{N}` | Squash merge | No (auto) | `finish-workflow` |
+| phase → audience | `-{aud}-p{N}` → `-{aud}` | PR + delete phase branch | Phase gate | `finish-phase` PR |
+| small → large | `-small` → `-large` | PR merge | Review gate | `open-large-review` |
+| large → root | `-large` → `{featureBranchRoot}` | PR merge | Final PBR | `open-final-pbr` |
 
 ### Phase Transition Flow
 
 ```
-┌─────────┐    merge     ┌─────────┐    merge     ┌─────────┐    merge     ┌─────────┐
+┌─────────┐   PR+del    ┌─────────┐   PR+del    ┌─────────┐   PR+del    ┌─────────┐
 │  P1     │ ──────────► │  P2     │ ──────────► │  P3     │ ──────────► │  P4     │
 │Analysis │  gate:p1    │Planning │  gate:p2    │Solution │  gate:p3    │  Impl   │
 └─────────┘             └─────────┘             └─────────┘             └─────────┘
@@ -201,13 +231,20 @@ Workflow ──squash──► Phase ──merge──► Size ──PR──►
                                                 │  Large  │
                                                 │ Review  │
                                                 └────┬────┘
-                                                     │ PR: large → base
+                                                     │ PR: large → root
                                                      ▼
-                                                ┌─────────┐
-                                                │  Base   │
-                                                │ (Done)  │
-                                                └─────────┘
+                                                ┌──────────────┐
+                                                │ Feature Root │
+                                                │   (Done)     │
+                                                └──────────────┘
 ```
+
+### Phase Branch Lifecycle
+
+At each phase:
+1. **Start:** Create phase branch from audience group → push immediately
+2. **Work:** All workflow branches created from phase branch
+3. **End:** Create PR from phase branch into audience group → delete phase branch locally → checkout audience group
 
 ### Merge Validation
 
@@ -230,36 +267,50 @@ git merge --no-commit --no-ff ${source_branch} && git merge --abort
 
 ## Branch Naming Validation
 
-Casey validates all branch names against this regex:
+Casey validates branch names against these patterns:
 
 ```regex
-# Service/feature layer branches:
-^[A-Za-z0-9_-]+/[a-z0-9-]+/(base|small|medium|large|[a-z]+-[0-9]+(-[a-z0-9-]+)?)$
+# Domain-layer branches (domain-only):
+^[a-z0-9-]+$
 
-# Domain-layer branches (domain-only, no subpath):
-^[A-Za-z0-9_-]+$
+# Service-layer branches (domain-service):
+^[a-z0-9-]+-[a-z0-9-]+$
+
+# Feature-layer initiative and audience branches:
+# {featureBranchRoot} or {featureBranchRoot}-{audience}
+^[a-z0-9-]+(-[a-z0-9-]+)*$
+
+# Feature-layer phase branches:
+# {featureBranchRoot}-{audience}-p{N}
+^[a-z0-9-]+-(?:small|medium|large)-p[0-9]+$
+
+# Feature-layer workflow branches:
+# {featureBranchRoot}-{audience}-p{N}-{workflow}
+^[a-z0-9-]+-(?:small|medium|large)-p[0-9]+-[a-z0-9-]+$
 ```
 
-> **Note:** Domain-layer branches are just `{domain_prefix}` (e.g., `bmad`). They do not match the service/feature regex. Casey must check the initiative layer before applying validation.
+> **Note:** All branches are flat (no `/` separators). Casey determines the layer from the initiative config to select the appropriate validation regex.
 
 ### Parsing Branch Components
 
+Branch names are flat hyphen-separated. Parsing requires knowledge of the `featureBranchRoot` (stored in initiative config) to extract components:
+
 ```bash
-# Extract components from branch name
-# Example: MyDomain/rate-limit-x7k2m9/small-2-prd
-branch="MyDomain/rate-limit-x7k2m9/small-2-prd"
+# Example: bmaddomain-lens-rate-limit-x7k2m9-small-p1-brainstorm
+# featureBranchRoot = "bmaddomain-lens-rate-limit-x7k2m9" (from initiative config)
 
-domain_prefix=$(echo "$branch" | cut -d'/' -f1)    # MyDomain
-initiative_id=$(echo "$branch" | cut -d'/' -f2)     # rate-limit-x7k2m9
-branch_segment=$(echo "$branch" | cut -d'/' -f3)    # small-2-prd
+# Strip featureBranchRoot prefix to get segment
+featureBranchRoot="bmaddomain-lens-rate-limit-x7k2m9"
+branch="bmaddomain-lens-rate-limit-x7k2m9-small-p1-brainstorm"
+segment="${branch#${featureBranchRoot}-}"  # small-p1-brainstorm
 
-# Parse the branch segment
-size=$(echo "$branch_segment" | cut -d'-' -f1)      # small
-phase=$(echo "$branch_segment" | cut -d'-' -f2)     # 2
-workflow=$(echo "$branch_segment" | cut -d'-' -f3-)  # prd
+# Parse segment
+audience=$(echo "$segment" | cut -d'-' -f1)     # small
+phase=$(echo "$segment" | cut -d'-' -f2)         # p1
+workflow=$(echo "$segment" | cut -d'-' -f3-)     # brainstorm
 
-# For phase-only branches (e.g., "small-2"):
-# workflow will be empty
+# For audience-only branches (e.g., "-small"):
+# phase and workflow will be empty
 ```
 
 ---
@@ -273,13 +324,13 @@ workflow=$(echo "$branch_segment" | cut -d'-' -f3-)  # prd
 | Orphaned workflow branch | Detected by `fix-state`, prompted for cleanup |
 | Phase skipped | Blocked — sequential enforcement is strict |
 | Multiple active workflows | Blocked — one workflow per phase at a time |
-| Medium size requested | Rejected with "not yet implemented" message |
+| Medium group requested | Rejected with "not yet implemented" message |
 
 ---
 
 ## Related Workflows
 
-- **init-initiative:** For domain-layer: creates Level 0 (domain) branch only. For service/feature: creates Level 1 (base) and Level 2 (sizes) branches
-- **phase-lifecycle:** Creates Level 3 (phase) branches (service/feature layers only)
-- **start-workflow / finish-workflow:** Creates and closes Level 4 (workflow) branches (service/feature layers only)
+- **init-initiative:** Domain: creates Level 0 branch. Service: creates Level 0s branch. Feature: creates Level 1 (root) and Level 2 (audience groups) — 4 branches total
+- **phase routers (/pre-plan, /spec, /plan, /dev):** Create Level 3 (phase) branches at phase start, PR + delete at phase end
+- **start-workflow / finish-workflow:** Creates and closes Level 4 (workflow) branches
 - **fix-state:** Detects and repairs topology drift

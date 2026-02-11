@@ -26,7 +26,7 @@ Activate Compass agent and execute /new-service:
 - That's it — everything else is derived
 
 **Process mirrors /new-domain:**
-1. Casey creates service branch ONLY (no base/size/phase branches)
+1. Casey creates service branch ONLY (no audience/phase branches) and pushes immediately
 2. Scaffold service folders under domain: `{domain}/{service}`
 3. Create Service.yaml (service descriptor + initiative config)
 4. Route to `/new-feature` within this service
@@ -34,7 +34,7 @@ Activate Compass agent and execute /new-service:
 Use `#think` before defining service boundaries or naming.
 
 **Creates:**
-- Branch: `{domain_prefix}/{service_prefix}` (single organizational branch — no audience/phase topology)
+- Branch: `{domain_prefix}-{service_prefix}` (single organizational branch — pushed immediately, no audience/phase topology)
 - Service folders (nested under domain):
   - `_bmad-output/lens-work/initiatives/{domain_prefix}/{service_prefix}/` (initiative configs)
   - `TargetProjects/{domain_prefix}/{service_prefix}/` (target project repos)
@@ -57,7 +57,7 @@ git clone <repo-url> TargetProjects/{domain_prefix}/{service_prefix}/{repo_name}
 ```
 Repos must be cloned into the service's TargetProjects folder to be onboarded for discovery and planning.
 
-**Note:** Service-layer does NOT create base/small/medium/large/p1 branches.
+**Note:** Service-layer does NOT create audience/phase branches.
 Feature initiatives within this service will create their own branch topology.
 
 ```

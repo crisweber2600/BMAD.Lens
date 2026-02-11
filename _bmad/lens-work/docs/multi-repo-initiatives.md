@@ -41,9 +41,9 @@ repos:
 
 ### Control Repo is the Source of Truth
 
-The BMAD control repo manages all `{Domain}/` branches. Target repos are _consumers_ — they receive work but don't drive lifecycle state.
+The BMAD control repo manages all initiative branches. Target repos are _consumers_ — they receive work but don't drive lifecycle state.
 
-> **Note:** Replace `{Domain}` with your actual domain prefix (e.g., `lens`, `payment`, `auth`). For example, `{Domain}/{initiative_id}/base` becomes `lens/rate-limit-x7k2m9/base` or `payment/checkout-0a1k2m/base`.
+> **Note:** Branch names are flat hyphen-separated. For example, `{featureBranchRoot}` might be `lens-chat-rate-limit-x7k2m9` or `payment-checkout-0a1k2m`.
 
 ### Domain-Layer Branch Pattern
 
@@ -55,19 +55,22 @@ NorthStarET.BMAD (control repo)
     (Domain.yaml + .gitkeep in initiatives/, TargetProjects/, Docs/)
 ```
 
-No base, size, phase, or workflow branches are created for domain-layer. Service and feature initiatives within the domain create their own full branch topology.
+No audience, phase, or workflow branches are created for domain-layer. Service and feature initiatives within the domain create their own branch topology.
 
 ### Service/Feature Branch Pattern
 
 ```
 NorthStarET.BMAD (control repo)
-├── {Domain}/bmad-9d7732/base          ← lifecycle branches live HERE
-├── {Domain}/bmad-9d7732/small-1
-└── {Domain}/bmad-9d7732/small-1-brainstorm
+├── {featureBranchRoot}                    ← initiative root (lifecycle branches live HERE)
+├── {featureBranchRoot}-small               ← small audience group
+├── {featureBranchRoot}-small-p1            ← phase 1 (created by /pre-plan)
+└── {featureBranchRoot}-small-p1-brainstorm ← workflow branch
 
 Target repos (e.g., bmad-chat)
-└── (no lens/ branches — work happens via PRs or feature branches)
+└── (no initiative branches — work happens via PRs or feature branches)
 ```
+
+All branches pushed to remote immediately on creation.
 
 ### When Target Repos Need Branches
 
@@ -76,8 +79,8 @@ For implementation phase (p4) work that touches target repo code directly:
 ```bash
 # Casey creates matching feature branches in target repos
 cd TargetProjects/BMAD/CHAT/bmad-chat
-git checkout -b "{Domain}/bmad-9d7732/small-4-feature-name"
-git push -u origin "{Domain}/bmad-9d7732/small-4-feature-name"
+git checkout -b "{featureBranchRoot}-large-p4-feature-name"
+git push -u origin "{featureBranchRoot}-large-p4-feature-name"
 ```
 
 These branches follow a simplified pattern — no full topology duplication. They link back to the control repo's initiative via the `{initiative_id}` segment.
@@ -95,10 +98,10 @@ current:
   workflow_status: in_progress
   active_repos:
     - repo: bmad-chat
-      branch: "{Domain}/bmad-9d7732/small-4-auth-flow"
+      branch: "{featureBranchRoot}-large-p4-auth-flow"
       status: in_progress
     - repo: bmadServer
-      branch: "{Domain}/bmad-9d7732/small-4-auth-api"
+      branch: "{featureBranchRoot}-large-p4-auth-api"
       status: in_progress
     - repo: BMAD.Lens
       branch: null

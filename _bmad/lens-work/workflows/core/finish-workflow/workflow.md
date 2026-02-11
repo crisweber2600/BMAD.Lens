@@ -28,15 +28,15 @@ commit_message: string     # Optional custom message
 
 ```bash
 # Verify we're on a workflow branch
-# New pattern: {Domain}/{InitiativeId}-{audience}-p{phaseNumber}-{workflow}
+# Pattern: {featureBranchRoot}-{audience}-p{N}-{workflow}  (flat, hyphen-separated)
 current_branch=$(git branch --show-current)
 
-# Branch must have the format: {Domain}/{id}-{audience}-p{N}-{workflow}
-# Valid: MyDomain/my-init-abc123-small-p1-brainstorm
-# Invalid: main, MyDomain/my-init-abc123/base
-if [[ ! "$current_branch" =~ ^[^/]+/.+-[a-z]+-p[0-9]+-[a-z0-9-]+$ ]]; then
+# Branch must contain -(small|medium|large)-p{N}-{workflow}
+# Valid: chat-spark-backend-xyz-small-p1-brainstorm
+# Invalid: main, chat-spark-backend-xyz, chat-spark-backend-xyz-small
+if [[ ! "$current_branch" =~ -(small|medium|large)-p[0-9]+-[a-z0-9]+([-][a-z0-9]+)*$ ]]; then
   error "Not on a workflow branch: $current_branch"
-  error "Expected pattern: {Domain}/{InitiativeId}-{audience}-p{N}-{workflow}"
+  error "Expected pattern: {featureBranchRoot}-{audience}-p{N}-{workflow}"
   exit 1
 fi
 
@@ -74,24 +74,17 @@ git push -u origin "${current_branch}"
 # Detect remote type
 remote_url=$(git remote get-url origin)
 
-# Parse components from branch pattern: {Domain}/{id}-{audience}-p{N}-{workflow}
-# The domain_prefix is before the first /
-# The rest is {initiative_id}-{audience}-p{N}-{workflow}
-domain_prefix=$(echo ${current_branch} | cut -d'/' -f1)
-branch_rest=$(echo ${current_branch} | cut -d'/' -f2-)
-
-# Parse from the end: workflow is after last -p{N}-
-# Pattern: {id}-{audience}-p{N}-{workflow}
-# e.g., rate-limit-x7k2m9-small-p1-brainstorm
-# Extract phase: find -p{N}- pattern
-phase_segment=$(echo ${branch_rest} | grep -oP 'p[0-9]+')
-review_size=$(echo ${branch_rest} | sed -E "s/.*-(small|medium|large)-p[0-9]+-.*/\1/")
-workflow=$(echo ${branch_rest} | sed -E "s/.*-p[0-9]+-//")
-initiative_segment=$(echo ${branch_rest} | sed -E "s/-(small|medium|large)-p[0-9]+-.*//)")
+# Parse components from flat branch: {featureBranchRoot}-{audience}-p{N}-{workflow}
+# e.g., chat-spark-backend-xyz-small-p1-brainstorm
+# Extract review_size, phase, workflow, and featureBranchRoot
+review_size=$(echo ${current_branch} | sed -E "s/.*-(small|medium|large)-p[0-9]+-.*/\1/")
+phase_segment=$(echo ${current_branch} | grep -oP '(?<=-(small|medium|large)-)p[0-9]+')
+workflow=$(echo ${current_branch} | sed -E "s/.*-p[0-9]+-//")
+featureBranchRoot=$(echo ${current_branch} | sed -E "s/-(small|medium|large)-p[0-9]+-.*//")
 
 # Target is the phase branch (without workflow suffix)
-# e.g., {Domain}/{id}-{audience}-p{N}
-target_branch="${domain_prefix}/${initiative_segment}-${review_size}-${phase_segment}"
+# e.g., chat-spark-backend-xyz-small-p1
+target_branch="${featureBranchRoot}-${review_size}-${phase_segment}"
 source_branch="${current_branch}"
 
 # Generate PR link based on remote type
@@ -145,10 +138,10 @@ if [[ "$remote_url" == *"github.com"* ]]; then
     --repo "${org_repo}" \
     --base "${target_branch}" \
     --head "${source_branch}" \
-    --title "feat(${initiative_id}): Complete ${workflow_name}" \
+    --title "feat(${featureBranchRoot}): Complete ${workflow_name}" \
     --body "## Workflow Complete: ${workflow_name}
 
-**Initiative:** ${initiative_id}
+**Initiative:** ${featureBranchRoot}
 **Phase:** ${phase_segment}
 **Review audience:** ${review_size}
 **Branch:** ${source_branch} → ${target_branch}
@@ -188,8 +181,8 @@ elif [[ "$remote_url" == *"gitlab.com"* ]]; then
     -H "PRIVATE-TOKEN: ${pat}" \
     -d "source_branch=${source_branch}" \
     -d "target_branch=${target_branch}" \
-    -d "title=feat(${initiative_id}): Complete ${workflow_name}" \
-    -d "description=Workflow ${workflow_name} complete for ${initiative_id}")
+    -d "title=feat(${featureBranchRoot}): Complete ${workflow_name}" \
+    -d "description=Workflow ${workflow_name} complete for ${featureBranchRoot}")
   
   pr_url=$(echo "$pr_result" | jq -r '.web_url // empty')
   
@@ -211,7 +204,7 @@ elif [[ "$remote_url" == *"dev.azure.com"* ]]; then
     "https://dev.azure.com/${ado_org}/${ado_project}/_apis/git/repositories/${ado_repo}/pullrequests?api-version=7.0" \
     -H "Authorization: Basic $(echo -n ":${pat}" | base64)" \
     -H "Content-Type: application/json" \
-    -d "{\"sourceRefName\":\"refs/heads/${source_branch}\",\"targetRefName\":\"refs/heads/${target_branch}\",\"title\":\"feat(${initiative_id}): Complete ${workflow_name}\"}")
+    -d "{\"sourceRefName\":\"refs/heads/${source_branch}\",\"targetRefName\":\"refs/heads/${target_branch}\",\"title\":\"feat(${featureBranchRoot}): Complete ${workflow_name}\"}")
   
   pr_url=$(echo "$pr_result" | jq -r '.url // empty')
   
@@ -236,7 +229,7 @@ echo "✅ PR created: ${pr_url}"
 
 ```yaml
 # Determine next phase branch
-# Current: {domain}/{id}-{audience}-p{N}-{workflow}
+# Current: {featureBranchRoot}-{audience}-p{N}-{workflow}
 # Next phase: needs review_audience_map lookup for next phase
 next_phase_number = int(phase_segment.replace("p", "")) + 1
 
@@ -247,7 +240,7 @@ phase_max = 4  # 4 phases: Analysis, Planning, Solutioning, Implementation
 # review_audience_map: {p1: small, p2: medium, p3: large, p4: large}
 if next_phase_number <= phase_max:
   next_review_size = initiative.review_audience_map["p${next_phase_number}"]
-  next_branch = "${domain_prefix}/${initiative_segment}-${next_review_size}-p${next_phase_number}"
+  next_branch = "${featureBranchRoot}-${next_review_size}-p${next_phase_number}"
   
   output: |
     🔄 Advancing to next phase branch...
@@ -266,7 +259,7 @@ if [ ${next_phase_number} -le ${phase_max} ]; then
     echo "✅ Switched to: ${next_branch}"
   else
     # Create next phase branch from its review audience branch
-    audience_branch="${domain_prefix}/${initiative_segment}-${next_review_size}"
+    audience_branch="${featureBranchRoot}-${next_review_size}"
     git checkout "${audience_branch}"
     git pull origin "${audience_branch}"
     git checkout -b "${next_branch}"

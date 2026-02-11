@@ -28,6 +28,6 @@ category: utility
 - Read initiative topology from `_bmad-output/lens-work/initiatives/{id}.yaml`.
 - Detect missing branches in local and remote refs.
 - Recreate branches using canonical pattern:
-  - `{domain}/{initiative_id}/{size}-{phase_number}`
+  - `{featureBranchRoot}-{audience}-p{phase_number}`
 - Never use legacy archive branch patterns.
 - Log recovery operations via Tracey.

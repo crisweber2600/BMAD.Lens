@@ -28,10 +28,10 @@ target_repo: api-gateway  # resolved from service map
 ### Branch Topology Created
 
 ```
-{domain_prefix}/{id}/base         # Initiative root
-├── {domain}/{id}/small               # Small team size
-│   └── {domain}/{id}/small/p1        # Phase 1 (Analysis)
-└── {domain}/{id}/large                # Large review size (created but empty)
+{featureBranchRoot}                              # Initiative root
+├── {featureBranchRoot}-small                   # Audience: small
+├── {featureBranchRoot}-medium                  # Audience: medium
+└── {featureBranchRoot}-large                   # Audience: large
 ```
 
 ### Sequence

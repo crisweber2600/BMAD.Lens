@@ -276,8 +276,8 @@ elif [ "${layer}" == "service" ]; then
   # Service-layer: use {domain_prefix}/{service_prefix} as initiative ID (no random suffix).
   # The service name IS the identity — Service.yaml replaces separate initiative config.
   service_prefix=$(echo "${service}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//')
-  initiative_id="${domain_prefix}/${service_prefix}"  # initiative_name defaults to service name if not explicitly set
-  initiative_name=\"${initiative_name:-${service}}\"else
+  initiative_id="${domain_prefix}/${service_prefix}"  # initiative_id uses / for file paths; branch name uses -
+  initiative_name="${initiative_name:-${service}}"else
   # Feature/microservice layers: generate random suffix
   # Format: {sanitized_name}-{random_6char}
   # Example: rate-limit-x7k2m9
@@ -325,7 +325,7 @@ elif layer == "feature":
 
 ```yaml
 # Domain prefix for branch naming
-# Determines the {Domain} segment of branch names: {Domain}/{InitiativeId}-{audience}-p{N}-{workflow}
+# Used as first segment of branch names: {domain_prefix}-{service_prefix}-{initiative_id}-{audience}-p{N}-{workflow}
 normalize_domain_prefix(input):
   token = input or ""
   if token contains "/":
@@ -407,6 +407,31 @@ service_prefix = normalize_service_prefix(service)
 ${endif}
 ```
 
+### 4c. Compute Feature Branch Root (Feature-Layer)
+
+```yaml
+${if layer == "feature" || layer == "microservice"}
+# Build {featureBranchRoot} from parent context + initiative_id
+# The root branch is the initiative's home — replaces the old /base branch.
+
+if service_prefix != null && service_prefix != "":
+  if target_repos.length > 1:
+    # Multi-repo: include repo name for disambiguation
+    repo_name = normalize_domain_prefix(target_repos[0])
+    featureBranchRoot = "${domain_prefix}-${service_prefix}-${repo_name}-${initiative_id}"
+  else:
+    featureBranchRoot = "${domain_prefix}-${service_prefix}-${initiative_id}"
+else:
+  # Domain-parent (repo-level feature, no service)
+  featureBranchRoot = "${domain_prefix}-${initiative_id}"
+
+# Derived group branch roots (aliases used by phase routers)
+smallGroupBranchRoot  = "${featureBranchRoot}-small"
+mediumGroupBranchRoot = "${featureBranchRoot}-medium"
+largeGroupBranchRoot  = "${featureBranchRoot}-large"
+${endif}
+```
+
 ### 5. Delegate Branch Creation to Casey
 
 ```yaml
@@ -425,19 +450,31 @@ ${if layer == "domain"}
 #
 # Domain branches are organizational — no audience/phase branches needed.
 # Service/feature initiatives within this domain will create their own topology.
+# PUSH: git push -u origin ${domain_prefix}
 ${elif layer == "service"}
 # Service-layer: Casey creates ONLY the service branch (pushed immediately to remote):
-# - ${domain_prefix}/${service_prefix}
+# - ${domain_prefix}-${service_prefix}  (hyphen-separated, e.g., bmaddomain-lens)
 #
 # Service branches are organizational — no audience/phase branches needed.
 # Feature initiatives within this service will create their own topology.
+# PUSH: git push -u origin ${domain_prefix}-${service_prefix}
 ${else}
-# Casey creates (ALL pushed immediately to remote):
-# - ${domain_prefix}/${initiative_id}/base
-# - ${domain_prefix}/${initiative_id}-small    (review audience: small — p1 PRs target here)
-# - ${domain_prefix}/${initiative_id}-medium   (review audience: medium — p2 PRs target here)
-# - ${domain_prefix}/${initiative_id}-large    (review audience: large — p3/p4 PRs target here)
-# - ${domain_prefix}/${initiative_id}-small-p1 (phase 1 branch, first working branch)
+# Feature-layer: Compute {featureBranchRoot} from parent context:
+#
+# If parent is service:
+#   featureBranchRoot = ${domain_prefix}-${service_prefix}-${initiative_id}
+#   (or ${domain_prefix}-${service_prefix}-${repo_name}-${initiative_id} for multi-repo)
+# If parent is domain (repo-level):
+#   featureBranchRoot = ${domain_prefix}-${initiative_id}
+#
+# Casey creates 4 branches (ALL pushed immediately to remote):
+# - ${featureBranchRoot}          (initiative root — replaces old /base)
+# - ${featureBranchRoot}-small    AKA {smallGroupBranchRoot}  (review audience: small)
+# - ${featureBranchRoot}-medium   AKA {mediumGroupBranchRoot} (review audience: medium)
+# - ${featureBranchRoot}-large    AKA {largeGroupBranchRoot}  (review audience: large)
+#
+# NOTE: No -small-p1 branch created at init. Phase branches are created by
+# the phase router workflows (e.g., /pre-plan creates {smallGroupBranchRoot}-p1).
 ${endif}
 ```
 
@@ -485,16 +522,17 @@ gates:
   - name: tests-pass
     status: open
 blocks: []
+featureBranchRoot: "${featureBranchRoot}"
 branches:
-  base: "${domain_prefix}/${initiative_id}/base"
+  root: "${featureBranchRoot}"
   audiences:
-    small: "${domain_prefix}/${initiative_id}-small"
-    medium: "${domain_prefix}/${initiative_id}-medium"
-    large: "${domain_prefix}/${initiative_id}-large"
-  active: "${domain_prefix}/${initiative_id}-small-p1"
+    small: "${featureBranchRoot}-small"
+    medium: "${featureBranchRoot}-medium"
+    large: "${featureBranchRoot}-large"
+  active: "${featureBranchRoot}"
 ```
 
-> **Note:** This file is committed to the repo and shared across collaborators. It holds the canonical initiative definition, the **review audience map** (phase → audience size), and branch topology. The audience map determines which review branch each phase's PR targets.
+> **Note:** This file is committed to the repo and shared across collaborators. It holds the canonical initiative definition, the **review audience map** (phase → audience size), and branch topology. The audience map determines which review branch each phase's PR targets. The `featureBranchRoot` is computed from parent context: `{domain_prefix}-{service_prefix}-{initiative_id}` (service parent) or `{domain_prefix}-{initiative_id}` (domain parent). Phase branches (e.g., `-small-p1`) are created by phase router workflows, NOT at init.
 ${endif}
 
 ### 6a. Scaffold Domain/Service Folders (Domain/Service-Layer)
@@ -607,7 +645,7 @@ docs:
   repo: ""
   feature: ""
   path: "${docs_path}"
-branch: "${domain_prefix}/${service_prefix}"
+branch: "${domain_prefix}-${service_prefix}"
 gates:
   - name: tests-pass
     status: open
@@ -650,8 +688,8 @@ ${elif layer == "service"}
   workflow: null
   workflow_status: null
 ${else}
-  phase: p1
-  phase_name: "Analysis"
+  phase: null
+  phase_name: null
   workflow: null
   workflow_status: pending
 ${endif}
@@ -702,7 +740,7 @@ git push -u origin "${domain_prefix}"
 ${elif layer == "service"}
 ```bash
 # Service-layer: checkout the service branch
-git checkout "${domain_prefix}/${service_prefix}"
+git checkout "${domain_prefix}-${service_prefix}"
 
 # Stage service scaffolding and event log (NO separate initiative config — Service.yaml IS the config)
 git add "_bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/Service.yaml"
@@ -712,14 +750,14 @@ git add "Docs/${domain_prefix}/${service_prefix}/.gitkeep"
 git add "_bmad-output/lens-work/event-log.jsonl"
 
 # Create targeted commit
-git commit -m "init(${domain_prefix}/${service_prefix}): Create service '${initiative_name}'
+git commit -m "init(${domain_prefix}-${service_prefix}): Create service '${initiative_name}'
 
 Domain: ${domain}
 Service: ${service}
 Layer: service
 
 Creates:
-- Service branch: ${domain_prefix}/${service_prefix}
+- Service branch: ${domain_prefix}-${service_prefix}
 - Service.yaml: initiatives/${domain_prefix}/${service_prefix}/Service.yaml (service config + initiative config)
 - Service folders: initiatives/${domain_prefix}/${service_prefix}/, TargetProjects/${domain_prefix}/${service_prefix}/, Docs/${domain_prefix}/${service_prefix}/
 - Event log entry
@@ -728,12 +766,12 @@ Service-layer: organizational branch only, no audience/phase topology.
 Feature initiatives within this service create their own branches."
 
 # Push service branch
-git push -u origin "${domain_prefix}/${service_prefix}"
+git push -u origin "${domain_prefix}-${service_prefix}"
 ```
 ${else}
 ```bash
-# Ensure on small-p1 branch (phase 1)
-git checkout "${domain_prefix}/${initiative_id}-small-p1"
+# Feature-layer: checkout the feature root branch
+git checkout "${featureBranchRoot}"
 
 # Stage initiative config and event log (NOT state.yaml — it's git-ignored)
 git add "_bmad-output/lens-work/initiatives/${initiative_id}.yaml"
@@ -751,16 +789,16 @@ Review audience progression:
   p1 → small | p2 → medium | p3 → large | p4 → large
 
 Creates:
-- Branch topology: base, -small, -medium, -large, -small-p1
+- Branch topology: ${featureBranchRoot}, -small, -medium, -large
 - Initiative config: initiatives/${initiative_id}.yaml (includes review_audience_map)
 - Event log entry
 
-Branch pattern: {Domain}/{id}-{audience}-p{N}-{workflow}
+Branch pattern: {featureBranchRoot}-{audience}-p{N}-{workflow}
 State architecture: two-file (personal state + shared initiative config)
 Ready for /pre-plan workflow."
 
-# Push to small-p1 branch
-git push -u origin "${domain_prefix}/${initiative_id}-small-p1"
+# Push to feature root branch
+git push -u origin "${featureBranchRoot}"
 ```
 ${endif}
 
@@ -770,9 +808,9 @@ ${endif}
 ${if layer == "domain"}
 PUSH_BRANCH="${domain_prefix}"
 ${elif layer == "service"}
-PUSH_BRANCH="${domain_prefix}/${service_prefix}"
+PUSH_BRANCH="${domain_prefix}-${service_prefix}"
 ${else}
-PUSH_BRANCH="${domain_prefix}/${initiative_id}-small-p1"
+PUSH_BRANCH="${featureBranchRoot}"
 ${endif}
 
 # Ensure state.yaml is git-ignored (personal state should not be committed)
@@ -865,7 +903,7 @@ State loading pattern:
 ```
 ${elif layer == "service"}
 ```
-✅ Service created: ${domain_prefix}/${service_prefix}
+✅ Service created: ${domain_prefix}-${service_prefix}
 ├── Name: ${initiative_name}
 ├── Layer: service
 ├── Domain: ${domain}
@@ -874,7 +912,7 @@ ${elif layer == "service"}
 ├── Docs path: ${docs_path}
 ├── Target repos: ${target_repos}
 ├──
-├── Branch: ${domain_prefix}/${service_prefix} (service-only, committed & pushed)
+├── Branch: ${domain_prefix}-${service_prefix} (service-only, committed & pushed)
 ├──
 ├── Service Folders:
 │   ├── Initiatives: _bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/
@@ -925,11 +963,11 @@ ${else}
 │   └── p4 (Implementation) → large  (full team, formal gates)
 ├──
 ├── Branch Topology:
-│   ├── Base: ${domain_prefix}/${initiative_id}/base
-│   ├── Small audience:  ${domain_prefix}/${initiative_id}-small
-│   ├── Medium audience: ${domain_prefix}/${initiative_id}-medium
-│   ├── Large audience:  ${domain_prefix}/${initiative_id}-large
-│   └── Phase: ${domain_prefix}/${initiative_id}-small-p1 (committed & pushed)
+│   ├── Root: ${featureBranchRoot} (committed & pushed)
+│   ├── Small audience:  ${featureBranchRoot}-small
+│   ├── Medium audience: ${featureBranchRoot}-medium
+│   └── Large audience:  ${featureBranchRoot}-large
+│      (Phase branches created by phase routers, e.g., /pre-plan creates -small-p1)
 ├──
 ├── Branch Selection:
 │   ${for target_repo in target_repos}
@@ -1040,7 +1078,7 @@ last_sync_date = profile.lens_work.last_sync.date
 
 ### Service-Layer Specific
 - [ ] `initiative_id` = `{domain_prefix}/{service_prefix}` (no random suffix)
-- [ ] Single `${domain_prefix}/${service_prefix}` branch created and pushed
+- [ ] Single `${domain_prefix}-${service_prefix}` branch created and pushed
 - [ ] Service folders scaffolded: `initiatives/{domain}/{service}/`, `TargetProjects/{domain}/{service}/`, `Docs/{domain}/{service}/`
 - [ ] `.gitkeep` files created in all service folders
 - [ ] `Service.yaml` created in `initiatives/{domain}/{service}/` with initiative config fields (target_repos, docs, gates, blocks)
@@ -1048,5 +1086,6 @@ last_sync_date = profile.lens_work.last_sync.date
 - [ ] Ready for /new-feature within this service
 
 ### Microservice/Feature Layers
-- [ ] All 5 branches created and pushed (via Casey: base, -small, -medium, -large, -small-p1)
+- [ ] All 4 branches created and pushed (via Casey: {featureBranchRoot}, -small, -medium, -large)
+- [ ] Phase branches NOT created at init (created by phase routers, e.g., /pre-plan creates -small-p1)
 - [ ] Control returned to Compass for /pre-plan routing

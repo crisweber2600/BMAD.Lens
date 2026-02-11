@@ -29,7 +29,8 @@ domain_map_path: "_bmad-output/lens-work/domain-map.yaml"
 target_projects_root: "TargetProjects/"
 
 # Branch naming pattern for initiative context
-branch_pattern: "{domain}/{initiative_id}/{size}-{phase_number}"
+# Flat, hyphen-separated: {featureBranchRoot}[-{audience}[-p{N}]]
+# Example: chat-spark-backend-alignment-50cf37-small-p1
 ```
 
 > **Note:** The domain map enhances impact analysis with richer boundary information, but is not required. The workflow operates with service map and/or repo inventory alone.

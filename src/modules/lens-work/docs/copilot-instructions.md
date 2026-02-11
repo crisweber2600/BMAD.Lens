@@ -314,21 +314,29 @@ main
 └── {domain_prefix}                                    ← Domain organizational branch (only branch)
 ```
 
-Domain-layer initiatives create only the `{domain_prefix}` branch with Domain.yaml and .gitkeep scaffolding in `initiatives/`, `TargetProjects/`, and `Docs/`. No base/size/phase/workflow branches.
+Domain-layer initiatives create only the `{domain_prefix}` branch with Domain.yaml and .gitkeep scaffolding in `initiatives/`, `TargetProjects/`, and `Docs/`. No audience/phase/workflow branches.
 
-**Service/Feature layers (full topology):**
+**Service-layer (single branch):**
 ```
 main
-└── {domain_prefix}/{initiative_id}/base           ← Baseline
-    ├── {domain_prefix}/{initiative_id}/small      ← Small review size
-    │   ├── .../small-1                            ← Phase 1 (Analysis)
-    │   │   └── .../small-1-{workflow}             ← Workflow branch
-    │   ├── .../small-2
-    │   ├── .../small-3
-    │   └── .../small-4
-    └── {domain_prefix}/{initiative_id}/large      ← Large review size
-        └── .../large-{N}-{workflow}
+└── {domain_prefix}-{service_prefix}               ← Service organizational branch
 ```
+
+**Feature/Microservice layers (full topology):**
+```
+main
+└── {featureBranchRoot}                            ← Initiative root
+    ├── {featureBranchRoot}-small                  ← Small review audience
+    │   └── {featureBranchRoot}-small-p1           ← Phase 1 (Analysis)
+    │       └── ...-small-p1-{workflow}            ← Workflow branch
+    ├── {featureBranchRoot}-medium                 ← Medium review audience
+    │   └── {featureBranchRoot}-medium-p2          ← Phase 2 (Planning)
+    └── {featureBranchRoot}-large                  ← Large review audience
+        ├── {featureBranchRoot}-large-p3           ← Phase 3 (Solutioning)
+        └── {featureBranchRoot}-large-p4           ← Phase 4 (Implementation)
+```
+
+All branches use flat hyphen-separated naming (no `/` separators). All branches pushed to remote immediately on creation.
 
 **Design principle:** The entire project lifecycle can be reconstructed from `git log` alone.
 
@@ -341,7 +349,7 @@ All lens-work workflows enforce:
 
 Example commit message:
 ```
-{domain}/{initiative_id}/{size}/{phase}[/{workflow}]: description of changes
+{type}({initiative_id}): description of changes
 ```
 
 ## Using Copilot Effectively in BMAD Repos

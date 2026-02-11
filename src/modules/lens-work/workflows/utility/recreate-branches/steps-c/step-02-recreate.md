@@ -10,8 +10,8 @@ nextStepFile: './step-03-report.md'
 Recreate missing branches.
 
 ## Instructions
-- Recreate branches from base or size branch as appropriate.
-- Use canonical branch pattern `{domain}/{initiative_id}/{size}-{phase_number}`.
+- Recreate branches from root or audience branch as appropriate.
+- Use canonical branch pattern `{featureBranchRoot}-{audience}-p{phase_number}`.
 - Do not use legacy archive branch names.
 - Push if auto_push enabled.
 
