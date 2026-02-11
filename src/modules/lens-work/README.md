@@ -52,6 +52,14 @@ _bmad-output/lens-work/
 
 Git branches mirror the BMAD lifecycle. See `workflows/includes/size-topology.md` for the full specification.
 
+**Domain-layer** (organizational only — single branch, no audience/phase topology):
+```
+main
+└── {domain_prefix}                            ← Domain branch (domain-layer only)
+    └── Domain.yaml, .gitkeep                  ← Domain config and scaffolding
+```
+
+**Service/Feature-layer** (full topology with audience progression):
 ```
 main
 └── {domain_prefix}/{initiative_id}/base      ← Initiative baseline

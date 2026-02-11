@@ -153,7 +153,9 @@ created: 2026-02-05
 
 | # | Test | Expected Result |
 |---|------|-----------------|
-| 3.2.1 | Domain layer creates domain folder structure | `TargetProjects/{DOMAIN}/` directory created |
+| 3.2.1 | Domain layer creates all domain folders | `initiatives/{domain}/`, `TargetProjects/{domain}/`, `Docs/{domain}/` directories created with `.gitkeep` |
+| 3.2.1a | Domain layer creates Domain.yaml | `initiatives/{domain}/Domain.yaml` exists with `folders.initiatives`, `folders.target_projects`, `folders.docs`, and `branch` fields |
+| 3.2.1b | Domain layer creates only domain branch | Only `{domain_prefix}` branch exists — no `/base`, `-small`, `-large`, or phase branches |
 | 3.2.2 | Domain layer prompts for domain name | Interactive prompt asks for domain identifier |
 | 3.2.3 | Service layer resolves target repo | Target repo resolved from `service-map.yaml` |
 | 3.2.4 | Service layer creates service subfolder | `TargetProjects/{DOMAIN}/{SERVICE}/{REPO}` structure created |

@@ -310,6 +310,7 @@ git:
   fetch_strategy: background
   fetch_ttl: 60
   branch_patterns:
+    domain: "{domain}"  # Domain-layer only: single organizational branch
     base: "{domain}/{initiative_id}/base"
     small_lane: "{domain}/{initiative_id}/small"
     large_lane: "{domain}/{initiative_id}/large"
