@@ -108,7 +108,7 @@ Write-Host ""
 Write-Host "🎨 [6/9] Configuring IDE prompts..." -ForegroundColor Yellow
 
 # Ensure directories exist in release-build
-@('.claude/commands', '.codex/prompts', '.cursor/commands', '.github/agents') | ForEach-Object {
+@('.claude/commands', '.codex/prompts', '.cursor/commands', '.github/prompts') | ForEach-Object {
     $dirPath = "release-build/$_"
     if (-not (Test-Path $dirPath)) {
         New-Item -ItemType Directory -Path $dirPath -Force | Out-Null
@@ -123,12 +123,12 @@ if ((Test-Path "release-build\.claude\commands") -and ((Get-ChildItem -Path "rel
     Write-Host "   ✓ .codex directory created (empty)" -ForegroundColor Green
 }
 
-# Copy GitHub agent prompts - only if they exist
-if ((Test-Path ".github\agents") -and ((Get-ChildItem -Path ".github\agents" -Recurse -File -ErrorAction SilentlyContinue).Count -gt 0)) {
-    Copy-Item -Path ".github\agents\*" -Destination "release-build\.github\agents\" -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Host "   ✓ GitHub agent prompts copied" -ForegroundColor Green
+# Copy lens-work prompts to .github/prompts/
+if (Test-Path "release-build\_bmad\lens-work\prompts") {
+    Copy-Item -Path "release-build\_bmad\lens-work\prompts\*" -Destination "release-build\.github\prompts\" -Recurse -Force -ErrorAction SilentlyContinue
+    Write-Host "   ✓ lens-work GitHub Copilot prompts installed" -ForegroundColor Green
 } else {
-    Write-Host "   ✓ .github/agents directory created (empty)" -ForegroundColor Green
+    Write-Host "   ✓ .github/prompts directory created (empty)" -ForegroundColor Green
 }
 
 Write-Host "   ✓ IDE prompt directories ready" -ForegroundColor Green

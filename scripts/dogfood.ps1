@@ -28,7 +28,7 @@ Write-Host ""
 # Copy lens-work module
 Write-Host "📋 Copying lens-work module from src/ to _bmad/..." -ForegroundColor Yellow
 if (-not (Test-Path "_bmad\lens-work")) {
-    Write-Host "   ⚠️  _bmad\lens-work doesn't exist. Run 'build-release.ps1' first to install BMAD." -ForegroundColor Red
+    Write-Host "   Warning: _bmad\lens-work does not exist. Run build-release.ps1 first to install BMAD." -ForegroundColor Red
     exit 1
 }
 
