@@ -91,7 +91,12 @@ blocks: []
 state = load("_bmad-output/lens-work/state.yaml")
 
 # Step 2: Load initiative config using the active_initiative pointer
-initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
+# Domain-layer: initiatives/{domain_prefix}/Domain.yaml
+# Service/feature: initiatives/{id}.yaml
+if initiative_layer == "domain":
+  initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}/Domain.yaml")
+else:
+  initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 
 # Step 3: Use both for workflow logic
 current_phase = state.current.phase
@@ -99,6 +104,8 @@ size = initiative.size           # ALWAYS read size/size from shared initiative 
 domain_prefix = initiative.domain_prefix
 target_repos = initiative.target_repos
 ```
+
+> **Domain-layer note:** For domain-layer initiatives, `active_initiative` equals the `domain_prefix` (e.g., `bmad`). The initiative config is `Domain.yaml` inside the domain folder, not a top-level `{id}.yaml` file.
 
 ---
 
@@ -200,11 +207,21 @@ branches:
 
 ## Branch Naming Pattern
 
+### Service/Feature Layers
+
 ```
 {domain}/{initiative_id}/{size}-{phase_number}
 ```
 
-### Structure
+### Domain Layer
+
+```
+{domain_prefix}
+```
+
+Domain-layer initiatives create a single organizational branch using just the domain prefix. No base, size, phase, or workflow branches. Service/feature initiatives within the domain create their own full branch topology.
+
+### Structure (Service/Feature)
 
 | Segment | Description | Example |
 |---------|-------------|---------|
@@ -215,6 +232,13 @@ branches:
 
 ### Branch Hierarchy
 
+**Domain-layer (single branch):**
+```
+main
+  └── {domain_prefix}                          (domain organizational branch)
+```
+
+**Service/Feature (full topology):**
 ```
 main
   └── {domain}/{initiative_id}/base

@@ -353,10 +353,17 @@ ${else}
 # Load via: initiatives/${active_initiative}.yaml
 ${endif}
 current:
+${if layer == "domain"}
+  phase: null
+  phase_name: null
+  workflow: null
+  workflow_status: null
+${else}
   phase: p1
   phase_name: "Analysis"
   workflow: null
   workflow_status: pending
+${endif}
 ```
 
 > **Note:** This file is git-ignored. It tracks the individual user's current position in the initiative. Each collaborator has their own local copy. Review audience is NOT stored here — derived from phase via initiative config's review_audience_map.

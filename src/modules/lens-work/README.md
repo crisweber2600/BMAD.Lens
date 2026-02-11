@@ -52,6 +52,16 @@ _bmad-output/lens-work/
 
 Git branches mirror the BMAD lifecycle. See `workflows/includes/size-topology.md` for the full specification.
 
+**Domain-Layer (single branch):**
+```
+main
+└── {domain_prefix}                               ← Domain organizational branch (only branch)
+    (Domain.yaml, .gitkeep in initiatives/, TargetProjects/, Docs/)
+```
+
+Domain-layer initiatives create only the `{domain_prefix}` branch. No base, size, phase, or workflow branches. Service/feature initiatives within this domain create their own full topology.
+
+**Service/Feature Layers (full topology):**
 ```
 main
 └── {domain_prefix}/{initiative_id}/base      ← Initiative baseline
@@ -114,6 +124,8 @@ Gates enforce quality and authorization between phases:
 | **large** | Team work, requires reviews | `{domain}/{id}/large-{n}` |
 
 Size is selected during `init-initiative` based on initiative complexity and team size.
+
+> **Note:** Domain-layer initiatives do not use sizes. They create only the `{domain_prefix}` branch as an organizational container.
 
 ---
 
@@ -258,7 +270,9 @@ Size is selected during `init-initiative` based on initiative complexity and tea
 
 # New initiative
 #new-domain "payment-platform"
-# → Sets up multi-repo initiative with domain folder structure
+# → Sets up domain branch (payment-platform), creates Domain.yaml,
+#   scaffolds domain folders (initiatives/, TargetProjects/, Docs/)
+#   Only one branch created — no base/small/large/p1 branches
 
 # Phase progression
 /pre-plan     # P1: Analysis — brainstorm, research, brief
@@ -450,6 +464,7 @@ lens-work/
 | `_bmad-output/lens-work/repo-inventory.yaml` | Discovered repo metadata |
 | `_bmad-output/lens-work/bootstrap-report.md` | Bootstrap scan results |
 | `_bmad-output/lens-work/initiatives/` | Per-initiative artifacts and state |
+| `_bmad-output/lens-work/initiatives/{domain}/Domain.yaml` | Domain-layer initiative config (domain-layer only) |
 | `_bmad-output/lens-work/dashboards/` | Telemetry dashboard data |
 | `_bmad-output/personal/profile.yaml` | User profile and preferences |
 
