@@ -107,7 +107,7 @@ echo "🎨 [6/9] Configuring IDE prompts..."
 mkdir -p release-build/.claude/commands
 mkdir -p release-build/.codex/prompts
 mkdir -p release-build/.cursor/commands
-mkdir -p release-build/.github/agents
+mkdir -p release-build/.github/prompts
 
 # Configure Codex (copy from Claude Code) - only if .claude exists and has files
 if [ -d "release-build/.claude/commands" ] && [ "$(ls -A release-build/.claude/commands 2>/dev/null)" ]; then
@@ -117,12 +117,12 @@ else
     echo "   ✓ .codex directory created (empty)"
 fi
 
-# Copy GitHub agent prompts - only if they exist
-if [ -d ".github/agents" ] && [ "$(ls -A .github/agents 2>/dev/null)" ]; then
-    cp -r .github/agents/* release-build/.github/agents/ 2>/dev/null || true
-    echo "   ✓ GitHub agent prompts copied"
+# Copy lens-work prompts to .github/prompts/
+if [ -d "release-build/_bmad/lens-work/prompts" ]; then
+    cp -r release-build/_bmad/lens-work/prompts/* release-build/.github/prompts/ 2>/dev/null || true
+    echo "   ✓ lens-work GitHub Copilot prompts installed"
 else
-    echo "   ✓ .github/agents directory created (empty)"
+    echo "   ✓ .github/prompts directory created (empty)"
 fi
 
 echo "   ✓ IDE prompt directories ready"

@@ -90,12 +90,11 @@ The scripts create a complete BMAD.Lens release package containing:
 
 ### IDE Configurations
 - **Cursor** — Command prompts in `.cursor/commands/`
-- **GitHub Copilot** — Agent definitions in `.github/agents/`
+- **GitHub Copilot** — Prompt files in `.github/prompts/`
 - **Claude Code** — Command prompts in `.claude/commands/`
 - **Codex** — Command prompts in `.codex/prompts/`
 
 ### Additional Content
-- GitHub prompts for lens-work in `.github/prompts/`
 - Documentation in `docs/`
 - Output directories in `_bmad-output/`
 

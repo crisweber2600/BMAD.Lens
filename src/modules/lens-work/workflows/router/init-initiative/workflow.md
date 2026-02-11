@@ -201,18 +201,30 @@ params:
   layer: ${layer}
   domain_prefix: ${domain_prefix}
   target_repos: ${target_repos}
-  
+
+${if layer == "domain"}
+# Domain-layer: Casey creates ONLY the domain branch (pushed immediately to remote):
+# - ${domain_prefix}
+#
+# Domain branches are organizational — no audience/phase branches needed.
+# Service/feature initiatives within this domain will create their own topology.
+${else}
 # Casey creates (ALL pushed immediately to remote):
 # - ${domain_prefix}/${initiative_id}/base
 # - ${domain_prefix}/${initiative_id}-small    (review audience: small — p1 PRs target here)
 # - ${domain_prefix}/${initiative_id}-medium   (review audience: medium — p2 PRs target here)
 # - ${domain_prefix}/${initiative_id}-large    (review audience: large — p3/p4 PRs target here)
 # - ${domain_prefix}/${initiative_id}-small-p1 (phase 1 branch, first working branch)
+${endif}
 ```
 
 ### 6. Write Initiative Config (Git-Committed)
 
+${if layer == "domain"}
+Create directory at `{project-root}/_bmad-output/lens-work/initiatives/${domain_prefix}/` and file at `{project-root}/_bmad-output/lens-work/initiatives/${domain_prefix}/${initiative_id}.yaml`:
+${else}
 Create directory and file at `{project-root}/_bmad-output/lens-work/initiatives/${initiative_id}.yaml`:
+${endif}
 
 ```yaml
 id: ${initiative_id}
@@ -235,15 +247,21 @@ docs:
   repo: "${docs_repo}"
   feature: "${docs_feature}"
   path: "${docs_path}"
+${if layer != "domain"}
 review_audience_map:           # Phase → review audience size
   p1: small
   p2: medium
   p3: large
   p4: large
+${endif}
 gates:
   - name: tests-pass
     status: open
 blocks: []
+${if layer == "domain"}
+branches:
+  domain: "${domain_prefix}"
+${else}
 branches:
   base: "${domain_prefix}/${initiative_id}/base"
   audiences:
@@ -251,9 +269,49 @@ branches:
     medium: "${domain_prefix}/${initiative_id}-medium"
     large: "${domain_prefix}/${initiative_id}-large"
   active: "${domain_prefix}/${initiative_id}-small-p1"
+${endif}
 ```
 
-> **Note:** This file is committed to the repo and shared across collaborators. It holds the canonical initiative definition, the **review audience map** (phase → audience size), and branch topology. The audience map determines which review branch each phase's PR targets.
+> **Note:** This file is committed to the repo and shared across collaborators. It holds the canonical initiative definition, the **review audience map** (phase → audience size for non-domain layers), and branch topology. The audience map determines which review branch each phase's PR targets.
+
+### 6a. Scaffold Domain Folders (Domain-Layer Only)
+
+${if layer == "domain"}
+
+Create domain folder structure with `.gitkeep` files and a `Domain.yaml` descriptor:
+
+```bash
+# Scaffold domain folders
+DOMAIN_NAME="${domain_prefix}"
+
+# Create domain folders with .gitkeep
+mkdir -p "_bmad-output/lens-work/initiatives/${DOMAIN_NAME}"
+touch "_bmad-output/lens-work/initiatives/${DOMAIN_NAME}/.gitkeep"
+
+mkdir -p "TargetProjects/${DOMAIN_NAME}"
+touch "TargetProjects/${DOMAIN_NAME}/.gitkeep"
+
+mkdir -p "Docs/${DOMAIN_NAME}"
+touch "Docs/${DOMAIN_NAME}/.gitkeep"
+```
+
+Create `{project-root}/_bmad-output/lens-work/initiatives/${DOMAIN_NAME}/Domain.yaml`:
+
+```yaml
+domain: "${domain}"
+domain_prefix: "${domain_prefix}"
+created_at: "${ISO_TIMESTAMP}"
+created_by: "${git_user}"
+folders:
+  initiatives: "_bmad-output/lens-work/initiatives/${domain_prefix}/"
+  target_projects: "TargetProjects/${domain_prefix}/"
+  docs: "Docs/${domain_prefix}/"
+branch: "${domain_prefix}"
+```
+
+> **Note:** Domain.yaml is the anchor file for the domain. Service and feature initiatives within this domain will be created as sub-files in the initiatives folder. The `.gitkeep` files ensure empty directories are committed.
+
+${endif}
 
 ### 7. Write Personal State (Git-Ignored)
 
@@ -280,6 +338,40 @@ Append to `{project-root}/_bmad-output/lens-work/event-log.jsonl`:
 
 ### 9. Commit Initiative Config
 
+${if layer == "domain"}
+```bash
+# Domain-layer: checkout the domain branch
+git checkout "${domain_prefix}"
+
+# Stage domain scaffolding, initiative config, and event log
+git add "_bmad-output/lens-work/initiatives/${domain_prefix}/Domain.yaml"
+git add "_bmad-output/lens-work/initiatives/${domain_prefix}/${initiative_id}.yaml"
+git add "_bmad-output/lens-work/initiatives/${domain_prefix}/.gitkeep"
+git add "TargetProjects/${domain_prefix}/.gitkeep"
+git add "Docs/${domain_prefix}/.gitkeep"
+git add "_bmad-output/lens-work/event-log.jsonl"
+
+# Create targeted commit
+git commit -m "init(${initiative_id}): Create domain '${initiative_name}'
+
+Initiative: ${initiative_id}
+Layer: domain
+Domain: ${domain}
+
+Creates:
+- Domain branch: ${domain_prefix}
+- Domain.yaml: initiatives/${domain_prefix}/Domain.yaml
+- Domain folders: initiatives/${domain_prefix}/, TargetProjects/${domain_prefix}/, Docs/${domain_prefix}/
+- Initiative config: initiatives/${domain_prefix}/${initiative_id}.yaml
+- Event log entry
+
+Domain-layer: organizational branch only, no audience/phase topology.
+Service and feature initiatives within this domain create their own branches."
+
+# Push domain branch
+git push -u origin "${domain_prefix}"
+```
+${else}
 ```bash
 # Ensure on small-p1 branch (phase 1)
 git checkout "${domain_prefix}/${initiative_id}-small-p1"
@@ -311,16 +403,23 @@ Ready for /pre-plan workflow."
 # Push to small-p1 branch
 git push -u origin "${domain_prefix}/${initiative_id}-small-p1"
 ```
+${endif}
 
 ### 10. Ensure .gitignore for Personal State
 
 ```bash
+${if layer == "domain"}
+PUSH_BRANCH="${domain_prefix}"
+${else}
+PUSH_BRANCH="${domain_prefix}/${initiative_id}-small-p1"
+${endif}
+
 # Ensure state.yaml is git-ignored (personal state should not be committed)
 if ! grep -q "_bmad-output/lens-work/state.yaml" .gitignore 2>/dev/null; then
   echo "_bmad-output/lens-work/state.yaml" >> .gitignore
   git add .gitignore
   git commit -m "chore: gitignore personal lens-work state"
-  git push origin "${domain_prefix}/${initiative_id}-small-p1"
+  git push origin "${PUSH_BRANCH}"
 fi
 ```
 
@@ -365,6 +464,45 @@ done
 
 Output to Compass:
 
+${if layer == "domain"}
+```
+✅ Domain created: ${initiative_id}
+├── Name: ${initiative_name}
+├── Layer: domain
+├── Domain: ${domain}
+├── Question mode: ${question_mode}
+├── Docs path: ${docs_path}
+├── Target repos: ${target_repos}
+├──
+├── Branch: ${domain_prefix} (domain-only, committed & pushed)
+├──
+├── Domain Folders:
+│   ├── Initiatives: _bmad-output/lens-work/initiatives/${domain_prefix}/
+│   ├── TargetProjects: TargetProjects/${domain_prefix}/
+│   └── Docs: Docs/${domain_prefix}/
+├──
+├── Domain Config: _bmad-output/lens-work/initiatives/${domain_prefix}/Domain.yaml
+├──
+├── Branch Selection:
+│   ${for target_repo in target_repos}
+│   ├── ${target_repo}: ${branch_selection_result[target_repo].branch}
+│   │  └── Synced: ${branch_selection_result[target_repo].timestamp}
+│   ${endfor}
+├──
+├── State Architecture:
+│   ├── Personal state: _bmad-output/lens-work/state.yaml (git-ignored)
+│   ├── Initiative config: _bmad-output/lens-work/initiatives/${domain_prefix}/${initiative_id}.yaml (committed)
+│   ├── Domain config: _bmad-output/lens-work/initiatives/${domain_prefix}/Domain.yaml (committed)
+│   └── Profile selected_branch: _bmad-output/personal/profile.yaml (git-ignored)
+├──
+└── Ready for /new-service or /new-feature within this domain
+
+State loading pattern:
+  state = load("_bmad-output/lens-work/state.yaml")
+  initiative = load("_bmad-output/lens-work/initiatives/${domain_prefix}/${state.active_initiative}.yaml")
+  profile = load("_bmad-output/personal/profile.yaml")
+```
+${else}
 ```
 ✅ Initiative created: ${initiative_id}
 ├── Name: ${initiative_name}
@@ -408,6 +546,7 @@ State loading pattern:
   review_size = initiative.review_audience_map[state.current.phase]   # Phase determines audience
   selected_branch = profile.lens_work.selected_branch.branch  # Cached branch selection
 ```
+${endif}
 
 ---
 
@@ -419,6 +558,7 @@ The three-part state architecture:
 |------|-------|------------|----------|
 | `state.yaml` | Personal | git-ignored | Active initiative pointer, current phase/workflow position |
 | `initiatives/{id}.yaml` | Shared | committed | Initiative definition, **review_audience_map**, gates, blocks, branches, target repos |
+| `initiatives/{domain}/Domain.yaml` | Shared | committed | Domain-layer only: domain folder locations and branch name |
 | `personal/profile.yaml` | Personal | git-ignored | User preferences, **branch selection + last sync timestamp** (per initiative) |
 
 **Loading pattern used by all downstream workflows:**
@@ -428,7 +568,11 @@ The three-part state architecture:
 state = load("_bmad-output/lens-work/state.yaml")
 
 # Step 2: Load initiative config using the active_initiative pointer
+${if layer == "domain"}
+initiative = load("_bmad-output/lens-work/initiatives/${initiative.domain_prefix}/${state.active_initiative}.yaml")
+${else}
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
+${endif}
 
 # Step 3: Load personal profile for branch selection and user preferences
 profile = load("_bmad-output/personal/profile.yaml")
@@ -436,7 +580,9 @@ profile = load("_bmad-output/personal/profile.yaml")
 # Step 4: Use all three for workflow logic
 current_phase = state.current.phase
 initiative_layer = initiative.layer
+${if layer != "domain"}
 review_size = initiative.review_audience_map[current_phase]  # Phase determines review audience
+${endif}
 target_repos = initiative.target_repos
 selected_branch = profile.lens_work.selected_branch.branch
 last_sync_date = profile.lens_work.last_sync.date
@@ -460,12 +606,23 @@ last_sync_date = profile.lens_work.last_sync.date
 
 ## Post-Conditions
 
+### All Layers
 - [ ] Initiative ID generated and unique
-- [ ] All 5 branches created and pushed (via Casey: base, -small, -medium, -large, -small-p1)
 - [ ] `initiatives/{id}.yaml` created and committed
 - [ ] `state.yaml` written locally (git-ignored)
 - [ ] `.gitignore` updated for `state.yaml`
 - [ ] `event-log.jsonl` entry appended and committed
 - [ ] **Target repos synced and branches selected** (via sync-and-select-branch)
 - [ ] `profile.lens_work.selected_branch` and `last_sync.date` updated
+- [ ] Control returned to Compass
+
+### Domain-Layer Specific
+- [ ] Single `${domain_prefix}` branch created and pushed
+- [ ] Domain folders scaffolded: `initiatives/{domain}/`, `TargetProjects/{domain}/`, `Docs/{domain}/`
+- [ ] `.gitkeep` files created in all domain folders
+- [ ] `Domain.yaml` created in `initiatives/{domain}/`
+- [ ] Ready for /new-service or /new-feature within this domain
+
+### Service/Microservice/Feature Layers
+- [ ] All 5 branches created and pushed (via Casey: base, -small, -medium, -large, -small-p1)
 - [ ] Control returned to Compass for /pre-plan routing

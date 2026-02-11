@@ -38,6 +38,15 @@ agent:
       content: |
         Branch topology pattern for initiatives:
         
+        DOMAIN-LAYER initiatives create ONLY a single domain branch:
+          {domain_prefix}                                          # Domain branch (organizational only)
+          - No base, size, phase, or workflow branches
+          - Scaffolds: initiatives/{domain}/, TargetProjects/{domain}/, Docs/{domain}/
+          - Creates Domain.yaml with domain folder locations
+          - Service/feature initiatives within this domain create their own topology
+        
+        SERVICE/MICROSERVICE/FEATURE-LAYER initiatives create full topology:
+        
         Size = PR review audience. It progresses per phase:
           p1 → small (solo dev, 1 reviewer)
           p2 → medium (small team, 2-3 reviewers)
@@ -62,6 +71,7 @@ agent:
         - With workflow: {Domain}/{id}-small-p1-brainstorm
         - Audience-only: {Domain}/{id}-small (review audience branch, PR target)
         - Base: {Domain}/{id}/base
+        - Domain-only: {domain_prefix} (domain-layer only, no sub-branches)
         
         Review audience map (phase → audience):
           review_audience = {1: "small", 2: "medium", 3: "large", 4: "large"}

@@ -12,14 +12,33 @@ This document defines the branch hierarchy used by lens-work to manage initiativ
 
 ---
 
-## Branch Hierarchy (4 Levels)
+## Branch Hierarchy
 
 ```
+Level 0: Domain Only         {domain_prefix}              (domain-layer only)
 Level 1: Initiative Base     {Domain}/{id}/base
 Level 2: Sizes              {Domain}/{id}/small, {Domain}/{id}/large
 Level 3: Phases             {Domain}/{id}/{size}-{N}
 Level 4: Workflows          {Domain}/{id}/{size}-{N}-{workflow}
 ```
+
+### Level 0: Domain Branch (Domain-Layer Only)
+
+```
+{domain_prefix}
+```
+
+Organizational branch for domain-level initiatives. Domain-layer initiatives create **only** this single branch — no base, size, phase, or workflow branches. The domain branch holds domain scaffolding (Domain.yaml, domain folders with .gitkeep files) and the initiative config.
+
+**Rules:**
+- Created from `main` (or current HEAD) at domain init
+- Domain-layer initiatives do NOT create Levels 1–4
+- Service/feature initiatives within this domain create their own Level 1–4 topology
+- Scaffolds: `initiatives/{domain}/`, `TargetProjects/{domain}/`, `Docs/{domain}/`
+- Creates `Domain.yaml` with domain folder locations
+- Pushed to remote immediately on creation
+
+---
 
 ### Level 1: Initiative Base
 
@@ -27,7 +46,7 @@ Level 4: Workflows          {Domain}/{id}/{size}-{N}-{workflow}
 {Domain}/{initiative_id}/base
 ```
 
-Root branch for the initiative. Created at init via `init-initiative` workflow. All work merges here eventually through the size → base PR flow. This branch represents the "done" state of the initiative.
+Root branch for service/microservice/feature initiatives. Created at init via `init-initiative` workflow. All work merges here eventually through the size → base PR flow. This branch represents the "done" state of the initiative.
 
 **Rules:**
 - Created from `main` (or current HEAD) at initiative start
@@ -35,6 +54,7 @@ Root branch for the initiative. Created at init via `init-initiative` workflow. 
 - Protected: requires PR review for final PBR merge
 - One base branch per initiative
 - Pushed to remote immediately on creation
+- Not used for domain-layer initiatives (see Level 0)
 
 ---
 

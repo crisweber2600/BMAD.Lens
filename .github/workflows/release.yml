@@ -42,7 +42,7 @@ jobs:
           mkdir -p release-build/.claude/commands
           mkdir -p release-build/.codex/prompts
           mkdir -p release-build/.cursor/commands
-          mkdir -p release-build/.github/agents
+          mkdir -p release-build/.github/prompts
           
           # Copy Claude Code commands to Codex (if they exist)
           if [ -d "release-build/.claude/commands" ] && [ "$(ls -A release-build/.claude/commands)" ]; then
@@ -52,12 +52,10 @@ jobs:
             echo "✓ .codex directory created (empty)"
           fi
           
-          # Copy GitHub agent prompts (if they exist)
-          if [ -d ".github/agents" ] && [ "$(ls -A .github/agents)" ]; then
-            cp -r .github/agents/* release-build/.github/agents/ || true
-            echo "✓ GitHub agent prompts copied"
-          else
-            echo "✓ .github/agents directory created (empty)"
+          # Copy lens-work prompts to .github/prompts/
+          if [ -d "release-build/_bmad/lens-work/prompts" ]; then
+            cp -r release-build/_bmad/lens-work/prompts/* release-build/.github/prompts/ || true
+            echo "✓ lens-work GitHub Copilot prompts installed"
           fi
 
       - name: Generate version tag
@@ -108,7 +106,7 @@ jobs:
 
             ### IDE Configurations
             - **Cursor** (`.cursor/commands/`)
-            - **GitHub Copilot** (`.github/agents/`)
+            - **GitHub Copilot** (`.github/prompts/`)
             - **Claude Code** (`.claude/commands/`)
             - **Codex** (`.codex/prompts/`)
 
