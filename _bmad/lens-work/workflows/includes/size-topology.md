@@ -12,14 +12,39 @@ This document defines the branch hierarchy used by lens-work to manage initiativ
 
 ---
 
-## Branch Hierarchy (4 Levels)
+## Branch Hierarchy (5 Levels)
 
 ```
-Level 1: Initiative Base     {Domain}/{id}/base
+Level 0: Domain              {domain_prefix}                              (domain-layer only)
+Level 1: Initiative Base     {Domain}/{id}/base                           (service/feature layers)
 Level 2: Sizes              {Domain}/{id}/small, {Domain}/{id}/large
 Level 3: Phases             {Domain}/{id}/{size}-{N}
 Level 4: Workflows          {Domain}/{id}/{size}-{N}-{workflow}
 ```
+
+### Level 0: Domain (domain-layer only)
+
+```
+{domain_prefix}
+```
+
+Organizational branch for domain-layer initiatives. Created at domain onboarding via `init-initiative` with `layer=domain`. This is the **only** branch created for domain-layer — no base, size, phase, or workflow branches exist.
+
+**Rules:**
+- Created from `main` (or current HEAD) at domain init
+- Branch name is just the domain prefix (e.g., `bmad`, `payment`, `auth`)
+- No audience/phase/workflow topology — domain is an organizational container
+- Domain.yaml is both the domain descriptor AND the initiative config
+- Service and feature initiatives within this domain create their own branches at Levels 1–4
+- Pushed to remote immediately on creation
+
+**Domain scaffolding (created on this branch):**
+- `_bmad-output/lens-work/initiatives/{domain_prefix}/Domain.yaml` — domain config + initiative config
+- `_bmad-output/lens-work/initiatives/{domain_prefix}/.gitkeep`
+- `TargetProjects/{domain_prefix}/.gitkeep`
+- `Docs/{domain_prefix}/.gitkeep`
+
+---
 
 ### Level 1: Initiative Base
 
@@ -208,8 +233,14 @@ git merge --no-commit --no-ff ${source_branch} && git merge --abort
 Casey validates all branch names against this regex:
 
 ```regex
+# Service/feature layer branches:
 ^[A-Za-z0-9_-]+/[a-z0-9-]+/(base|small|medium|large|[a-z]+-[0-9]+(-[a-z0-9-]+)?)$
+
+# Domain-layer branches (domain-only, no subpath):
+^[A-Za-z0-9_-]+$
 ```
+
+> **Note:** Domain-layer branches are just `{domain_prefix}` (e.g., `bmad`). They do not match the service/feature regex. Casey must check the initiative layer before applying validation.
 
 ### Parsing Branch Components
 
@@ -248,7 +279,7 @@ workflow=$(echo "$branch_segment" | cut -d'-' -f3-)  # prd
 
 ## Related Workflows
 
-- **init-initiative:** Creates Level 1 (base) and Level 2 (sizes) branches
-- **phase-lifecycle:** Creates Level 3 (phase) branches
-- **start-workflow / finish-workflow:** Creates and closes Level 4 (workflow) branches
+- **init-initiative:** For domain-layer: creates Level 0 (domain) branch only. For service/feature: creates Level 1 (base) and Level 2 (sizes) branches
+- **phase-lifecycle:** Creates Level 3 (phase) branches (service/feature layers only)
+- **start-workflow / finish-workflow:** Creates and closes Level 4 (workflow) branches (service/feature layers only)
 - **fix-state:** Detects and repairs topology drift

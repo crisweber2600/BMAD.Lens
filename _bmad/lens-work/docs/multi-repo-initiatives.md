@@ -45,6 +45,20 @@ The BMAD control repo manages all `{Domain}/` branches. Target repos are _consum
 
 > **Note:** Replace `{Domain}` with your actual domain prefix (e.g., `lens`, `payment`, `auth`). For example, `{Domain}/{initiative_id}/base` becomes `lens/rate-limit-x7k2m9/base` or `payment/checkout-0a1k2m/base`.
 
+### Domain-Layer Branch Pattern
+
+Domain-layer initiatives create only a single organizational branch in the control repo:
+
+```
+NorthStarET.BMAD (control repo)
+└── {domain_prefix}                            ← Domain branch (only branch)
+    (Domain.yaml + .gitkeep in initiatives/, TargetProjects/, Docs/)
+```
+
+No base, size, phase, or workflow branches are created for domain-layer. Service and feature initiatives within the domain create their own full branch topology.
+
+### Service/Feature Branch Pattern
+
 ```
 NorthStarET.BMAD (control repo)
 ├── {Domain}/bmad-9d7732/base          ← lifecycle branches live HERE

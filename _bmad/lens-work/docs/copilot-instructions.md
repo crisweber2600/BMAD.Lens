@@ -308,6 +308,15 @@ The LENS Workbench enforces strict git-based workflow control:
 
 Branches mirror the BMAD lifecycle phases and sizes:
 
+**Domain-layer (single branch):**
+```
+main
+└── {domain_prefix}                                    ← Domain organizational branch (only branch)
+```
+
+Domain-layer initiatives create only the `{domain_prefix}` branch with Domain.yaml and .gitkeep scaffolding in `initiatives/`, `TargetProjects/`, and `Docs/`. No base/size/phase/workflow branches.
+
+**Service/Feature layers (full topology):**
 ```
 main
 └── {domain_prefix}/{initiative_id}/base           ← Baseline
