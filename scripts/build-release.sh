@@ -22,8 +22,30 @@ echo "  1. Build a clean release package"
 echo "  2. Dogfood it to your local _bmad/ directory"
 echo ""
 
-# Step 1: Create release-build directory
-echo "📁 [1/8] Creating release-build directory..."
+# Step 1: Clean workspace — remove all root folders except protected set
+echo "🧹 [1/9] Cleaning workspace (removing non-source folders)..."
+PROTECTED="src .git _bmad-output scripts TargetProjects Docs release-build"
+for dir in */; do
+    dir_name="${dir%/}"
+    if echo " $PROTECTED " | grep -q " $dir_name "; then
+        echo "   ✓ Keeping $dir_name/"
+    else
+        echo "   ✗ Removing $dir_name/"
+        rm -rf "$dir_name"
+    fi
+done
+# Also remove dot-directories (except .git)
+for dir in .*/; do
+    dir_name="${dir%/}"
+    [[ "$dir_name" == "." || "$dir_name" == ".." || "$dir_name" == ".git" ]] && continue
+    echo "   ✗ Removing $dir_name/"
+    rm -rf "$dir_name"
+done
+echo "   ✓ Workspace cleaned"
+
+# Step 2: Create release-build directory
+echo ""
+echo "📁 [2/9] Creating release-build directory..."
 if [ -d "release-build" ]; then
     echo "   Cleaning existing release-build directory..."
     rm -rf release-build
@@ -31,9 +53,9 @@ fi
 mkdir -p release-build
 echo "   ✓ Directory created"
 
-# Step 2: Clean personal data
+# Step 3: Clean personal data
 echo ""
-echo "🧹 [2/8] Cleaning personal data..."
+echo "🧹 [3/9] Cleaning personal data..."
 if [ -d "_bmad-output/lens-work/personal" ]; then
     rm -rf _bmad-output/lens-work/personal
     echo "   ✓ Removed personal directory"
@@ -49,7 +71,7 @@ fi
 # Step 3: Install BMAD with official modules
 if [ "$SKIP_INSTALL" != "true" ]; then
     echo ""
-    echo "📦 [3/8] Installing BMAD with official modules..."
+    echo "📦 [4/9] Installing BMAD with official modules..."
     echo "   This may take 1-2 minutes..."
     
     cd release-build
@@ -65,12 +87,12 @@ if [ "$SKIP_INSTALL" != "true" ]; then
     echo "   ✓ BMAD installed successfully"
 else
     echo ""
-    echo "📦 [3/8] Skipping BMAD installation (SKIP_INSTALL=true)"
+    echo "📦 [4/9] Skipping BMAD installation (SKIP_INSTALL=true)"
 fi
 
 # Step 4: Copy custom modules
 echo ""
-echo "📋 [4/8] Copying custom modules..."
+echo "📋 [5/9] Copying custom modules..."
 mkdir -p release-build/_bmad
 cp -r src/modules/lens-work release-build/_bmad/lens-work
 cp -r src/modules/file-transforms release-build/_bmad/file-transforms
@@ -79,7 +101,7 @@ echo "   ✓ file-transforms module copied"
 
 # Step 5: Configure IDE prompts
 echo ""
-echo "🎨 [5/8] Configuring IDE prompts..."
+echo "🎨 [6/9] Configuring IDE prompts..."
 
 # Configure Codex (copy from Claude Code) - only if .claude exists
 if [ -d "release-build/.claude/commands" ]; then
@@ -101,7 +123,7 @@ fi
 
 # Step 6: Create release archive
 echo ""
-echo "📦 [6/8] Creating release archive..."
+echo "📦 [7/9] Creating release archive..."
 
 cd release-build
 
@@ -140,29 +162,26 @@ if [ -f "${ARCHIVE_FILE}" ]; then
     echo "   Size: ${SIZE}"
 fi
 
-# Step 7: Dogfood the release
+# Step 8: Dogfood the release — copy everything from release-build to workspace root
 echo ""
-echo "🐕 [7/8] Dogfooding the release to local _bmad/..."
-if [ -d "_bmad/lens-work" ]; then
-    echo "   Copying lens-work from release-build..."
-    cp -r release-build/_bmad/lens-work/* _bmad/lens-work/
-    echo "   ✓ lens-work module updated"
-fi
-
-if [ -d "_bmad/file-transforms" ] || [ -d "release-build/_bmad/file-transforms" ]; then
-    if [ ! -d "_bmad/file-transforms" ]; then
-        mkdir -p _bmad/file-transforms
-    fi
-    echo "   Copying file-transforms from release-build..."
-    cp -r release-build/_bmad/file-transforms/* _bmad/file-transforms/
-    echo "   ✓ file-transforms module updated"
-fi
-
-echo "   ✓ Local _bmad/ now running the released version"
+echo "🐕 [8/9] Dogfooding the release to workspace root..."
+for item in release-build/*/; do
+    item_name="$(basename "$item")"
+    echo "   Copying $item_name/"
+    cp -r "$item" "$item_name"
+done
+# Copy dot-directories (.github, .cursor, .claude, .codex, etc.)
+for item in release-build/.*/; do
+    item_name="$(basename "$item")"
+    [[ "$item_name" == "." || "$item_name" == ".." ]] && continue
+    echo "   Copying $item_name/"
+    cp -r "$item" "$item_name"
+done
+echo "   ✓ Workspace rebuilt from release-build"
 
 # Cleanup
 echo ""
-echo "🧹 [8/8] Cleaning up..."
+echo "🧹 [9/9] Cleaning up..."
 if [ -d "release-build" ]; then
     rm -rf release-build
     echo "   ✓ Removed release-build directory"

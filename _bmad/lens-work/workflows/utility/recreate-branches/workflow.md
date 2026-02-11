@@ -310,8 +310,6 @@ Recovery logged to: _bmad-output/lens-work/event-log.jsonl
 
 The branch hierarchy for a lens-work initiative follows this pattern:
 
-> **Note:** Domain-layer initiatives use only the domain branch (`{domain}`) — no `/{id}/base` suffix. The hierarchy below applies to service/microservice/feature layers.
-
 ```
 main
   └── {domain}/{id}/base

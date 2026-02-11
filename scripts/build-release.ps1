@@ -25,8 +25,22 @@ Write-Host "  2. Dogfood it to your local _bmad/ directory" -ForegroundColor Gra
 Write-Host ""
 Write-Host ""
 
-# Step 1: Create release-build directory
-Write-Host "📁 [1/8] Creating release-build directory..." -ForegroundColor Yellow
+# Step 1: Clean workspace — remove all root folders except protected set
+Write-Host "🧹 [1/9] Cleaning workspace (removing non-source folders)..." -ForegroundColor Yellow
+$protected = @('src', '.git', '_bmad-output', 'scripts', 'TargetProjects', 'Docs', 'release-build')
+Get-ChildItem -Directory -Force | ForEach-Object {
+    if ($protected -contains $_.Name) {
+        Write-Host "   ✓ Keeping $($_.Name)/" -ForegroundColor Green
+    } else {
+        Write-Host "   ✗ Removing $($_.Name)/" -ForegroundColor Red
+        Remove-Item $_.FullName -Recurse -Force
+    }
+}
+Write-Host "   ✓ Workspace cleaned" -ForegroundColor Green
+
+# Step 2: Create release-build directory
+Write-Host ""
+Write-Host "📁 [2/9] Creating release-build directory..." -ForegroundColor Yellow
 if (Test-Path "release-build") {
     Write-Host "   Cleaning existing release-build directory..." -ForegroundColor Gray
     Remove-Item "release-build" -Recurse -Force
@@ -34,9 +48,9 @@ if (Test-Path "release-build") {
 New-Item -ItemType Directory -Path "release-build" | Out-Null
 Write-Host "   ✓ Directory created" -ForegroundColor Green
 
-# Step 2: Clean personal data
+# Step 3: Clean personal data
 Write-Host ""
-Write-Host "🧹 [2/8] Cleaning personal data..." -ForegroundColor Yellow
+Write-Host "🧹 [3/9] Cleaning personal data..." -ForegroundColor Yellow
 $personalPath = "_bmad-output/lens-work/personal"
 $rosterPath = "_bmad-output/lens-work/roster"
 $cleaned = $false
@@ -57,7 +71,7 @@ if (-not $cleaned) {
 # Step 3: Install BMAD with official modules
 if (-not $SkipInstall) {
     Write-Host ""
-    Write-Host "📦 [3/8] Installing BMAD with official modules..." -ForegroundColor Yellow
+    Write-Host "📦 [4/9] Installing BMAD with official modules..." -ForegroundColor Yellow
     Write-Host "   This may take 1-2 minutes..." -ForegroundColor Gray
     
     Push-Location "release-build"
@@ -77,12 +91,12 @@ if (-not $SkipInstall) {
     }
 } else {
     Write-Host ""
-    Write-Host "📦 [3/8] Skipping BMAD installation (--SkipInstall flag)" -ForegroundColor Yellow
+    Write-Host "📦 [4/9] Skipping BMAD installation (--SkipInstall flag)" -ForegroundColor Yellow
 }
 
 # Step 4: Copy custom modules
 Write-Host ""
-Write-Host "📋 [4/8] Copying custom modules..." -ForegroundColor Yellow
+Write-Host "📋 [5/9] Copying custom modules..." -ForegroundColor Yellow
 New-Item -ItemType Directory -Path "release-build\_bmad" -Force | Out-Null
 Copy-Item -Path "src\modules\lens-work" -Destination "release-build\_bmad\lens-work" -Recurse -Force
 Copy-Item -Path "src\modules\file-transforms" -Destination "release-build\_bmad\file-transforms" -Recurse -Force
@@ -91,7 +105,7 @@ Write-Host "   ✓ file-transforms module copied" -ForegroundColor Green
 
 # Step 5: Configure IDE prompts
 Write-Host ""
-Write-Host "🎨 [5/8] Configuring IDE prompts..." -ForegroundColor Yellow
+Write-Host "🎨 [6/9] Configuring IDE prompts..." -ForegroundColor Yellow
 
 # Configure Codex (copy from Claude Code) - only if .claude exists
 if (Test-Path "release-build\.claude\commands") {
@@ -113,7 +127,7 @@ if (-not (Test-Path "release-build\.claude\commands") -and -not (Test-Path ".git
 
 # Step 6: Create release archive
 Write-Host ""
-Write-Host "📦 [6/8] Creating release archive..." -ForegroundColor Yellow
+Write-Host "📦 [7/9] Creating release archive..." -ForegroundColor Yellow
 
 Push-Location "release-build"
 try {
@@ -158,29 +172,18 @@ if (Test-Path "bmad-lens-v$Version.zip") {
     Write-Host "   Size: $([math]::Round($size, 2)) MB"
 }
 
-# Step 7: Dogfood the release
+# Step 8: Dogfood the release — copy everything from release-build to workspace root
 Write-Host ""
-Write-Host "🐕 [7/8] Dogfooding the release to local _bmad/..." -ForegroundColor Yellow
-if (Test-Path "_bmad\lens-work") {
-    Write-Host "   Copying lens-work from release-build..." -ForegroundColor Gray
-    Copy-Item -Path "release-build\_bmad\lens-work\*" -Destination "_bmad\lens-work\" -Recurse -Force
-    Write-Host "   ✓ lens-work module updated" -ForegroundColor Green
+Write-Host "🐕 [8/9] Dogfooding the release to workspace root..." -ForegroundColor Yellow
+Get-ChildItem -Path "release-build" -Directory -Force | ForEach-Object {
+    Write-Host "   Copying $($_.Name)/" -ForegroundColor Gray
+    Copy-Item -Path $_.FullName -Destination $_.Name -Recurse -Force
 }
-
-if ((Test-Path "_bmad\file-transforms") -or (Test-Path "release-build\_bmad\file-transforms")) {
-    if (-not (Test-Path "_bmad\file-transforms")) {
-        New-Item -ItemType Directory -Path "_bmad\file-transforms" -Force | Out-Null
-    }
-    Write-Host "   Copying file-transforms from release-build..." -ForegroundColor Gray
-    Copy-Item -Path "release-build\_bmad\file-transforms\*" -Destination "_bmad\file-transforms\" -Recurse -Force
-    Write-Host "   ✓ file-transforms module updated" -ForegroundColor Green
-}
-
-Write-Host "   ✓ Local _bmad/ now running the released version" -ForegroundColor Green
+Write-Host "   ✓ Workspace rebuilt from release-build" -ForegroundColor Green
 
 # Cleanup
 Write-Host ""
-Write-Host "🧹 [8/8] Cleaning up..." -ForegroundColor Yellow
+Write-Host "🧹 [9/9] Cleaning up..." -ForegroundColor Yellow
 if (Test-Path "release-build") {
     Remove-Item "release-build" -Recurse -Force
     Write-Host "   ✓ Removed release-build directory" -ForegroundColor Green
