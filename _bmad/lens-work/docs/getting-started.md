@@ -58,7 +58,7 @@ bmad.start
    - git-lens: Initializes Tracey state
    - spec: Creates default constitution
 3. ✅ **Bootstrap (If Configured):** Clones repositories from domain-map.yaml (with approval)
-4. ✅ **Navigator Activation:** Launches Navigator for context-aware workflow guidance
+4. ✅ **Compass Activation:** Launches Compass for context-aware workflow guidance
 
 **Bootstrap Configuration (Optional):**
 
@@ -68,22 +68,22 @@ If you want automatic repository cloning on first run:
 2. Create `_bmad/{domain}/service.yaml` for each domain
 3. Run `bmad.start` - you'll be prompted to approve repository clones
 
-See [Bootstrap Quick Reference](../workflows/bootstrap/QUICK-REFERENCE.md) for configuration templates.
+See the [Workflows Reference](workflows.md) for configuration templates.
 
 ---
 
 ## First Steps (After Setup)
 
 **Navigation:**
-1. Run `navigator` to detect your current lens context
-2. Use `guide` to get lens-aware workflow recommendations
-3. Use `switch lens` to change between Domain/Service/Microservice/Feature views
+1. Run `/context` to detect your current lens context
+2. Use `/help` to get lens-aware workflow recommendations
+3. Use `/switch` to change between Domain/Service/Microservice/Feature views
 4. Use `context load` to pull deeper details for the current lens
 
 **Discovery & Synchronization:**
 1. Run `Scout, discover` to analyze a brownfield service and generate docs
-2. Run `Bridge, bootstrap` to manually sync folder structure with domain map
-3. Run `Link, lens-sync` to propagate documentation changes
+2. Run `Compass, bootstrap` to manually sync folder structure with domain map
+3. Run `Scribe, generate-docs` to propagate documentation changes
 4. Use `sync-status` to check alignment between architecture and code
 
 ---
@@ -99,7 +99,7 @@ See [Bootstrap Quick Reference](../workflows/bootstrap/QUICK-REFERENCE.md) for c
 
 ## What's Next
 
-- Review the [Bootstrap Integration Guide](../workflows/bootstrap/docs/bootstrap-integration.md)
+- Review the [Workflows Reference](workflows.md) for bootstrap integration details
 - Meet the agents in the [Agents Reference](agents.md)
 - Browse the [Workflows Reference](workflows.md)
 - Review examples in [Examples](examples.md)
@@ -114,5 +114,4 @@ If you run into issues:
 1. Check the [Troubleshooting Guide](troubleshooting.md)
 2. Ensure `domain-map.yaml` is present and valid (if using bootstrap)
 3. Verify git access for repository cloning
-4. Review your module configuration in `module-config.yaml`
-5. Check bootstrap configuration with [Quick Reference](../workflows/bootstrap/QUICK-REFERENCE.md)
+4. Review your module configuration in `config.yaml`

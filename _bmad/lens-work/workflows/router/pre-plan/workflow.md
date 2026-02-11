@@ -26,36 +26,187 @@ if user_role not in ["PO", "Architect", "Tech Lead"]:
 
 ---
 
+## User Interaction Keywords
+
+This workflow supports special keywords to control prompting behavior:
+
+- **"defaults" / "best defaults"** → Apply defaults to **CURRENT STEP ONLY**; resume normal prompting for subsequent steps
+- **"yolo" / "keep rolling"** → Apply defaults to **ENTIRE REMAINING WORKFLOW**; auto-complete all steps
+- **"all questions" / "batch questions"** → Present **ALL QUESTIONS UPFRONT** → wait for batch answers → follow-up questions → adversarial review → final questions → generate artifacts
+- **"skip"** → Jump to a named optional step (e.g., "skip to product brief")
+- **"pause"** → Halt workflow, save progress, resume later
+- **"back"** → Roll back to previous step, re-answer questions
+
+Full documentation: [User Interaction Keywords](../../docs/user-interaction-keywords.md)
+
+**Critical Rule:** 
+- "defaults" applies only to the current question/step
+- "yolo" applies to all remaining steps in the workflow
+- "all questions" presents comprehensive questionnaire, then iteratively refines with follow-ups and party mode review
+- Other workflows and phases are unaffected
+
+---
+
 ## Prerequisites
 
 - [x] Initiative created via `#new-*` command
 - [x] Layer detected with confidence ≥ 75%
 - [x] state.yaml exists with active initiative
+- [x] Initiative file exists at `_bmad-output/lens-work/initiatives/{id}.yaml`
 
 ---
 
 ## Execution Sequence
 
-### 1. Validate State
+### 0. Git Discipline — Verify Clean State
 
 ```yaml
-# Check state.yaml
-if state.initiative == null:
+# Verify working directory is clean
+invoke: casey.verify-clean-state
+
+# Load two-file state
+state = load("_bmad-output/lens-work/state.yaml")
+initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
+
+# Read size from initiative config (shared, canonical)
+size = initiative.size
+domain_prefix = initiative.domain_prefix
+
+# === Path Resolver (S01-S06: Context Enhancement) ===
+docs_path = initiative.docs.path    # e.g., "docs/BMAD/LENS/BMAD.Lens/context-enhancement-9bfe4e"
+repo_docs_path = "docs/${initiative.docs.domain}/${initiative.docs.service}/${initiative.docs.repo}"
+
+if docs_path == null or docs_path == "":
+  # Fallback for older initiatives without docs block
+  docs_path = "_bmad-output/planning-artifacts/"
+  repo_docs_path = null
+  warning: "⚠️ DEPRECATED: Initiative missing docs.path configuration."
+  warning: "  → Run: /compass migrate <initiative-id> to add docs.path"
+  warning: "  → This fallback will be removed in a future version."
+
+output_path = docs_path
+ensure_directory(output_path)
+
+# === Context Loader (S08: Context Enhancement) ===
+# Pre-plan has no prior artifacts to load — this is the first phase
+# repo_docs_path provides optional context from target repo
+if repo_docs_path != null:
+  repo_readme = load_if_exists("${repo_docs_path}/README.md")
+  repo_contributing = load_if_exists("${repo_docs_path}/CONTRIBUTING.md")
+  repo_context = { readme: repo_readme, contributing: repo_contributing }
+else:
+  repo_context = null
+
+# Validate we're on the correct branch (or can switch)
+# New branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
+expected_branch: "${domain_prefix}/${initiative.id}/${size}-1"
+current_branch = casey.get-current-branch()
+
+if current_branch != expected_branch:
+  if branch_exists(expected_branch):
+    invoke: casey.checkout-branch
+    params:
+      branch: ${expected_branch}
+  # else: branch will be created in Step 2
+```
+
+### 1. Validate State & Constitution
+
+```yaml
+# Check active initiative
+if state.active_initiative == null:
   error: "No active initiative. Run #new-domain, #new-service, or #new-feature first."
+
+# Constitution enforcement — verify required fields
+required_fields: [name, layer, target_repos]
+for field in required_fields:
+  if initiative.${field} == null or initiative.${field} == "":
+    error: "Initiative missing required field: ${field}. Re-run #new-* to fix."
+
+# Phase check
+if initiative.current_phase not in [null, "p1"]:
+  warning: "Current phase is ${initiative.current_phase}. /pre-plan is for Phase 1."
+```
+
+### 1a. Constitutional Context Injection (Required)
+
+```yaml
+# Resolve constitutional governance for the active initiative context
+constitutional_context = invoke("scribe.resolve-context")
+
+# Parse errors are hard failures because governance cannot be evaluated
+if constitutional_context.status == "parse_error":
+  error: |
+    Constitutional context parse error:
+    ${constitutional_context.error_details.file}
+    ${constitutional_context.error_details.error}
+
+# Make constitutional context available to downstream workflows
+session.constitutional_context = constitutional_context
+```
+
+### 1b. Discovery Validation
+
+```yaml
+# Check that repo-discover has been run for target repos
+for repo in initiative.target_repos:
+  inventory_path = "_bmad-output/lens-work/repo-inventory.yaml"
+  inventory = load(inventory_path)
   
-if state.current.phase != "p1":
-  warning: "Current phase is ${state.current.phase}. /pre-plan is for Phase 1."
+  if repo not in inventory.repos:
+    warning: |
+      ⚠️ Discovery not run for repo: ${repo}
+      Run @scout discover for better analysis context.
+      Proceeding without discovery data.
+```
+
+### 1b. Constitution Compliance Gate (ADVISORY)
+
+```yaml
+# Invoke compliance-check to verify inherited constitution constraints
+# Mode: ADVISORY (log warnings, do not block)
+invoke: lens-work.compliance-check
+params:
+  phase: "p1"
+  phase_name: "Analysis"
+  initiative_id: ${initiative.id}
+  target_repos: ${initiative.target_repos}
+  mode: "ADVISORY"
+
+# Compliance check logs findings to _bmad-output/lens-work/compliance-reports/
+# Warnings are surfaced to user but do not block workflow progression
 ```
 
 ### 2. Start Phase (if needed)
 
 ```yaml
-# Invoke Casey if p1 branch doesn't exist
-if not branch_exists("lens/${initiative_id}/small/p1"):
+# Invoke Casey if small-1 branch doesn't exist — auto-branch creation
+# Branch pattern: {Domain}/{InitiativeId}/{size}-{phaseNumber}
+if not branch_exists("${domain_prefix}/${initiative.id}/${size}-1"):
   invoke: casey.start-phase
   params:
     phase_number: 1
     phase_name: "Analysis"
+    initiative_id: ${initiative.id}
+    size: ${size}
+    domain_prefix: ${domain_prefix}
+  # Casey creates: ${domain_prefix}/{initiative_id}/{size}-1 and pushes to remote
+
+  # Pull latest after branch creation
+  invoke: casey.pull-latest
+```
+
+### 2a. Batch Mode (Single-File Questions)
+
+```yaml
+if initiative.question_mode == "batch":
+  invoke: lens-work.batch-process
+  params:
+    phase_number: "1"
+    phase_name: "Analysis"
+    template_path: "templates/phase-1-analysis-questions.template.md"
+    output_filename: "phase-1-analysis-questions.md"
+  exit: 0
 ```
 
 ### 3. Offer Workflow Options
@@ -84,7 +235,8 @@ params:
 
 invoke: cis.brainstorming  # CIS module workflow
 params:
-  context: "${initiative_name} at ${layer} layer"
+  context: "${initiative.name} at ${initiative.layer} layer"
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```
@@ -96,6 +248,8 @@ params:
   workflow_name: research
 
 invoke: cis.research  # CIS module workflow
+params:
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```
@@ -109,6 +263,7 @@ params:
 invoke: bmm.product-brief  # BMM module workflow
 params:
   output_path: "_bmad-output/planning-artifacts/"
+  constitutional_context: ${constitutional_context}
 
 invoke: casey.finish-workflow
 ```
@@ -126,7 +281,52 @@ if all_workflows_complete("p1"):
     └── Next: Run /spec to continue to Planning phase
 ```
 
-### 6. Offer Next Step
+### 6. Update State Files
+
+```yaml
+# Update initiative file: _bmad-output/lens-work/initiatives/${initiative.id}.yaml
+invoke: tracey.update-initiative
+params:
+  initiative_id: ${initiative.id}
+  updates:
+    current_phase: "p1"
+    current_phase_name: "Analysis"
+    phases:
+      p1:
+        status: "in_progress"
+        started_at: "${ISO_TIMESTAMP}"
+
+# Update state.yaml
+invoke: tracey.update-state
+params:
+  updates:
+    current_phase: "p1"
+    current_phase_name: "Analysis"
+    active_branch: "${domain_prefix}/${initiative.id}/${size}-1"
+```
+
+### 7. Commit State Changes
+
+```yaml
+# Casey commits all state and artifact changes
+invoke: casey.commit-and-push
+params:
+  paths:
+    - "_bmad-output/lens-work/state.yaml"
+    - "_bmad-output/lens-work/initiatives/${initiative.id}.yaml"
+    - "_bmad-output/lens-work/event-log.jsonl"
+    - "${docs_path}/"
+  message: "[lens-work] /pre-plan: Phase 1 Analysis — ${initiative.id}"
+  branch: "${domain_prefix}/${initiative.id}/${size}-1"
+```
+
+### 8. Log Event
+
+```json
+{"ts":"${ISO_TIMESTAMP}","event":"pre-plan","id":"${initiative.id}","phase":"p1","workflow":"pre-plan","status":"complete"}
+```
+
+### 9. Offer Next Step
 
 ```
 Ready to continue?
@@ -142,9 +342,10 @@ Ready to continue?
 
 | Artifact | Location |
 |----------|----------|
-| Product Brief | `_bmad-output/planning-artifacts/product-brief.md` |
-| Brainstorm Notes | `_bmad-output/planning-artifacts/brainstorm-notes.md` |
-| Research Summary | `_bmad-output/planning-artifacts/research-summary.md` |
+| Product Brief | `${docs_path}/product-brief.md` |
+| Brainstorm Notes | `${docs_path}/brainstorm-notes.md` |
+| Research Summary | `${docs_path}/research-summary.md` |
+| Initiative State | `_bmad-output/lens-work/initiatives/${id}.yaml` |
 
 ---
 
@@ -155,3 +356,20 @@ Ready to continue?
 | No initiative | Prompt to run #new-* first |
 | Wrong phase | Warn but allow override |
 | CIS not installed | Skip brainstorm/research, proceed to product brief |
+| Dirty working directory | Prompt to stash or commit changes first |
+| Missing constitution fields | Error with specific field name, prompt #new-* rerun |
+| Discovery not run | Warn but allow proceeding (non-blocking) |
+| Branch creation failed | Check remote connectivity, retry with backoff |
+| State file write failed | Retry (max 3 attempts), then fail with save instructions |
+
+---
+
+## Post-Conditions
+
+- [ ] Working directory clean (all changes committed)
+- [ ] On correct branch: `{domain_prefix}/{initiative_id}/{size}-1`
+- [ ] state.yaml updated with phase p1
+- [ ] initiatives/{id}.yaml updated with p1 status
+- [ ] event-log.jsonl entry appended
+- [ ] Planning artifacts written to `${docs_path}/` (at minimum product-brief.md)
+- [ ] All changes pushed to origin
