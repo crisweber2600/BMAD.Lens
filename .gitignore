@@ -16,7 +16,3 @@ tmp*
 TargetProjects/
 Docs/
 node_modules/
-.codex/*
-.claude/*
-.cursor/*
-.github/*
