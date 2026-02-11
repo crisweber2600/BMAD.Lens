@@ -5,11 +5,41 @@ description: Run LENS Workbench preflight check and activate Compass for lifecyc
 
 # LENS Workbench System Preflight Check & Activation
 
-Execute preflight check of all lens-work systems, then activate Compass for workflow guidance.
+## Phase 0: User Profile Gate
+
+**FIRST: Check for user profile:**
+
+```bash
+Check for file: _bmad-output/lens-work/personal/profile.yaml
+```
+
+### IF FILE DOES NOT EXIST:
+
+**Display this message:**
+```
+🔭 Welcome to LENS Workbench!
+
+No user profile detected. You need to complete onboarding first.
+
+Starting onboarding now...
+```
+
+**Then IMMEDIATELY load and execute:**
+```
+_bmad/lens-work/prompts/lens-work.onboard.prompt.md
+```
+
+**DO NOT proceed to Phase 1. STOP HERE and run the onboard prompt.**
 
 ---
 
-## Phase 0: Daily Sync Check (Optional)
+### IF FILE EXISTS:
+
+Profile found. Proceed to Phase 1 below.
+
+---
+
+## Phase 0.5: Daily Sync Check (Optional)
 
 ### 0.1 Load User Profile
 - [ ] Check for profile: `_bmad-output/personal/profile.yaml`
@@ -75,10 +105,11 @@ else:
 
 ## Phase 3: Activate Compass
 
-If preflight passes:
-1. Load Compass agent: `_bmad/lens-work/agents/compass.agent.yaml`
-2. Display status and available commands
-3. Offer: `[onboard]` for new users, `[RS]` to resume, or phase commands
+**Profile has been confirmed in Phase 0. Proceed with activation:**
+1. Load profile from `_bmad-output/lens-work/personal/profile.yaml`
+2. Load Compass agent: `_bmad/lens-work/agents/compass.agent.yaml`
+3. Display preflight check results and status
+4. Show available commands based on current state
 
 If state exists, show current position:
 ```

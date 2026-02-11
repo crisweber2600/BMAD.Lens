@@ -3,19 +3,22 @@
 description: Create new service-level initiative with branch topology
 ---
 
-Activate Compass agent and execute #new-service:
+Activate Compass agent and execute /new-service:
 
 1. Load agent: `_bmad/lens-work/agents/compass.agent.yaml`
-2. Execute `#new-service` command to create service initiative
-3. Casey creates branch topology, Scout runs discovery
-4. Route to `/pre-plan` phase
+2. Execute `/new-service` command to create service initiative
+3. Router dispatches to `workflows/router/init-initiative/` workflow
+4. Casey creates branch topology, Scout runs discovery
+5. Route to `/pre-plan` phase
 
 Use `#think` before defining service boundaries or naming.
 
 **Creates:**
 - Initiative ID: `{sanitized_name}-{random}`
-- Branch: `{domain}/{id}/base` → `small/p1`
-- State file: `_bmad-output/lens-work/state.yaml`
+- Branch: `{domain_prefix}/{id}/base` → `{domain_prefix}/{id}/small-1`
+- Two-file state:
+  - `_bmad-output/lens-work/state.yaml` (active initiative pointer)
+  - `_bmad-output/lens-work/initiatives/{initiative_id}.yaml` (initiative config)
 
 **In-Scope Repos:** All repos in service
 

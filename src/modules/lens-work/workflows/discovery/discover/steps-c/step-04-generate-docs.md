@@ -61,15 +61,15 @@ Generate **six** BMAD-ready documentation artifacts from analysis results and up
 └── README.md                      # Index of all generated docs
 ```
 
-**Example for NorthStarET:**
+**Example for Contoso:**
 ```
 {docs_output_path}/
-├── NextGen/
-│   ├── NorthStarET/
+├── Domain/
+│   ├── Contoso/
 │   │   ├── architecture.md
 │   │   ├── api-surface.md
 │   │   └── ...
-│   └── NorthStarET.Student/
+│   └── ContosoSvc/
 │       └── ...
 ├── OldNorthStar/
 │   └── OldNorthStar/
