@@ -20,14 +20,14 @@
 | Workflow Specs | 22 | ✅ Done |
 | Workflow Implementations | 22 | ✅ Done |
 | Includes | 3 | ✅ Done |
-| Prompts | 13 | ✅ Done |
+| Prompts | 23 | ✅ Done |
 | Docs | 9 | ✅ Done |
 | Templates | 2 | ✅ Done |
 | Test Spec | 1 | ✅ Done |
 | Scripts | 1 | ✅ Done |
 | README | 1 | ✅ Done |
 | TODO | 1 | ✅ Done |
-| **Total** | **84** | **✅ All Implementation Complete** |
+| **Total** | **94** | **✅ All Implementation Complete** |
 
 ---
 
@@ -87,7 +87,7 @@
 - [x] `workflows/includes/pr-links.md`
 - [x] `workflows/includes/artifact-validator.md`
 
-### Prompts (13)
+### Prompts (23)
 - [x] `prompts/lens.pre-plan.prompt.md`
 - [x] `prompts/lens.plan.prompt.md`
 - [x] `prompts/lens.tech-plan.prompt.md`
@@ -95,12 +95,22 @@
 - [x] `prompts/lens.review.prompt.md`
 - [x] `prompts/lens.dev.prompt.md`
 - [x] `prompts/lens.new.prompt.md`
+- [x] `prompts/lens.new-domain.prompt.md`
+- [x] `prompts/lens.new-service.prompt.md`
+- [x] `prompts/lens.new-feature.prompt.md`
 - [x] `prompts/lens.switch.prompt.md`
 - [x] `prompts/lens.status.prompt.md`
 - [x] `prompts/lens.sync.prompt.md`
 - [x] `prompts/lens.fix.prompt.md`
+- [x] `prompts/lens.override.prompt.md`
+- [x] `prompts/lens.resume.prompt.md`
+- [x] `prompts/lens.archive.prompt.md`
 - [x] `prompts/lens.onboard.prompt.md`
+- [x] `prompts/lens.discover.prompt.md`
+- [x] `prompts/lens.bootstrap.prompt.md`
+- [x] `prompts/lens.constitution.prompt.md`
 - [x] `prompts/lens.lens.prompt.md`
+- [x] `prompts/lens.help.prompt.md`
 
 ### Docs (9)
 - [x] `docs/getting-started.md`

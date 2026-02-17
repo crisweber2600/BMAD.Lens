@@ -109,6 +109,22 @@ workflow_status: idle
             await fs.writeFile(eventLogFile, '');
         }
 
+        // Install prompt files into _bmad/lens/prompts
+        const sourcePromptsDir = path.join(__dirname, '..', 'prompts');
+        const targetPromptsDir = path.join(projectRoot, '_bmad', 'lens', 'prompts');
+        try {
+            if (await fs.pathExists(sourcePromptsDir)) {
+                await fs.ensureDir(targetPromptsDir);
+                logger.log(chalk.yellow('Installing Lens prompts to _bmad/lens/prompts/'));
+                await fs.copy(sourcePromptsDir, targetPromptsDir, { overwrite: true });
+                logger.log(chalk.green('✓ Lens prompts installed'));
+            } else {
+                logger.warn(chalk.yellow(`Warning: Prompts source not found at ${sourcePromptsDir}`));
+            }
+        } catch (copyError) {
+            logger.warn(chalk.yellow(`Warning: Could not install prompts: ${copyError.message}`));
+        }
+
         // Copy copilot instructions to .github folder
         const sourceInstructionsFile = path.join(__dirname, '..', 'docs', 'copilot-instructions.md');
         const githubDir = path.join(projectRoot, '.github');

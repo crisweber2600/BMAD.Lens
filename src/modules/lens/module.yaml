@@ -158,15 +158,27 @@ prompts:
     - lens.dev.prompt.md
     # Initiative Commands
     - lens.new.prompt.md
+    - lens.new-domain.prompt.md
+    - lens.new-service.prompt.md
+    - lens.new-feature.prompt.md
     - lens.switch.prompt.md
     # State & Recovery
     - lens.status.prompt.md
     - lens.sync.prompt.md
     - lens.fix.prompt.md
+    - lens.override.prompt.md
+    - lens.resume.prompt.md
+    - lens.archive.prompt.md
     # Discovery
     - lens.onboard.prompt.md
+    - lens.discover.prompt.md
+    - lens.bootstrap.prompt.md
+    # Governance
+    - lens.constitution.prompt.md
     # Context
     - lens.lens.prompt.md
+    # Help
+    - lens.help.prompt.md
 
 # Output Paths
 outputs:
