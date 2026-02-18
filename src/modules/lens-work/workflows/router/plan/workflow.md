@@ -308,10 +308,20 @@ if all_workflows_complete("p3"):
     message: "[${initiative.id}] P3 Solutioning complete"
   # Phase branch remains alive — PR handles merge to audience branch
 
+  # REQ-8: Create PR for phase merge
+  invoke: casey.create-pr
+  params:
+    head: ${phase_branch}
+    base: ${audience_branch}
+    title: "[P3] Solutioning: ${initiative.name}"
+    body: "Phase 3 (Solutioning) complete for ${initiative.id}.\n\nArtifacts: epics.md, stories.md, readiness-checklist.md"
+  capture: pr_result  # { url, number } or fallback message
+
   output: |
     ✅ /plan complete
     ├── Phase 3 (Solutioning) finished
     ├── Branch pushed: ${phase_branch}
+    ├── PR: ${pr_result}
     ├── Stories ready for sprint planning
     └── Next: Run /review for implementation gate
 ```

@@ -272,10 +272,20 @@ if all_workflows_complete("p2"):
     message: "[${initiative.id}] P2 Planning complete"
   # Phase branch remains alive — PR handles merge to audience branch
 
+  # REQ-8: Create PR for phase merge
+  invoke: casey.create-pr
+  params:
+    head: ${phase_branch}
+    base: ${audience_branch}
+    title: "[P2] Planning: ${initiative.name}"
+    body: "Phase 2 (Planning) complete for ${initiative.id}.\n\nArtifacts: prd.md, ux-design.md, architecture.md"
+  capture: pr_result  # { url, number } or fallback message
+
   output: |
     ✅ /spec complete
     ├── Phase 2 (Planning) finished
     ├── Branch pushed: ${phase_branch}
+    ├── PR: ${pr_result}
     ├── Remaining on: ${phase_branch}
     └── Next: Run /plan to continue to Solutioning phase
 ```

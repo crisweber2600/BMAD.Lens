@@ -271,6 +271,15 @@ agent:
       action: show-branch
       description: "Display branch details (name, remote, tracking)"
 
+    - id: create-pr
+      description: "Create PR via GitHub API (REQ-8). Falls back to manual URL if no PAT."
+      script: "{module-path}/scripts/create-pr.sh"
+      params:
+        - head_branch
+        - base_branch
+        - title
+        - body
+
   git_config:
     fetch_strategy: background
     fetch_ttl: 60

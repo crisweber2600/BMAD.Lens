@@ -301,11 +301,21 @@ if all_workflows_complete("p1"):
     message: "[${initiative.id}] P1 Analysis complete"
   # Phase branch remains alive — PR handles merge to audience branch
 
+  # REQ-8: Create PR for phase merge
+  invoke: casey.create-pr
+  params:
+    head: ${phase_branch}
+    base: ${audience_branch}
+    title: "[P1] Analysis: ${initiative.name}"
+    body: "Phase 1 (Analysis) complete for ${initiative.id}.\n\nArtifacts: product-brief.md"
+  capture: pr_result  # { url, number } or fallback message
+
   output: |
     ✅ /pre-plan complete
     ├── Phase 1 (Analysis) finished
     ├── Artifacts: product-brief.md
     ├── Branch pushed: ${phase_branch}
+    ├── PR: ${pr_result}
     ├── Remaining on: ${phase_branch}
     └── Next: Run /spec to continue to Planning phase
 ```

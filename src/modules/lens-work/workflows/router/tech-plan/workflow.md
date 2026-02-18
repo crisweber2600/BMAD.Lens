@@ -208,6 +208,15 @@ params:
   message: "[lens-work] P3 tech-plan: architecture and technical design"
 # Phase branch remains alive — PR handles merge to audience branch
 
+# REQ-8: Create PR for phase merge
+invoke: casey.create-pr
+params:
+  head: ${phase_branch}
+  base: ${audience_branch}
+  title: "[P3] Technical Planning: ${initiative.name}"
+  body: "Phase 3 (Technical Planning) complete for ${initiative.id}.\n\nArtifacts: architecture.md, tech-decisions.md, api-contracts.md"
+capture: pr_result  # { url, number } or fallback message
+
 # Update state
 state.current_phase = "tech-plan"
 state.gate_status.tech_plan = "passed"
@@ -230,6 +239,7 @@ output: |
   - Tech decisions: ${docs_path}/tech-decisions.md
   
   Branch pushed: ${phase_branch}
+  PR: ${pr_result}
   Remaining on: ${phase_branch}
   
   Next: Run /story-gen to generate implementation stories

@@ -185,6 +185,15 @@ params:
   message: "[lens-work] P4 story-gen: implementation stories and estimates"
 # Phase branch remains alive — PR handles merge to audience branch
 
+# REQ-8: Create PR for phase merge
+invoke: casey.create-pr
+params:
+  head: ${phase_branch}
+  base: ${audience_branch}
+  title: "[P4] Story Generation: ${initiative.name}"
+  body: "Phase 4 (Story Generation) complete for ${initiative.id}.\n\nArtifacts: implementation-stories.md, story-estimates.md, dependency-map.md"
+capture: pr_result  # { url, number } or fallback message
+
 # Update state
 state.current_phase = "story-gen"
 state.gate_status.story_gen = "passed"
@@ -208,6 +217,7 @@ output: |
   - Dependencies: ${docs_path}/dependency-map.md
   
   Branch pushed: ${phase_branch}
+  PR: ${pr_result}
   Remaining on: ${phase_branch}
   
   Next: Run /review for implementation readiness check
