@@ -23,6 +23,29 @@ service: string | null      # Service context (required for microservice layer)
 
 ---
 
+<critical>
+ANTI-HALLUCINATION GATE: If the user provided input alongside the command invocation
+(e.g., "/new-domain BMAD" or "/new-service Auth" or "/new-feature Rate Limiting"),
+that input IS the initiative/domain/service/feature name. Do NOT invent, substitute,
+or ignore user-provided values. Every field below that uses `ask:` MUST capture the
+user's ACTUAL response — never fabricate values.
+
+Command-arg parsing:
+```yaml
+user_args = parse_command_args()
+if user_args:
+  initiative_name = user_args     # User already provided the name
+  # For /new-domain: domain = user_args
+  # For /new-service: service = user_args
+  # For /new-feature: initiative_name = user_args
+else:
+  # Ask the user — but NEVER invent a value
+  ask: initiative_name
+```
+</critical>
+
+---
+
 ## Execution Sequence
 
 ### 0. Verify Git State (Pre-flight Check)
@@ -264,6 +287,59 @@ ${else}
 # Already loaded in Step 0a (service) or Step 0b (feature)
 ```
 ${endif}
+
+### 1.5 Confirmation Gate
+
+```yaml
+# ANTI-HALLUCINATION: Echo back ALL captured values for user confirmation
+# before ANY branch creation or state mutation.
+
+${if layer == "domain"}
+output: |
+  📋 Confirm initiative details:
+  
+  Type: Domain
+  Domain name: ${domain || initiative_name}
+  Question mode: ${question_mode}
+  
+  Proceed? [Y/n/edit]
+${elif layer == "service"}
+output: |
+  📋 Confirm initiative details:
+  
+  Type: Service
+  Parent domain: ${domain} (${domain_prefix})
+  Service name: ${service}
+  Target repos: ${target_repos}
+  
+  Proceed? [Y/n/edit]
+${elif layer == "feature"}
+output: |
+  📋 Confirm initiative details:
+  
+  Type: Feature
+  Parent: ${parent_layer == "service" ? service + " (" + domain + ")" : domain}
+  Feature name: ${initiative_name}
+  Target repos: ${target_repos}
+  
+  Proceed? [Y/n/edit]
+${else}
+output: |
+  📋 Confirm initiative details:
+  
+  Name: ${initiative_name}
+  Layer: ${layer}
+  Question mode: ${question_mode}
+  
+  Proceed? [Y/n/edit]
+${endif}
+
+if response == "n":
+  exit: "Initiative creation cancelled by user."
+elif response == "edit":
+  # Return to Step 1 to re-gather details
+  goto: step_1
+```
 
 ### 2. Generate Initiative ID
 

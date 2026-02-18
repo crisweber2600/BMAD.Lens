@@ -2,7 +2,7 @@
 name: manage-credentials
 description: Add, update, remove, or view git host credentials (PATs) in user profile
 agent: scout
-trigger: "@compass /credentials" or "@scout credentials"
+trigger: '@compass /credentials or @scout credentials'
 category: utility
 ---
 

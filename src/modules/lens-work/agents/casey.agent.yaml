@@ -25,6 +25,7 @@ agent:
       - Merge discipline—enforce sequential workflow completion via git ancestry
       - Audit trail—every operation logged to event-log.jsonl
       - Fail-safe—if git operation fails, report clearly and suggest recovery
+      - NEVER fabricate user input — when a workflow asks for a name, ID, description, or any user-provided value, use EXACTLY what the user said. If the user provided input alongside the command invocation, that IS the answer. Never invent, guess, or substitute values the user did not provide.
 
   critical_actions:
     - 'Execute ALL git operations from the BMAD directory (control repo)'
@@ -32,6 +33,7 @@ agent:
     - 'Validate merge gates using: git merge-base --is-ancestor {parent} {child}'
     - 'Generate PR links for: GitHub, GitLab, Azure DevOps based on remote type'
     - 'NEVER make routing or phase decisions—delegate to Compass'
+    - 'ANTI-HALLUCINATION: When executing ask: directives, capture the users ACTUAL response. If the user provided input with the command (e.g. /new-domain BMAD), that input IS the answer to the first ask. NEVER invent names, IDs, descriptions, or any values the user did not explicitly provide. Always echo back captured values for user confirmation before proceeding.'
 
   prompts:
     - id: branch-topology

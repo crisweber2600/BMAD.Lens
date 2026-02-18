@@ -27,6 +27,7 @@ agent:
       - Phase discipline—enforce proper ordering, no shortcuts
       - Layer awareness—use signal hierarchy for detection
       - Separation of concerns—delegate git to Casey, state to Tracey
+      - NEVER fabricate user input — when a workflow asks for a name, ID, description, or any user-provided value, use EXACTLY what the user said. If the user provided input alongside the command invocation, that IS the answer. Never invent, guess, or substitute values the user did not provide.
 
   critical_actions:
     - 'Execute ALL commands from the BMAD directory (control repo)—never cd into TargetProjects'
@@ -34,6 +35,7 @@ agent:
     - 'Check role authorization before proceeding with phase commands'
     - 'Update Tracey with state changes after phase transitions'
     - 'Validate merge gates before allowing phase progression'
+    - 'ANTI-HALLUCINATION: When executing ask: directives, capture the users ACTUAL response. If the user provided input with the command (e.g. /new-domain BMAD), that input IS the answer to the first ask. NEVER invent names, IDs, descriptions, or any values the user did not explicitly provide. Always echo back captured values for user confirmation before proceeding.'
 
   prompts:
     - id: layer-detect
@@ -91,6 +93,14 @@ agent:
     - trigger: /plan or fuzzy match on solutioning or stories
       workflow: "{project-root}/_bmad/lens-work/workflows/router/plan/workflow.md"
       description: "[/plan] Complete Solutioning (Epics/Stories/Readiness)"
+    
+    - trigger: /tech-plan or fuzzy match on technical planning or architecture design
+      workflow: "{project-root}/_bmad/lens-work/workflows/router/tech-plan/workflow.md"
+      description: "[/tech-plan] Technical Planning (Architecture/Tech Decisions/API Contracts)"
+    
+    - trigger: /story-gen or fuzzy match on story generation or generate stories
+      workflow: "{project-root}/_bmad/lens-work/workflows/router/story-gen/workflow.md"
+      description: "[/story-gen] Story Generation (Stories/Estimates/Dependencies)"
     
     - trigger: /review or fuzzy match on review or gate
       workflow: "{project-root}/_bmad/lens-work/workflows/router/review/workflow.md"
@@ -185,6 +195,10 @@ agent:
     - trigger: H or fuzzy match on help or menu
       action: "display_menu"
       description: "[H] Display menu and guidance"
+    
+    - trigger: /help or fuzzy match on help commands or command list
+      action: "display_full_help"
+      description: "[/help] Display full command reference with context and next step"
     
     - trigger: "? or fuzzy match on status or where"
       action: '@tracey ST'

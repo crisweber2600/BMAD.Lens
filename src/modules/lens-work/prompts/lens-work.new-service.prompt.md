@@ -60,4 +60,9 @@ Repos must be cloned into the service's TargetProjects folder to be onboarded fo
 **Note:** Service-layer does NOT create audience/phase branches.
 Feature initiatives within this service will create their own branch topology.
 
+**CRITICAL — User Input Anchoring:**
+If the user provided text alongside this prompt invocation, that text IS the
+service name. Use it exactly as given. Do NOT invent, substitute, or hallucinate
+a different name. Example: `/new-service Auth` → service name = "Auth".
+
 ```
