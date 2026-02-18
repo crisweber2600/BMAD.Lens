@@ -41,19 +41,63 @@ phase_name: Story Generation
 
 ## Execution Sequence
 
-### 0. Git Discipline — Verify Clean State
+### 0. Pre-Flight [REQ-9]
 
 ```yaml
+# PRE-FLIGHT (mandatory, never skip) [REQ-9]
+# 1. Verify working directory is clean
+# 2. Load two-file state (state.yaml + initiative config)
+# 3. Check previous phase status (if applicable)
+# 4. Determine correct phase branch: {featureBranchRoot}-{audience}-p{N}
+# 5. Create phase branch if it doesn't exist
+# 6. Checkout phase branch
+# 7. Confirm to user: "Now on branch: {branch_name}"
+# GATE: All steps must pass before proceeding to artifact work
+
+# Verify working directory is clean
 invoke: casey.verify-clean-state
 
 # Load two-file state
 state = load("_bmad-output/lens-work/state.yaml")
 initiative = load_initiative_config(state.active_initiative)
 
+# Read initiative config
+size = initiative.size
 domain_prefix = initiative.domain_prefix
 docs_path = initiative.docs.path
 output_path = docs_path
 ensure_directory(output_path)
+
+# Derive audience for story-gen (always large) [REQ-9]
+audience = "large"
+featureBranchRoot = initiative.featureBranchRoot
+audience_branch = "${featureBranchRoot}-large"
+
+# Determine phase branch [REQ-9]
+phase_branch = "${featureBranchRoot}-large-p4"
+
+# Step 5: Create phase branch if it doesn't exist [REQ-9]
+if not branch_exists(phase_branch):
+  invoke: casey.create-and-push-branch
+  params:
+    branch: ${phase_branch}
+    from: ${audience_branch}
+  if create_branch.exit_code != 0:
+    FAIL("❌ Pre-flight failed: Could not create branch ${phase_branch}")
+
+# Step 6: Checkout phase branch
+invoke: casey.checkout-branch
+params:
+  branch: ${phase_branch}
+invoke: casey.pull-latest
+
+# Step 7: Confirm to user
+output: |
+  📋 Pre-flight complete [REQ-9]
+  ├── Initiative: ${initiative.name} (${initiative.id})
+  ├── Phase: P4 Story Generation
+  ├── Branch: ${phase_branch}
+  └── Working directory: clean ✅
 ```
 
 ### 1. Validate Prerequisites & Gate Check
@@ -73,17 +117,12 @@ for artifact in required_artifacts:
     warning: "Required artifact not found: ${artifact}. Proceeding but story quality may suffer."
 ```
 
-### 2. Create Phase Branch
+### 2. Branch Verification (consolidated into Pre-Flight)
 
 ```yaml
-# Story-gen stays on large audience (same as tech-plan)
-audience_branch = "${initiative.featureBranchRoot}-large"
-phase_branch = "${initiative.featureBranchRoot}-large-p4"
-
-invoke: casey.create-and-push-branch
-params:
-  branch: ${phase_branch}
-  from: ${audience_branch}
+# Branch creation handled in Step 0 Pre-Flight [REQ-9]
+# Phase branch ${phase_branch} is already checked out at this point.
+assert: current_branch == phase_branch
 ```
 
 ### 3. Story Generation

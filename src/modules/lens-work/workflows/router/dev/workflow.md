@@ -36,9 +36,19 @@ phase_name: Implementation
 
 ## Execution Sequence
 
-### 0. Git Discipline — Verify Clean State
+### 0. Pre-Flight [REQ-9]
 
 ```yaml
+# PRE-FLIGHT (mandatory, never skip) [REQ-9]
+# 1. Verify working directory is clean
+# 2. Load two-file state (state.yaml + initiative config)
+# 3. Check previous phase status (if applicable)
+# 4. Determine correct phase branch: {featureBranchRoot}-{audience}-p{N}
+# 5. Create phase branch if it doesn't exist
+# 6. Checkout phase branch
+# 7. Confirm to user: "Now on branch: {branch_name}"
+# GATE: All steps must pass before proceeding to artifact work
+
 # Verify working directory is clean
 invoke: casey.verify-clean-state
 
@@ -46,9 +56,14 @@ invoke: casey.verify-clean-state
 state = load("_bmad-output/lens-work/state.yaml")
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 
-# Read size from initiative config (shared, canonical)
+# Read initiative config
 size = initiative.size
 domain_prefix = initiative.domain_prefix
+
+# Derive audience for P4 dev (always small) [REQ-9]
+audience = "small"
+featureBranchRoot = initiative.featureBranchRoot
+audience_branch = "${featureBranchRoot}-small"
 
 # === Path Resolver (S01-S06: Context Enhancement) ===
 docs_path = initiative.docs.path    # e.g., "docs/BMAD/LENS/BMAD.Lens/context-enhancement-9bfe4e"
@@ -87,18 +102,35 @@ if size != "small":
     ├── Required: small
     └── Dev phase (P4) only runs on the small size.
 
-# Validate we're on the correct branch (or can switch)
-# Branch pattern: {featureBranchRoot}-{audience}-p{N}
-expected_branch: "${initiative.featureBranchRoot}-${audience}-p4"
-current_branch = casey.get-current-branch()
+# Determine phase branch [REQ-9]
+phase_branch = "${initiative.featureBranchRoot}-${audience}-p4"
 
-if current_branch != expected_branch:
-  if branch_exists(expected_branch):
-    invoke: casey.checkout-branch
-    params:
-      branch: ${expected_branch}
-    invoke: casey.pull-latest
-  # else: branch will be created in Step 1a
+# Step 5: Create phase branch if it doesn't exist [REQ-9]
+if not branch_exists(phase_branch):
+  invoke: casey.start-phase
+  params:
+    phase_number: 4
+    phase_name: "Implementation"
+    initiative_id: ${initiative.id}
+    audience: ${audience}
+    featureBranchRoot: ${initiative.featureBranchRoot}
+    parent_branch: ${audience_branch}
+  if start_phase.exit_code != 0:
+    FAIL("❌ Pre-flight failed: Could not create branch ${phase_branch}")
+
+# Step 6: Checkout phase branch
+invoke: casey.checkout-branch
+params:
+  branch: ${phase_branch}
+invoke: casey.pull-latest
+
+# Step 7: Confirm to user
+output: |
+  📋 Pre-flight complete [REQ-9]
+  ├── Initiative: ${initiative.name} (${initiative.id})
+  ├── Phase: P4 Implementation
+  ├── Branch: ${phase_branch}
+  └── Working directory: clean ✅
 ```
 
 ### 1. Merge Gate Check — P3 Complete
@@ -139,27 +171,12 @@ if constitutional_context.status == "parse_error":
 session.constitutional_context = constitutional_context
 ```
 
-### 1b. Auto-Branch Creation - P4
+### 1b. Branch Verification (consolidated into Pre-Flight)
 
 ```yaml
-# Casey creates P4 branch if it doesn't exist
-# Branch pattern: {featureBranchRoot}-{audience}-p{N}
-if not branch_exists("${initiative.featureBranchRoot}-${audience}-p4"):
-  invoke: casey.start-phase
-  params:
-    phase_number: 4
-    phase_name: "Implementation"
-    initiative_id: ${initiative.id}
-    audience: ${audience}
-    featureBranchRoot: ${initiative.featureBranchRoot}
-  # Casey creates: ${featureBranchRoot}-${audience}-p4 and pushes to remote
-
-  invoke: casey.pull-latest
-else:
-  invoke: casey.checkout-branch
-  params:
-    branch: "${initiative.featureBranchRoot}-${audience}-p4"
-  invoke: casey.pull-latest
+# Branch creation and checkout handled in Step 0 Pre-Flight [REQ-9]
+# Phase branch ${phase_branch} is already checked out at this point.
+assert: current_branch == phase_branch
 ```
 
 ### 1c. Batch Mode (Single-File Questions)

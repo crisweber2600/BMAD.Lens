@@ -58,9 +58,19 @@ Full documentation: [User Interaction Keywords](../../docs/user-interaction-keyw
 
 ## Execution Sequence
 
-### 0. Git Discipline — Verify Clean State
+### 0. Pre-Flight [REQ-9]
 
 ```yaml
+# PRE-FLIGHT (mandatory, never skip) [REQ-9]
+# 1. Verify working directory is clean
+# 2. Load two-file state (state.yaml + initiative config)
+# 3. Check previous phase status (if applicable)
+# 4. Determine correct phase branch: {featureBranchRoot}-{audience}-p{N}
+# 5. Create phase branch if it doesn't exist
+# 6. Checkout phase branch
+# 7. Confirm to user: "Now on branch: {branch_name}"
+# GATE: All steps must pass before proceeding to artifact work
+
 # Verify working directory is clean
 invoke: casey.verify-clean-state
 
@@ -102,17 +112,34 @@ if repo_docs_path != null:
 else:
   repo_context = null
 
-# Validate we're on the correct branch (or can switch)
-# Phase branch: {featureBranchRoot}-{audience}-p1
-expected_branch = phase_branch
-current_branch = casey.get-current-branch()
+# Step 5: Create phase branch if it doesn't exist [REQ-9]
+if not branch_exists(phase_branch):
+  invoke: casey.start-phase
+  params:
+    phase_number: 1
+    phase_name: "Analysis"
+    initiative_id: ${initiative.id}
+    audience: ${audience}
+    featureBranchRoot: ${featureBranchRoot}
+    parent_branch: ${audience_branch}
+  # Casey creates: ${phase_branch} from ${audience_branch}
+  # Casey pushes: git push -u origin ${phase_branch}
+  if start_phase.exit_code != 0:
+    FAIL("❌ Pre-flight failed: Could not create branch ${phase_branch}")
 
-if current_branch != expected_branch:
-  if branch_exists(expected_branch):
-    invoke: casey.checkout-branch
-    params:
-      branch: ${expected_branch}
-  # else: branch will be created in Step 2
+# Step 6: Checkout phase branch
+invoke: casey.checkout-branch
+params:
+  branch: ${phase_branch}
+invoke: casey.pull-latest
+
+# Step 7: Confirm to user
+output: |
+  📋 Pre-flight complete [REQ-9]
+  ├── Initiative: ${initiative.name} (${initiative.id})
+  ├── Phase: P1 Analysis
+  ├── Branch: ${phase_branch}
+  └── Working directory: clean ✅
 ```
 
 ### 1. Validate State & Constitution
@@ -182,27 +209,12 @@ params:
 # Warnings are surfaced to user but do not block workflow progression
 ```
 
-### 2. Start Phase — Create and Push P1 Branch
+### 2. Branch Verification (consolidated into Pre-Flight)
 
 ```yaml
-# Create {smallGroupBranchRoot}-p1 from {smallGroupBranchRoot} if it doesn't exist
-# Phase branches are created by phase routers, NOT at init.
-if not branch_exists(phase_branch):
-  invoke: casey.start-phase
-  params:
-    phase_number: 1
-    phase_name: "Analysis"
-    initiative_id: ${initiative.id}
-    audience: ${audience}
-    featureBranchRoot: ${featureBranchRoot}
-    parent_branch: ${audience_branch}    # Branch from audience group
-  # Casey creates: ${phase_branch} from ${audience_branch}
-  # Casey pushes immediately: git push -u origin ${phase_branch}
-
-  # Checkout the new phase branch
-  invoke: casey.checkout-branch
-  params:
-    branch: ${phase_branch}
+# Branch creation and checkout handled in Step 0 Pre-Flight [REQ-9]
+# Phase branch ${phase_branch} is already checked out at this point.
+assert: current_branch == phase_branch
 ```
 
 ### 2a. Batch Mode (Single-File Questions)

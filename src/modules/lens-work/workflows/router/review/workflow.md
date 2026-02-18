@@ -38,9 +38,19 @@ if user_role != "Scrum Master":
 
 ## Execution Sequence
 
-### 0. Git Discipline — Verify Clean State
+### 0. Pre-Flight [REQ-9]
 
 ```yaml
+# PRE-FLIGHT (mandatory, never skip) [REQ-9]
+# 1. Verify working directory is clean
+# 2. Load two-file state (state.yaml + initiative config)
+# 3. Check previous phase status (if applicable)
+# 4. Confirm current branch
+# 5. Pull latest
+# 6. Confirm to user: "Now on branch: {branch_name}"
+# GATE: All steps must pass before proceeding to gate checks
+# NOTE: /review is a gate phase — no new branch creation
+
 # Verify working directory is clean
 invoke: casey.verify-clean-state
 
@@ -71,6 +81,14 @@ ensure_directory("${docs_path}/reviews/")
 # /review operates on the current phase branch (typically small-3 or base)
 current_branch = casey.get-current-branch()
 invoke: casey.pull-latest
+
+# Confirm to user [REQ-9]
+output: |
+  📋 Pre-flight complete [REQ-9]
+  ├── Initiative: ${initiative.name} (${initiative.id})
+  ├── Phase: Implementation Gate (review)
+  ├── Branch: ${current_branch}
+  └── Working directory: clean ✅
 ```
 
 ### 1. Validate Prerequisites & Gate Check

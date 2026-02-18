@@ -42,19 +42,78 @@ phase_name: Technical Planning
 
 ## Execution Sequence
 
-### 0. Git Discipline — Verify Clean State
+### 0. Pre-Flight [REQ-9]
 
 ```yaml
+# PRE-FLIGHT (mandatory, never skip) [REQ-9]
+# 1. Verify working directory is clean
+# 2. Load two-file state (state.yaml + initiative config)
+# 3. Check previous phase status (if applicable)
+# 4. Determine correct phase branch: {featureBranchRoot}-{audience}-p{N}
+# 5. Create phase branch if it doesn't exist
+# 6. Checkout phase branch
+# 7. Confirm to user: "Now on branch: {branch_name}"
+# GATE: All steps must pass before proceeding to artifact work
+
+# Verify working directory is clean
 invoke: casey.verify-clean-state
 
 # Load two-file state
 state = load("_bmad-output/lens-work/state.yaml")
 initiative = load_initiative_config(state.active_initiative)
 
+# Read initiative config
+size = initiative.size
 domain_prefix = initiative.domain_prefix
 docs_path = initiative.docs.path
 output_path = docs_path
 ensure_directory(output_path)
+
+# Derive audience for tech-plan (always large) [REQ-9]
+audience = "large"
+featureBranchRoot = initiative.featureBranchRoot
+audience_branch = "${featureBranchRoot}-large"
+
+# Determine phase branch [REQ-9]
+phase_branch = "${featureBranchRoot}-large-p3"
+
+# Audience cascade merge: medium → large (bring P1+P2 artifacts forward)
+prev_audience_branch = "${featureBranchRoot}-medium"
+result = casey.exec("git merge-base --is-ancestor origin/${prev_audience_branch} origin/${audience_branch}")
+
+if result.exit_code != 0:
+  invoke: casey.checkout-branch
+  params:
+    branch: ${audience_branch}
+  result = casey.exec("git merge origin/${prev_audience_branch} --no-edit -m '[lens-work] cascade: P1+P2 artifacts from ${prev_audience_branch} → ${audience_branch}'")
+  if result.exit_code != 0:
+    FAIL("❌ Pre-flight failed: Cascade merge conflict ${prev_audience_branch} → ${audience_branch}")
+  invoke: casey.push-branch
+  params:
+    branch: ${audience_branch}
+
+# Step 5: Create phase branch if it doesn't exist [REQ-9]
+if not branch_exists(phase_branch):
+  invoke: casey.create-and-push-branch
+  params:
+    branch: ${phase_branch}
+    from: ${audience_branch}
+  if create_branch.exit_code != 0:
+    FAIL("❌ Pre-flight failed: Could not create branch ${phase_branch}")
+
+# Step 6: Checkout phase branch
+invoke: casey.checkout-branch
+params:
+  branch: ${phase_branch}
+invoke: casey.pull-latest
+
+# Step 7: Confirm to user
+output: |
+  📋 Pre-flight complete [REQ-9]
+  ├── Initiative: ${initiative.name} (${initiative.id})
+  ├── Phase: P3 Technical Planning
+  ├── Branch: ${phase_branch}
+  └── Working directory: clean ✅
 ```
 
 ### 1. Validate Prerequisites & Gate Check
@@ -74,49 +133,20 @@ for artifact in required_artifacts:
     warning: "Required artifact not found: ${artifact}. Proceeding but tech-plan quality may suffer."
 ```
 
-### 2. Audience Cascade Merge
+### 2. Audience Cascade Merge (consolidated into Pre-Flight)
 
 ```yaml
-# Tech-plan uses large audience, plan used medium.
-# Merge medium → large to bring P1+P2 artifacts forward.
-prev_audience_branch = "${initiative.featureBranchRoot}-medium"
-audience_branch = "${initiative.featureBranchRoot}-large"
-
-# Check if cascade merge is needed
-result = casey.exec("git merge-base --is-ancestor origin/${prev_audience_branch} origin/${audience_branch}")
-
-if result.exit_code != 0:
-  # Need to cascade
-  invoke: casey.checkout-branch
-  params:
-    branch: ${audience_branch}
-  
-  result = casey.exec("git merge origin/${prev_audience_branch} --no-edit -m '[lens-work] cascade: P1+P2 artifacts from ${prev_audience_branch} → ${audience_branch}'")
-  
-  if result.exit_code != 0:
-    error: |
-      ⚠️ Cascade merge conflict: ${prev_audience_branch} → ${audience_branch}
-      The prior PR may not have been merged yet. Please:
-      1. Merge the prior PR into ${prev_audience_branch}
-      2. Resolve any conflicts manually
-      3. Run /tech-plan again
-    exit: 1
-  
-  invoke: casey.push-branch
-  params:
-    branch: ${audience_branch}
+# Audience cascade merge handled in Step 0 Pre-Flight [REQ-9]
+# Cascade: medium → large already completed during pre-flight.
+assert: cascade_merge_complete == true
 ```
 
-### 3. Create Phase Branch
+### 3. Branch Verification (consolidated into Pre-Flight)
 
 ```yaml
-# Branch: {featureBranchRoot}-large-p3
-phase_branch = "${initiative.featureBranchRoot}-large-p3"
-
-invoke: casey.create-and-push-branch
-params:
-  branch: ${phase_branch}
-  from: ${audience_branch}
+# Branch creation handled in Step 0 Pre-Flight [REQ-9]
+# Phase branch ${phase_branch} is already checked out at this point.
+assert: current_branch == phase_branch
 ```
 
 ### 4. Architecture Design
