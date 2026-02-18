@@ -204,6 +204,12 @@ profile = {
   }
 }
 
+# REQ-4
+# ANTI-PATTERN: Do NOT create profiles/*.yaml files.
+# User preferences go ONLY in: personal/profile.yaml
+# Team roster info goes in: roster/{name}.yaml
+# The profiles/ directory must NOT exist.
+
 # Save personal profile (local/gitignored)
 save(profile, "_bmad-output/lens-work/personal/profile.yaml")
 
