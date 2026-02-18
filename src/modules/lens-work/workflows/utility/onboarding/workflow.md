@@ -148,6 +148,21 @@ else:
     
     (from project root directory)
 
+# REQ-2: Question mode preference prompt
+output: |
+  
+  **Question Mode**
+  
+  How would you like to answer phase questions?
+  [1] Interactive (guided chat — recommended)
+  [2] Batch MD (single markdown file per phase)
+
+qm_input = prompt_user()
+if qm_input.strip() == "2":
+  question_mode = "batch"
+else:
+  question_mode = "interactive"
+
 profile = {
   name: name,
   email: email,
@@ -156,7 +171,8 @@ profile = {
   created_at: now(),
   preferences: {
     communication_style: "professional",
-    auto_fetch: true
+    auto_fetch: true,
+    question_mode: question_mode  # REQ-2
   }
 }
 
@@ -269,6 +285,7 @@ created_at: 2026-02-03T10:00:00Z
 preferences:
   communication_style: professional
   auto_fetch: true
+  question_mode: interactive  # REQ-2
 ```
 
 ### GitHub Credentials (Gitignored)
