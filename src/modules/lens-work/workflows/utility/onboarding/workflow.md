@@ -163,6 +163,32 @@ if qm_input.strip() == "2":
 else:
   question_mode = "interactive"
 
+# REQ-3: Tracker preference prompt
+output: |
+  
+  **Work Item Tracker**
+  
+  What work item tracker do you use?
+  [1] Jira
+  [2] Azure DevOps
+  [3] None
+
+tracker_input = prompt_user()
+if tracker_input.strip() == "1":
+  tracker = "jira"
+  output: |
+    Jira base URL (optional):
+    Example: https://mycompany.atlassian.net
+    Press Enter to skip.
+  jira_url_input = prompt_user()
+  jira_base_url = jira_url_input.strip() if jira_url_input.strip() else null
+elif tracker_input.strip() == "2":
+  tracker = "azure-devops"
+  jira_base_url = null
+else:
+  tracker = "none"
+  jira_base_url = null
+
 profile = {
   name: name,
   email: email,
@@ -172,7 +198,9 @@ profile = {
   preferences: {
     communication_style: "professional",
     auto_fetch: true,
-    question_mode: question_mode  # REQ-2
+    question_mode: question_mode,  # REQ-2
+    tracker: tracker,  # REQ-3
+    jira_base_url: jira_base_url if tracker == "jira" and jira_base_url else null  # REQ-3
   }
 }
 
@@ -286,6 +314,8 @@ preferences:
   communication_style: professional
   auto_fetch: true
   question_mode: interactive  # REQ-2
+  tracker: jira  # REQ-3
+  jira_base_url: https://mycompany.atlassian.net  # REQ-3 (only if tracker is jira)
 ```
 
 ### GitHub Credentials (Gitignored)
