@@ -87,6 +87,41 @@ if repo_docs_path != null:
 else:
   repo_context = null
 
+# REQ-7/REQ-9: Validate previous phase PR merged [S1.5]
+prev_phase = "p1"
+prev_phase_audience = initiative.review_audience_map.p1
+prev_phase_branch = "${initiative.featureBranchRoot}-${prev_phase_audience}-p1"
+prev_audience_branch = initiative.branches.audiences[prev_phase_audience]
+
+if initiative.phases[prev_phase] exists:
+  if initiative.phases[prev_phase].status == "pr_pending":
+    # Check if the audience branch contains the phase commits (merged via PR)
+    result = casey.exec("git merge-base --is-ancestor origin/${prev_phase_branch} origin/${prev_audience_branch}")
+    
+    if result.exit_code == 0:
+      # PR was merged! Auto-update status
+      invoke: tracey.update-initiative
+      params:
+        initiative_id: ${initiative.id}
+        updates:
+          phases:
+            p1:
+              status: "complete"
+              completed_at: "${ISO_TIMESTAMP}"
+      output: "✅ Previous phase (p1 pre-plan) PR merged — status updated to complete"
+    else:
+      # PR not merged yet — warn but allow proceeding
+      pr_url = initiative.phases[prev_phase].pr_url || "(no PR URL recorded)"
+      output: |
+        ⚠️  Previous phase (p1 pre-plan) PR not yet merged
+        ├── Status: pr_pending
+        ├── PR: ${pr_url}
+        └── You may continue, but phase artifacts may not be on the audience branch
+      
+      ask: "Continue anyway? [Y]es / [N]o"
+      if no:
+        exit: 0  # User chose to wait for merge
+
 # Determine phase branch [REQ-9]
 phase_branch = "${initiative.featureBranchRoot}-${audience}-p2"
 
