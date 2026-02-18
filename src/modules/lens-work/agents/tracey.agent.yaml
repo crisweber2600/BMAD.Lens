@@ -125,3 +125,24 @@ agent:
       state: "_bmad-output/lens-work/state.yaml"
       event_log: "_bmad-output/lens-work/event-log.jsonl"
       archive: "_bmad-output/lens-work/archive/"
+
+  # REQ-7/REQ-8: Phase status lifecycle
+  phase_status_lifecycle:
+    # Valid phase status progression:
+    #   not_started → in_progress → pr_pending → complete
+    valid_statuses:
+      - not_started    # Phase has not begun
+      - in_progress    # Phase work is actively underway
+      - pr_pending     # Phase work done, PR created, awaiting merge
+      - complete       # PR merged, phase fully complete
+    transitions:
+      not_started: [in_progress]
+      in_progress: [pr_pending]
+      pr_pending: [complete]
+    notes:
+      pr_pending: |
+        Phase enters pr_pending when all phase work is complete and a PR has been
+        created for merge into the audience branch. The phase remains in pr_pending
+        until the PR is merged. This prevents premature advancement to the next phase
+        before human review is complete. The pr_url and pr_number fields on the phase
+        record track the associated PR.

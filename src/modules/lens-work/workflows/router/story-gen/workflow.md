@@ -194,10 +194,32 @@ params:
   body: "Phase 4 (Story Generation) complete for ${initiative.id}.\n\nArtifacts: implementation-stories.md, story-estimates.md, dependency-map.md"
 capture: pr_result  # { url, number } or fallback message
 
+# REQ-7/REQ-8: Phase enters pr_pending after PR creation
+invoke: tracey.update-initiative
+params:
+  initiative_id: ${initiative.id}
+  updates:
+    phases:
+      p4:
+        status: "pr_pending"
+        pr_url: "${pr_result.url}"
+        pr_number: ${pr_result.number}
+# If manual fallback (no PAT), still set pr_pending with null PR info
+if pr_result.fallback:
+  invoke: tracey.update-initiative
+  params:
+    initiative_id: ${initiative.id}
+    updates:
+      phases:
+        p4:
+          status: "pr_pending"
+          pr_url: null
+          pr_number: null
+
 # Update state
 state.current_phase = "story-gen"
 state.gate_status.story_gen = "passed"
-state.workflow_status = "idle"
+state.workflow_status = "pr_pending"
 save(state)
 
 # Dual-write to initiative config
@@ -218,6 +240,7 @@ output: |
   
   Branch pushed: ${phase_branch}
   PR: ${pr_result}
+  Status: pr_pending (awaiting merge)
   Remaining on: ${phase_branch}
   
   Next: Run /review for implementation readiness check

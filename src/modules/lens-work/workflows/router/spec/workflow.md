@@ -281,11 +281,34 @@ if all_workflows_complete("p2"):
     body: "Phase 2 (Planning) complete for ${initiative.id}.\n\nArtifacts: prd.md, ux-design.md, architecture.md"
   capture: pr_result  # { url, number } or fallback message
 
+  # REQ-7/REQ-8: Phase enters pr_pending after PR creation
+  invoke: tracey.update-initiative
+  params:
+    initiative_id: ${initiative.id}
+    updates:
+      phases:
+        p2:
+          status: "pr_pending"
+          pr_url: "${pr_result.url}"
+          pr_number: ${pr_result.number}
+  # If manual fallback (no PAT), still set pr_pending with null PR info
+  if pr_result.fallback:
+    invoke: tracey.update-initiative
+    params:
+      initiative_id: ${initiative.id}
+      updates:
+        phases:
+          p2:
+            status: "pr_pending"
+            pr_url: null
+            pr_number: null
+
   output: |
     ✅ /spec complete
     ├── Phase 2 (Planning) finished
     ├── Branch pushed: ${phase_branch}
     ├── PR: ${pr_result}
+    ├── Status: pr_pending (awaiting merge)
     ├── Remaining on: ${phase_branch}
     └── Next: Run /plan to continue to Solutioning phase
 ```
@@ -315,6 +338,7 @@ params:
   updates:
     current_phase: "p2"
     current_phase_name: "Planning"
+    workflow_status: "pr_pending"
     active_branch: "${initiative.featureBranchRoot}-${audience}-p2"
 ```
 

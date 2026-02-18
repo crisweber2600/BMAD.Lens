@@ -317,11 +317,34 @@ if all_workflows_complete("p3"):
     body: "Phase 3 (Solutioning) complete for ${initiative.id}.\n\nArtifacts: epics.md, stories.md, readiness-checklist.md"
   capture: pr_result  # { url, number } or fallback message
 
+  # REQ-7/REQ-8: Phase enters pr_pending after PR creation
+  invoke: tracey.update-initiative
+  params:
+    initiative_id: ${initiative.id}
+    updates:
+      phases:
+        p3:
+          status: "pr_pending"
+          pr_url: "${pr_result.url}"
+          pr_number: ${pr_result.number}
+  # If manual fallback (no PAT), still set pr_pending with null PR info
+  if pr_result.fallback:
+    invoke: tracey.update-initiative
+    params:
+      initiative_id: ${initiative.id}
+      updates:
+        phases:
+          p3:
+            status: "pr_pending"
+            pr_url: null
+            pr_number: null
+
   output: |
     ✅ /plan complete
     ├── Phase 3 (Solutioning) finished
     ├── Branch pushed: ${phase_branch}
     ├── PR: ${pr_result}
+    ├── Status: pr_pending (awaiting merge)
     ├── Stories ready for sprint planning
     └── Next: Run /review for implementation gate
 ```
@@ -354,6 +377,7 @@ params:
   updates:
     current_phase: "p3"
     current_phase_name: "Solutioning"
+    workflow_status: "pr_pending"
     active_branch: "${initiative.featureBranchRoot}-${audience}-p3"
 ```
 
