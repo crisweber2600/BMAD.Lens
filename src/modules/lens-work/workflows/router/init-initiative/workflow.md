@@ -374,6 +374,16 @@ elif response == "edit":
 ### 2. Generate Initiative ID
 
 ```bash
+# REQ-1, REQ-3: Jira ticket prompt for feature-layer when tracker=jira
+jira_ticket=""
+if [ "${layer}" == "feature" ] && [ "${tracker}" == "jira" ]; then
+  # REQ-3: Prompt for optional Jira ticket ID
+  ask: "Jira ticket (optional, e.g., BMAD-123):"
+  if [ -n "${answer}" ]; then
+    jira_ticket="${answer}"  # REQ-3: Store raw Jira ticket ID
+  fi
+fi
+
 if [ "${layer}" == "domain" ]; then
   # Domain-layer: use domain_prefix as the initiative ID (no random suffix).
   # The domain name IS the identity — no separate initiative config file needed.
@@ -386,7 +396,13 @@ elif [ "${layer}" == "service" ]; then
   initiative_name="${initiative_name:-${service}}"
 elif [ "${layer}" == "feature" ]; then
   # REQ-1: Feature ID = sanitized name only (no random suffix)
-  initiative_id=$(echo "${initiative_name}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//')
+  sanitized_name=$(echo "${initiative_name}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//')
+  # REQ-1, REQ-3: Prepend Jira ticket ID if provided
+  if [ -n "${jira_ticket}" ]; then
+    initiative_id="${jira_ticket}-${sanitized_name}"  # e.g., BMAD-123-onboarding-enhancements
+  else
+    initiative_id="${sanitized_name}"
+  fi
 else
   # Microservice layers: generate random suffix
   # Format: {sanitized_name}-{random_6char}
@@ -668,6 +684,7 @@ domain_prefix: ${domain_prefix}
 service: ${service}
 service_prefix: ${service_prefix}
 question_mode: ${question_mode}
+jira_ticket: ${jira_ticket || ""}          # REQ-1, REQ-3: Jira ticket ID (feature-layer, tracker=jira)
 created_at: "${ISO_TIMESTAMP}"
 created_by: ${git_user}
 target_repos:
