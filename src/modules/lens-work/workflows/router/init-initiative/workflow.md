@@ -353,8 +353,12 @@ elif [ "${layer}" == "service" ]; then
   # The service name IS the identity — Service.yaml replaces separate initiative config.
   service_prefix=$(echo "${service}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//')
   initiative_id="${domain_prefix}/${service_prefix}"  # initiative_id uses / for file paths; branch name uses -
-  initiative_name="${initiative_name:-${service}}"else
-  # Feature/microservice layers: generate random suffix
+  initiative_name="${initiative_name:-${service}}"
+elif [ "${layer}" == "feature" ]; then
+  # REQ-1: Feature ID = sanitized name only (no random suffix)
+  initiative_id=$(echo "${initiative_name}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//')
+else
+  # Microservice layers: generate random suffix
   # Format: {sanitized_name}-{random_6char}
   # Example: rate-limit-x7k2m9
   initiative_id=$(echo "${initiative_name}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | cut -c1-20)-$(openssl rand -hex 3)
