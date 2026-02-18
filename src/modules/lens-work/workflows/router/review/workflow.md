@@ -77,6 +77,11 @@ if docs_path == null or docs_path == "":
 output_path = "${docs_path}/reviews/"
 ensure_directory("${docs_path}/reviews/")
 
+# REQ-10: Resolve BmadDocs path for per-initiative output co-location
+bmad_docs = initiative.docs.bmad_docs   # REQ-10
+if bmad_docs != null and bmad_docs != "":
+  ensure_directory("${bmad_docs}")   # REQ-10: Auto-create BmadDocs if missing
+
 # REQ-7/REQ-9: Validate previous phase PR merged [S1.5]
 prev_phase = "p3"
 prev_phase_audience = initiative.review_audience_map.p3
@@ -269,12 +274,14 @@ if compliance_failures.length > 0:
 invoke: bmm.sprint-planning
 params:
   stories: "${docs_path}/stories.md"
+  output_path: "${bmad_docs}"   # REQ-10: Sprint backlog to BmadDocs
   constitutional_context: ${constitutional_context}
   
 output: |
   📋 Sprint Planning
   ├── Stories prioritized
   ├── Capacity allocated
+  ├── Sprint backlog: ${bmad_docs}/sprint-backlog.md   # REQ-10
   └── Sprint backlog created
 ```
 
@@ -284,12 +291,13 @@ output: |
 invoke: bmm.create-dev-story
 params:
   story_id: "${selected_story}"
-  output_path: "_bmad-output/implementation-artifacts/"
+  output_path: "${bmad_docs}"   # REQ-10: Dev stories to BmadDocs
   constitutional_context: ${constitutional_context}
   
 output: |
-  📝 Dev Story Created
+  📝 Dev Story Created   # REQ-10
   ├── Story: ${story_id}
+  ├── Location: ${bmad_docs}/dev-story-${story_id}.md   # REQ-10
   ├── Acceptance Criteria: ✅
   ├── Technical Notes: ✅
   └── Ready for developer pickup
@@ -379,7 +387,7 @@ params:
     - "_bmad-output/lens-work/state.yaml"
     - "_bmad-output/lens-work/initiatives/${initiative.id}.yaml"
     - "_bmad-output/lens-work/event-log.jsonl"
-    - "_bmad-output/implementation-artifacts/"
+    - "${bmad_docs}/"   # REQ-10: BmadDocs (dev stories, sprint backlog)
     - "${docs_path}/"
   message: "[lens-work] /review: Implementation Gate ${gate_status} — ${initiative.id}"
   branch: ${current_branch}
@@ -411,8 +419,8 @@ Hand off to developer? [Y]es / [N]o
 
 | Artifact | Location |
 |----------|----------|
-| Dev Story | `_bmad-output/implementation-artifacts/dev-story-${id}.md` |
-| Sprint Backlog | `${docs_path}/sprint-backlog.md` |
+| Dev Story | `${initiative.docs.bmad_docs}/dev-story-${id}.md` |   <!-- REQ-10 -->
+| Sprint Backlog | `${initiative.docs.bmad_docs}/sprint-backlog.md` |   <!-- REQ-10 -->
 | Initiative State | `_bmad-output/lens-work/initiatives/${id}.yaml` |
 | Event Log | `_bmad-output/lens-work/event-log.jsonl` |
 

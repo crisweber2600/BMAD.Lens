@@ -580,6 +580,9 @@ if docs_feature != "":
   segments.push(docs_feature)
 docs_segments = segments.filter(seg => seg != "")
 docs_path = "docs/" + docs_segments.join("/")
+
+# REQ-10: Compute BmadDocs path for co-located per-initiative output
+bmad_docs = docs_path + "/BmadDocs"   # REQ-10
 ```
 
 ### 4b. Resolve Service Prefix (Service-Layer)
@@ -706,6 +709,7 @@ docs:
   repo: "${docs_repo}"
   feature: "${docs_feature}"
   path: "${docs_path}"
+  bmad_docs: "${bmad_docs}"   # REQ-10: BmadDocs co-located output path
 review_audience_map:           # Phase → review audience size
   p1: small
   p2: medium
@@ -853,6 +857,23 @@ blocks: []
 
 ${endif}
 
+### 6b. Create BmadDocs Directory & Copy Initiative Config  # REQ-10
+
+${if layer != "domain" && layer != "service"}
+```bash
+# REQ-10: Create BmadDocs directory for co-located per-initiative output
+mkdir -p "${bmad_docs}"
+
+# REQ-10: Copy canonical initiative config to BmadDocs for co-location
+cp "_bmad-output/lens-work/initiatives/${initiative_id}.yaml" "${bmad_docs}/initiative.yaml"
+```
+
+> **Note:** BmadDocs co-locates per-initiative output (dev stories, sprint backlog,
+> initiative config copy) with the initiative's planning docs. The canonical
+> initiative config remains at `_bmad-output/lens-work/initiatives/` for backward
+> compatibility; the BmadDocs copy is a convenience snapshot.
+${endif}
+
 ### 7. Write Personal State (Git-Ignored)
 
 Write to `{project-root}/_bmad-output/lens-work/state.yaml`:
@@ -969,6 +990,7 @@ git checkout "${featureBranchRoot}"
 # Stage initiative config and event log (NOT state.yaml — it's git-ignored)
 git add "_bmad-output/lens-work/initiatives/${initiative_id}.yaml"
 git add "_bmad-output/lens-work/event-log.jsonl"
+git add "${bmad_docs}/"   # REQ-10: BmadDocs initiative config copy
 
 # Create targeted commit
 git commit -m "init(${initiative_id}): Create ${layer} initiative '${initiative_name}'

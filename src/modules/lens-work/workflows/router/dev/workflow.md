@@ -80,6 +80,9 @@ if docs_path == null or docs_path == "":
 # NOTE: docs_path is READ-ONLY in /dev — used for context loading (S11)
 # Dev outputs go to _bmad-output/implementation-artifacts/ (unchanged)
 
+# REQ-10: Resolve BmadDocs path for per-initiative output co-location
+bmad_docs = initiative.docs.bmad_docs   # REQ-10
+
 # === Context Loader (S11: Context Enhancement) ===
 # Load planning context for dev reference (read-only)
 if docs_path != "_bmad-output/planning-artifacts/":
@@ -230,12 +233,19 @@ if initiative.question_mode == "batch":
 ### 2. Load Dev Story
 
 ```yaml
-dev_story = load("_bmad-output/implementation-artifacts/dev-story-${id}.md")
+# REQ-10: Read dev story from BmadDocs first, fallback to legacy location
+if bmad_docs != null and file_exists("${bmad_docs}/dev-story-${id}.md"):   # REQ-10
+  dev_story = load("${bmad_docs}/dev-story-${id}.md")
+  dev_story_source = "${bmad_docs}/dev-story-${id}.md"
+else:
+  dev_story = load("_bmad-output/implementation-artifacts/dev-story-${id}.md")
+  dev_story_source = "_bmad-output/implementation-artifacts/dev-story-${id}.md"
 
 output: |
   🚀 /dev — Implementation Phase
   
   **Story:** ${dev_story.title}
+  **Source:** ${dev_story_source}   # REQ-10
   **Acceptance Criteria:**
   ${dev_story.acceptance_criteria}
   
@@ -248,7 +258,8 @@ output: |
 ### 2a. Dev Story Constitution Check (Required)
 
 ```yaml
-dev_story_path = "_bmad-output/implementation-artifacts/dev-story-${id}.md"
+# REQ-10: Use BmadDocs path if available, fallback to legacy
+dev_story_path = dev_story_source   # REQ-10: set by Step 2 fallback logic
 
 dev_story_compliance = invoke("scribe.compliance-check")
 params:
