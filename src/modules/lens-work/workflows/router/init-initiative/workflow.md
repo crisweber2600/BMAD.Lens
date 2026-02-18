@@ -570,7 +570,15 @@ if layer == "service":
   docs_repo = ""
   docs_feature = ""
 
-docs_segments = [docs_domain, docs_service, docs_repo, docs_feature].filter(seg => seg != "")
+# REQ-11: Type-discriminator directories for self-describing path hierarchy
+segments = [docs_domain, docs_service]
+if docs_repo != "":
+  segments.push("repo")
+  segments.push(docs_repo)
+if docs_feature != "":
+  segments.push("feature")
+  segments.push(docs_feature)
+docs_segments = segments.filter(seg => seg != "")
 docs_path = "docs/" + docs_segments.join("/")
 ```
 
