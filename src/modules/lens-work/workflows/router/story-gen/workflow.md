@@ -134,6 +134,7 @@ params:
 ### 4. Commit & Gate
 
 ```yaml
+# REQ-7: Never auto-merge. PR created in S1.2.
 # Commit all story-gen artifacts
 invoke: casey.targeted-commit
 params:
@@ -143,6 +144,7 @@ params:
     - "${docs_path}/story-estimates.md"
     - "${docs_path}/dependency-map.md"
   message: "[lens-work] P4 story-gen: implementation stories and estimates"
+# Phase branch remains alive — PR handles merge to audience branch
 
 # Update state
 state.current_phase = "story-gen"
@@ -166,9 +168,10 @@ output: |
   - Estimates: ${docs_path}/story-estimates.md
   - Dependencies: ${docs_path}/dependency-map.md
   
-  Next: Run /review for implementation readiness check
+  Branch pushed: ${phase_branch}
+  Remaining on: ${phase_branch}
   
-  PR: ${casey.generate-pr-link(phase_branch, audience_branch)}
+  Next: Run /review for implementation readiness check
 ```
 
 ---

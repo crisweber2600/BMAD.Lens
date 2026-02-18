@@ -277,43 +277,24 @@ params:
 invoke: casey.finish-workflow
 ```
 
-### 5. Phase Completion — PR, Delete, Checkout
+### 5. Phase Completion — Push Only
 
 ```yaml
+# REQ-7: Never auto-merge. PR created in S1.2.
 if all_workflows_complete("p1"):
   # Push final state to phase branch
   invoke: casey.commit-and-push
   params:
     branch: ${phase_branch}
-    message: "finish-phase(p1): Analysis complete — ${initiative.id}"
-
-  # Create PR: {smallGroupBranchRoot}-p1 → {smallGroupBranchRoot}
-  invoke: casey.create-pr
-  params:
-    source: ${phase_branch}               # {featureBranchRoot}-small-p1
-    target: ${audience_branch}             # {featureBranchRoot}-small
-    title: "P1 Analysis: ${initiative.name}"
-    body: "Phase 1 (Analysis) complete. Review audience: small."
-  capture: pr_result
-
-  # Delete phase branch locally (PR keeps remote alive)
-  invoke: casey.delete-local-branch
-  params:
-    branch: ${phase_branch}
-
-  # Checkout the audience group branch
-  invoke: casey.checkout-branch
-  params:
-    branch: ${audience_branch}
+    message: "[${initiative.id}] P1 Analysis complete"
+  # Phase branch remains alive — PR handles merge to audience branch
 
   output: |
     ✅ /pre-plan complete
     ├── Phase 1 (Analysis) finished
     ├── Artifacts: product-brief.md
-    ├── PR created: ${pr_result.url}
-    │   └── ${phase_branch} → ${audience_branch}
-    ├── Phase branch deleted locally
-    ├── Now on: ${audience_branch}
+    ├── Branch pushed: ${phase_branch}
+    ├── Remaining on: ${phase_branch}
     └── Next: Run /spec to continue to Planning phase
 ```
 
@@ -403,9 +384,8 @@ Ready to continue?
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] PR created from `{featureBranchRoot}-small-p1` → `{featureBranchRoot}-small`
-- [ ] Phase branch `{featureBranchRoot}-small-p1` deleted locally
-- [ ] Checked out to audience branch: `{featureBranchRoot}-small`
+- [ ] Phase branch `{featureBranchRoot}-small-p1` pushed to origin (REQ-7: no auto-merge)
+- [ ] Remaining on phase branch: `{featureBranchRoot}-small-p1`
 - [ ] state.yaml updated with phase p1
 - [ ] initiatives/{id}.yaml updated with p1 status
 - [ ] event-log.jsonl entry appended

@@ -281,17 +281,21 @@ params:
 invoke: casey.finish-workflow
 ```
 
-### 4. Phase Completion
+### 4. Phase Completion — Push Only
 
 ```yaml
+# REQ-7: Never auto-merge. PR created in S1.2.
 if all_workflows_complete("p3"):
-  invoke: casey.finish-phase
-  invoke: casey.open-final-pbr  # PR: large → base
-  
+  invoke: casey.commit-and-push
+  params:
+    branch: ${phase_branch}
+    message: "[${initiative.id}] P3 Solutioning complete"
+  # Phase branch remains alive — PR handles merge to audience branch
+
   output: |
     ✅ /plan complete
     ├── Phase 3 (Solutioning) finished
-    ├── Final PBR PR opened (large → base)
+    ├── Branch pushed: ${phase_branch}
     ├── Stories ready for sprint planning
     └── Next: Run /review for implementation gate
 ```
@@ -383,13 +387,12 @@ params:
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] On correct branch: `{featureBranchRoot}-{audience}-p3`
+- [ ] On phase branch: `{featureBranchRoot}-{audience}-p3` (REQ-7: no auto-merge)
 - [ ] state.yaml updated with phase p3
 - [ ] initiatives/{id}.yaml updated with p3 status and p2 gate passed
 - [ ] event-log.jsonl entry appended
 - [ ] Planning artifacts written to `${docs_path}/` (epics, stories, readiness-checklist)
 - [ ] Epic adversarial review executed and passed
 - [ ] Epic party-mode review executed and report generated
-- [ ] Final PBR PR opened (large → base)
 - [ ] All changes pushed to origin
 

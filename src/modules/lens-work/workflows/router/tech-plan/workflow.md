@@ -166,6 +166,7 @@ if answer == "Y":
 ### 5. Commit & Gate
 
 ```yaml
+# REQ-7: Never auto-merge. PR created in S1.2.
 # Commit all tech-plan artifacts
 invoke: casey.targeted-commit
 params:
@@ -175,6 +176,7 @@ params:
     - "${docs_path}/tech-decisions.md"
     - "${docs_path}/api-contracts.md"  # if created
   message: "[lens-work] P3 tech-plan: architecture and technical design"
+# Phase branch remains alive — PR handles merge to audience branch
 
 # Update state
 state.current_phase = "tech-plan"
@@ -197,9 +199,10 @@ output: |
   - Architecture: ${docs_path}/architecture.md
   - Tech decisions: ${docs_path}/tech-decisions.md
   
-  Next: Run /story-gen to generate implementation stories
+  Branch pushed: ${phase_branch}
+  Remaining on: ${phase_branch}
   
-  PR: ${casey.generate-pr-link(phase_branch, audience_branch)}
+  Next: Run /story-gen to generate implementation stories
 ```
 
 ---

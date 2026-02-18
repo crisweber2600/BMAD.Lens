@@ -245,18 +245,23 @@ params:
 invoke: casey.finish-workflow
 ```
 
-### 5. Phase Completion + Large Review
+### 5. Phase Completion — Push Only
 
 ```yaml
+# REQ-7: Never auto-merge. PR created in S1.2.
 if all_workflows_complete("p2"):
-  invoke: casey.finish-phase
-  invoke: casey.open-large-review  # PR: small → large
-  
+  invoke: casey.commit-and-push
+  params:
+    branch: ${phase_branch}
+    message: "[${initiative.id}] P2 Planning complete"
+  # Phase branch remains alive — PR handles merge to audience branch
+
   output: |
     ✅ /spec complete
     ├── Phase 2 (Planning) finished
-    ├── Large Review PR opened
-    └── Next: Get large review approval, then run /plan
+    ├── Branch pushed: ${phase_branch}
+    ├── Remaining on: ${phase_branch}
+    └── Next: Run /plan to continue to Solutioning phase
 ```
 
 ### 6. Update State Files
@@ -338,10 +343,9 @@ params:
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] On correct branch: `{featureBranchRoot}-{audience}-p2`
+- [ ] On phase branch: `{featureBranchRoot}-{audience}-p2` (REQ-7: no auto-merge)
 - [ ] state.yaml updated with phase p2
 - [ ] initiatives/{id}.yaml updated with p2 status and p1 gate passed
 - [ ] event-log.jsonl entry appended
 - [ ] Planning artifacts written to `${docs_path}/` (PRD, architecture; optionally UX)
-- [ ] Large Review PR opened (small → large)
 - [ ] All changes pushed to origin

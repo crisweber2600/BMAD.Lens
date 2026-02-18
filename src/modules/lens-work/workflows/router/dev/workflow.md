@@ -387,6 +387,7 @@ params:
 ### 8. Commit State Changes
 
 ```yaml
+# REQ-7: Never auto-merge. PR created in S1.2.
 # Casey commits all state and artifact changes
 invoke: casey.commit-and-push
 params:
