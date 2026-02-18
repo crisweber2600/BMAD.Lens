@@ -234,6 +234,22 @@ else:
   output: "Will bootstrap repos for ${scope}"
 ```
 
+### 3a. Ensure TargetProjects Directory <!-- REQ-5 -->
+
+```yaml
+# REQ-5: Auto-create TargetProjects directory before discovery
+# Reads target_projects_path from service-map.yaml, then ensures it exists.
+# Idempotent — no error if directory already exists.
+
+service_map = load_yaml("_bmad/lens-work/service-map.yaml")
+target_path = service_map.target_projects_path
+
+shell: mkdir -p "${target_path}"
+
+output: |
+  📂 TargetProjects directory ensured: ${target_path}
+```
+
 ### 4. Run Discovery
 
 ```yaml
