@@ -207,6 +207,31 @@ else:
 ```
 ${endif}
 
+### 0c. Load User Profile Preferences  # REQ-2, REQ-3
+
+```yaml
+# Load user profile to source default preferences.
+# Profile preferences act as defaults — can be overridden per-initiative.
+profile_path = "{project-root}/_bmad-output/lens-work/personal/profile.yaml"
+
+if exists(profile_path):
+  profile = load(profile_path)
+  profile_question_mode = profile.preferences.question_mode || "interactive"   # REQ-2
+  profile_tracker       = profile.preferences.tracker       || "none"          # REQ-3
+else:
+  profile_question_mode = "interactive"   # REQ-2 default
+  profile_tracker       = "none"          # REQ-3 default
+
+# For domain / microservice layers, profile values become the defaults
+# (override happens in Step 1a). For service / feature layers, parent
+# inheritance from Steps 0a/0b takes precedence.
+if layer != "service" && layer != "feature":
+  question_mode = profile_question_mode   # REQ-2
+
+# Store tracker value for downstream use (S2.3 Jira ticket prompt)  # REQ-3
+tracker = profile_tracker
+```
+
 ### 1. Gather Initiative Details
 
 ${if layer == "service"}
@@ -266,7 +291,7 @@ ${endif}
 ```
 ${endif}
 
-### 1a. Choose Question Mode
+### 1a. Choose Question Mode  # REQ-2
 
 ${if layer != "service" && layer != "feature"}
 ```
@@ -275,11 +300,16 @@ How would you like to answer phase questions?
 **[1] Interactive (chat)** — Current guided flow
 **[2] Batch MD** — Single file per phase, filled in one shot
 
-Select mode: [1] or [2]
+Default from profile: ${question_mode}   (press Enter to keep)
+Select mode: [1] or [2] (default: ${question_mode == "batch" ? "2" : "1"})
 ```
 
 ```yaml
-question_mode = selection == "2" ? "batch" : "interactive"
+# question_mode was pre-loaded from profile in Step 0c (REQ-2)
+# User may override; if they press Enter the profile default is kept.
+if selection != "":
+  question_mode = selection == "2" ? "batch" : "interactive"
+# else: question_mode retains the profile-sourced default from Step 0c
 ```
 ${else}
 ```yaml
