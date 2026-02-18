@@ -365,6 +365,64 @@ else
 fi
 ```
 
+### 2a. Duplicate Initiative Detection
+
+```yaml
+# REQ-1: Duplicate initiative detection
+# Check if an initiative with this ID already exists before creating anything.
+# Applies to ALL layers (domain, service, feature, microservice).
+
+initiatives_root = "{project-root}/_bmad-output/lens-work/initiatives"
+
+if layer == "domain":
+  # REQ-1: Domain — check nested path: initiatives/{domain_prefix}/Domain.yaml
+  initiative_path = "${initiatives_root}/${domain_prefix}/Domain.yaml"
+elif layer == "service":
+  # REQ-1: Service — check nested path: initiatives/{domain_prefix}/{service_prefix}/Service.yaml
+  initiative_path = "${initiatives_root}/${domain_prefix}/${service_prefix}/Service.yaml"
+elif layer == "feature":
+  # REQ-1: Feature — check flat path: initiatives/{initiative_id}.yaml
+  initiative_path = "${initiatives_root}/${initiative_id}.yaml"
+else:
+  # REQ-1: Microservice/other — check flat path: initiatives/{initiative_id}.yaml
+  initiative_path = "${initiatives_root}/${initiative_id}.yaml"
+
+if file_exists(initiative_path):
+  error: |
+    ❌ Initiative already exists: ${initiative_id}
+    ├── Config: ${initiative_path}
+    └── Choose a different name or archive the existing initiative
+
+  ask: "Enter a different name (or 'cancel' to abort):"
+  if answer == "cancel":
+    exit: 0
+  else:
+    # Re-sanitize the new name and re-check
+    name = answer
+    if layer == "domain":
+      domain = name
+      domain_prefix = normalize_domain_prefix(name)
+      initiative_id = domain_prefix
+      initiative_path = "${initiatives_root}/${domain_prefix}/Domain.yaml"
+    elif layer == "service":
+      service = name
+      service_prefix = $(echo "${name}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//')
+      initiative_id = "${domain_prefix}/${service_prefix}"
+      initiative_path = "${initiatives_root}/${domain_prefix}/${service_prefix}/Service.yaml"
+    elif layer == "feature":
+      initiative_name = name
+      initiative_id = $(echo "${name}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//')
+      initiative_path = "${initiatives_root}/${initiative_id}.yaml"
+    else:
+      initiative_name = name
+      initiative_id = $(echo "${name}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | cut -c1-20)-$(openssl rand -hex 3)
+      initiative_path = "${initiatives_root}/${initiative_id}.yaml"
+
+    if file_exists(initiative_path):
+      error: "Still a duplicate: ${initiative_id}. Please archive the existing initiative first."
+      exit: 1
+```
+
 ### 3. Resolve Target Repos
 
 ```yaml
