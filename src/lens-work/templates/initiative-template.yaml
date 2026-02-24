@@ -1,0 +1,81 @@
+# Initiative Template for lens-work (v2 — Lifecycle Contract)
+# =============================================================================
+# Schema for initiative config files.
+# Location:
+#   Feature/Microservice: _bmad-output/lens-work/initiatives/{id}.yaml
+#   Domain:               _bmad-output/lens-work/initiatives/{domain_prefix}/Domain.yaml
+#   Service:              _bmad-output/lens-work/initiatives/{domain_prefix}/{service_prefix}/Service.yaml
+# =============================================================================
+
+# --- Lifecycle Version ---
+# Determines which naming convention and phase model to use.
+# Version 1: legacy p1-p6 numbered phases (backward compat)
+# Version 2: named phases from lifecycle.yaml
+lifecycle_version: 2
+
+# --- Identity ---
+id: null                          # Initiative ID
+name: null                        # Human-readable name
+layer: null                       # domain|service|repo (v2 hierarchy)
+domain: null                      # Domain name
+domain_prefix: null               # Normalized domain prefix for branch names
+service: null                     # Service name (if applicable)
+service_prefix: null              # Normalized service prefix (if applicable)
+
+# --- Target repos ---
+target_repos: []
+
+# --- Branch topology ---
+initiative_root: null             # Root branch name (v2: replaces featureBranchRoot)
+
+# --- Track & Phases (v2) ---
+track: full                       # full|feature|tech-change|hotfix|spike
+active_phases:                    # Derived from track via lifecycle.yaml
+  - preplan
+  - businessplan
+  - techplan
+  - devproposal
+  - sprintplan
+
+# Per-initiative audience configuration (v2: derived from track)
+audiences:
+  - small
+  - medium
+  - large
+  - base
+
+# --- Phase Status (v2: named phases) ---
+phase_status:
+  preplan: null                   # null|passed|blocked
+  businessplan: null
+  techplan: null
+  devproposal: null
+  sprintplan: null
+
+# Current phase (v2: named, not numbered)
+current_phase: null               # preplan|businessplan|techplan|devproposal|sprintplan
+
+# --- Documentation paths ---
+docs:
+  path: null                      # e.g., "docs/BMAD/LENS/BMAD.Lens/my-feature"
+  domain: null
+  service: null
+  repo: null
+
+# --- Governance ---
+constitution_mode: advisory       # advisory|enforced
+
+# --- Question mode ---
+question_mode: interactive        # interactive|batch
+
+# --- Initiative scope & coupling (v2) ---
+scope: null                       # repo|service|domain|org
+coupling: none                    # none|coupled|independent (for multi-service)
+
+# --- Timestamps ---
+created_at: null
+last_activity: null
+
+# =============================================================================
+# End of initiative template (v2.0.0 — Lifecycle Contract)
+# =============================================================================
