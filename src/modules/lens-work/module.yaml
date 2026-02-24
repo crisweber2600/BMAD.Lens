@@ -20,6 +20,24 @@ optional_dependencies:
   - cis      # Creative Innovation Suite (brainstorming/research)
   - tea      # Test Engineering Academy (test planning)
 
+# Skills (formalize agent delegation contracts)
+skills:
+  - id: git-orchestration
+    file: skills/git-orchestration.md
+    description: Branch creation, commits, pushes, topology management
+  - id: state-management
+    file: skills/state-management.md
+    description: state.yaml read/write, event-log.jsonl append, status queries
+  - id: discovery
+    file: skills/discovery.md
+    description: Repo scanning, documentation, bootstrapping, onboarding
+  - id: constitution
+    file: skills/constitution.md
+    description: Inline governance checks at every workflow step
+  - id: checklist
+    file: skills/checklist.md
+    description: Progressive phase gate checklists with expandable detail
+
 # Installation Questions
 install_questions:
   target_projects_path:
@@ -117,9 +135,20 @@ workflow_categories:
       - pre-plan
       - spec
       - plan
+      - tech-plan       # NEW: split from /spec — architecture phase
+      - story-gen       # NEW: split from /plan — story generation phase
       - review
       - dev
       - init-initiative
+  
+  background:
+    description: "Auto-triggered lifecycle operations (never user-invoked)"
+    workflows:
+      - state-sync           # Validate state.yaml at workflow boundaries
+      - event-log            # Append to event-log.jsonl on state mutations
+      - branch-validate      # Verify branch topology matches expected patterns
+      - constitution-check   # Run governance validation at workflow boundaries
+      - checklist-update     # Update progressive checklist items
   
   discovery:
     description: "Repo discovery and documentation"
@@ -187,6 +216,8 @@ prompts:
     - lens-work.pre-plan.prompt.md
     - lens-work.spec.prompt.md
     - lens-work.plan.prompt.md
+    - lens-work.tech-plan.prompt.md    # NEW: technical planning phase
+    - lens-work.story-gen.prompt.md    # NEW: story generation phase
     - lens-work.review.prompt.md
     - lens-work.dev.prompt.md
     # Initiative Commands (Compass)
@@ -214,6 +245,8 @@ prompts:
     # Discovery (Scout)
     - lens-work.domain-map.prompt.md
     - lens-work.impact-analysis.prompt.md
+    # Help
+    - lens-work.help.prompt.md         # NEW: full command reference with context
     # Utility (Casey)
     - lens-work.recreate-branches.prompt.md
     # Bootstrap & Discovery (Scout)
@@ -248,6 +281,12 @@ templates:
       - service-constitution.md
       - microservice-constitution.md
       - feature-constitution.md
+  state:
+    file: "templates/state-template.yaml"
+    description: "Schema template for _bmad-output/lens-work/state.yaml"
+  initiative:
+    file: "templates/initiative-template.yaml"
+    description: "Schema template for initiative config files"
 
 # Documentation
 docs:
@@ -317,3 +356,26 @@ git:
     audience_large: "{featureBranchRoot}-large"                       # Large review audience group
     phase: "{featureBranchRoot}-{audience}-p{phase_number}"           # Phase branch
     workflow: "{featureBranchRoot}-{audience}-p{phase_number}-{workflow_name}"  # Workflow branch
+
+# Background Triggers (auto-triggered workflow dispatch)
+background_triggers:
+  workflow_start:
+    - state-sync           # Read current state
+    - constitution-check   # Validate governance
+  workflow_end:
+    - state-sync           # Write updated state
+    - event-log            # Append event
+    - checklist-update     # Update checklists
+  phase_transition:
+    - branch-validate      # Verify topology
+    - state-sync           # Read + write state
+    - event-log            # Append event
+    - constitution-check   # Validate governance
+    - checklist-update     # Update checklists
+  initiative_create:
+    - branch-validate      # Create topology
+    - state-sync           # Initialize state
+    - event-log            # Append creation event
+  error:
+    - event-log            # Log error event
+    - state-sync           # Mark error in state

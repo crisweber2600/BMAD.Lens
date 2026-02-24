@@ -34,4 +34,9 @@ Use `#think` before defining domain boundaries or scope.
 **Note:** Domain-layer does NOT create audience/phase branches.
 Service and feature initiatives within this domain will create their own branch topology.
 
+**CRITICAL — User Input Anchoring:**
+If the user provided text alongside this prompt invocation, that text IS the
+domain name. Use it exactly as given. Do NOT invent, substitute, or hallucinate
+a different name. Example: `/new-domain BMAD` → domain name = "BMAD".
+
 ```

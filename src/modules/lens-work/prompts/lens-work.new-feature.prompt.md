@@ -59,4 +59,9 @@ Activate Compass agent and execute /new-feature:
 
 Use `#think` before defining feature scope or dependencies.
 
+**CRITICAL — User Input Anchoring:**
+If the user provided text alongside this prompt invocation, that text IS the
+feature name. Use it exactly as given. Do NOT invent, substitute, or hallucinate
+a different name. Example: `/new-feature Rate Limiting` → feature name = "Rate Limiting".
+
 ```

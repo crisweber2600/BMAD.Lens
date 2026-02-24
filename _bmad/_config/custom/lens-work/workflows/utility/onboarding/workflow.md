@@ -2,7 +2,7 @@
 name: onboarding
 description: Full onboarding — profile, repo reconciliation, state init, welcome
 agent: scout
-trigger: "@scout onboard" or "@lens-work onboard"
+trigger: '@scout onboard or @lens-work onboard'
 category: utility
 first_run: true
 ---

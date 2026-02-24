@@ -36,9 +36,19 @@ phase_name: Implementation
 
 ## Execution Sequence
 
-### 0. Git Discipline — Verify Clean State
+### 0. Pre-Flight [REQ-9]
 
 ```yaml
+# PRE-FLIGHT (mandatory, never skip) [REQ-9]
+# 1. Verify working directory is clean
+# 2. Load two-file state (state.yaml + initiative config)
+# 3. Check previous phase status (if applicable)
+# 4. Determine correct phase branch: {featureBranchRoot}-{audience}-p{N}
+# 5. Create phase branch if it doesn't exist
+# 6. Checkout phase branch
+# 7. Confirm to user: "Now on branch: {branch_name}"
+# GATE: All steps must pass before proceeding to artifact work
+
 # Verify working directory is clean
 invoke: casey.verify-clean-state
 
@@ -46,9 +56,14 @@ invoke: casey.verify-clean-state
 state = load("_bmad-output/lens-work/state.yaml")
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 
-# Read size from initiative config (shared, canonical)
+# Read initiative config
 size = initiative.size
 domain_prefix = initiative.domain_prefix
+
+# Derive audience for P4 dev (always small) [REQ-9]
+audience = "small"
+featureBranchRoot = initiative.featureBranchRoot
+audience_branch = "${featureBranchRoot}-small"
 
 # === Path Resolver (S01-S06: Context Enhancement) ===
 docs_path = initiative.docs.path    # e.g., "docs/BMAD/LENS/BMAD.Lens/context-enhancement-9bfe4e"
@@ -65,6 +80,9 @@ if docs_path == null or docs_path == "":
 # NOTE: docs_path is READ-ONLY in /dev — used for context loading (S11)
 # Dev outputs go to _bmad-output/implementation-artifacts/ (unchanged)
 
+# REQ-10: Resolve BmadDocs path for per-initiative output co-location
+bmad_docs = initiative.docs.bmad_docs   # REQ-10
+
 # === Context Loader (S11: Context Enhancement) ===
 # Load planning context for dev reference (read-only)
 if docs_path != "_bmad-output/planning-artifacts/":
@@ -73,6 +91,41 @@ if docs_path != "_bmad-output/planning-artifacts/":
   planning_context = { architecture: architecture, stories: stories }
 else:
   planning_context = null
+
+# REQ-7/REQ-9: Validate previous phase PR merged [S1.5]
+prev_phase = "p3"
+prev_phase_audience = initiative.review_audience_map.p3
+prev_phase_branch = "${initiative.featureBranchRoot}-${prev_phase_audience}-p3"
+prev_audience_branch = initiative.branches.audiences[prev_phase_audience]
+
+if initiative.phases[prev_phase] exists:
+  if initiative.phases[prev_phase].status == "pr_pending":
+    # Check if the audience branch contains the phase commits (merged via PR)
+    result = casey.exec("git merge-base --is-ancestor origin/${prev_phase_branch} origin/${prev_audience_branch}")
+    
+    if result.exit_code == 0:
+      # PR was merged! Auto-update status
+      invoke: tracey.update-initiative
+      params:
+        initiative_id: ${initiative.id}
+        updates:
+          phases:
+            p3:
+              status: "complete"
+              completed_at: "${ISO_TIMESTAMP}"
+      output: "✅ Previous phase (p3 solutioning) PR merged — status updated to complete"
+    else:
+      # PR not merged yet — warn but allow proceeding
+      pr_url = initiative.phases[prev_phase].pr_url || "(no PR URL recorded)"
+      output: |
+        ⚠️  Previous phase (p3 solutioning) PR not yet merged
+        ├── Status: pr_pending
+        ├── PR: ${pr_url}
+        └── You may continue, but phase artifacts may not be on the audience branch
+      
+      ask: "Continue anyway? [Y]es / [N]o"
+      if no:
+        exit: 0  # User chose to wait for merge
 
 # Require dev story for interactive mode
 if initiative.question_mode != "batch" and not dev_story_exists():
@@ -87,18 +140,35 @@ if size != "small":
     ├── Required: small
     └── Dev phase (P4) only runs on the small size.
 
-# Validate we're on the correct branch (or can switch)
-# Branch pattern: {featureBranchRoot}-{audience}-p{N}
-expected_branch: "${initiative.featureBranchRoot}-${audience}-p4"
-current_branch = casey.get-current-branch()
+# Determine phase branch [REQ-9]
+phase_branch = "${initiative.featureBranchRoot}-${audience}-p4"
 
-if current_branch != expected_branch:
-  if branch_exists(expected_branch):
-    invoke: casey.checkout-branch
-    params:
-      branch: ${expected_branch}
-    invoke: casey.pull-latest
-  # else: branch will be created in Step 1a
+# Step 5: Create phase branch if it doesn't exist [REQ-9]
+if not branch_exists(phase_branch):
+  invoke: casey.start-phase
+  params:
+    phase_number: 4
+    phase_name: "Implementation"
+    initiative_id: ${initiative.id}
+    audience: ${audience}
+    featureBranchRoot: ${initiative.featureBranchRoot}
+    parent_branch: ${audience_branch}
+  if start_phase.exit_code != 0:
+    FAIL("❌ Pre-flight failed: Could not create branch ${phase_branch}")
+
+# Step 6: Checkout phase branch
+invoke: casey.checkout-branch
+params:
+  branch: ${phase_branch}
+invoke: casey.pull-latest
+
+# Step 7: Confirm to user
+output: |
+  📋 Pre-flight complete [REQ-9]
+  ├── Initiative: ${initiative.name} (${initiative.id})
+  ├── Phase: P4 Implementation
+  ├── Branch: ${phase_branch}
+  └── Working directory: clean ✅
 ```
 
 ### 1. Merge Gate Check — P3 Complete
@@ -139,27 +209,12 @@ if constitutional_context.status == "parse_error":
 session.constitutional_context = constitutional_context
 ```
 
-### 1b. Auto-Branch Creation - P4
+### 1b. Branch Verification (consolidated into Pre-Flight)
 
 ```yaml
-# Casey creates P4 branch if it doesn't exist
-# Branch pattern: {featureBranchRoot}-{audience}-p{N}
-if not branch_exists("${initiative.featureBranchRoot}-${audience}-p4"):
-  invoke: casey.start-phase
-  params:
-    phase_number: 4
-    phase_name: "Implementation"
-    initiative_id: ${initiative.id}
-    audience: ${audience}
-    featureBranchRoot: ${initiative.featureBranchRoot}
-  # Casey creates: ${featureBranchRoot}-${audience}-p4 and pushes to remote
-
-  invoke: casey.pull-latest
-else:
-  invoke: casey.checkout-branch
-  params:
-    branch: "${initiative.featureBranchRoot}-${audience}-p4"
-  invoke: casey.pull-latest
+# Branch creation and checkout handled in Step 0 Pre-Flight [REQ-9]
+# Phase branch ${phase_branch} is already checked out at this point.
+assert: current_branch == phase_branch
 ```
 
 ### 1c. Batch Mode (Single-File Questions)
@@ -178,12 +233,19 @@ if initiative.question_mode == "batch":
 ### 2. Load Dev Story
 
 ```yaml
-dev_story = load("_bmad-output/implementation-artifacts/dev-story-${id}.md")
+# REQ-10: Read dev story from BmadDocs first, fallback to legacy location
+if bmad_docs != null and file_exists("${bmad_docs}/dev-story-${id}.md"):   # REQ-10
+  dev_story = load("${bmad_docs}/dev-story-${id}.md")
+  dev_story_source = "${bmad_docs}/dev-story-${id}.md"
+else:
+  dev_story = load("_bmad-output/implementation-artifacts/dev-story-${id}.md")
+  dev_story_source = "_bmad-output/implementation-artifacts/dev-story-${id}.md"
 
 output: |
   🚀 /dev — Implementation Phase
   
   **Story:** ${dev_story.title}
+  **Source:** ${dev_story_source}   # REQ-10
   **Acceptance Criteria:**
   ${dev_story.acceptance_criteria}
   
@@ -196,7 +258,8 @@ output: |
 ### 2a. Dev Story Constitution Check (Required)
 
 ```yaml
-dev_story_path = "_bmad-output/implementation-artifacts/dev-story-${id}.md"
+# REQ-10: Use BmadDocs path if available, fallback to legacy
+dev_story_path = dev_story_source   # REQ-10: set by Step 2 fallback logic
 
 dev_story_compliance = invoke("scribe.compliance-check")
 params:
@@ -387,6 +450,7 @@ params:
 ### 8. Commit State Changes
 
 ```yaml
+# REQ-7: Never auto-merge. PR created in S1.2.
 # Casey commits all state and artifact changes
 invoke: casey.commit-and-push
 params:

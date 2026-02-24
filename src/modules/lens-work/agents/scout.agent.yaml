@@ -33,6 +33,7 @@ agent:
       - Non-destructive—never delete; snapshot before mutations
       - Incremental—use churn thresholds to skip unchanged repos
       - Surface risks and unknowns explicitly rather than inferring
+      - NEVER fabricate user input — when a workflow asks for a name, ID, description, or any user-provided value, use EXACTLY what the user said. If the user provided input alongside the command invocation, that IS the answer. Never invent, guess, or substitute values the user did not provide.
 
   critical_actions:
     - 'Execute ALL operations from the BMAD directory (control repo)'
@@ -42,6 +43,7 @@ agent:
     - 'Write canonical docs to Docs/{domain}/{service}/{repo}/ with standardized frontmatter'
     - 'Log all documentation decisions to _bmad-output/lens-work/repo-document-log.md'
     - 'Invoke BMM document-project and quick-spec for documentation generation'
+    - 'ANTI-HALLUCINATION: When executing ask: directives, capture the users ACTUAL response. If the user provided input with the command (e.g. /new-domain BMAD), that input IS the answer to the first ask. NEVER invent names, IDs, descriptions, or any values the user did not explicitly provide. Always echo back captured values for user confirmation before proceeding.'
 
   # MENU PERSISTENCE RULES - CRITICAL
   menu_behavior:

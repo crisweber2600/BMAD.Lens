@@ -23,6 +23,29 @@ service: string | null      # Service context (required for microservice layer)
 
 ---
 
+<critical>
+ANTI-HALLUCINATION GATE: If the user provided input alongside the command invocation
+(e.g., "/new-domain BMAD" or "/new-service Auth" or "/new-feature Rate Limiting"),
+that input IS the initiative/domain/service/feature name. Do NOT invent, substitute,
+or ignore user-provided values. Every field below that uses `ask:` MUST capture the
+user's ACTUAL response — never fabricate values.
+
+Command-arg parsing:
+```yaml
+user_args = parse_command_args()
+if user_args:
+  initiative_name = user_args     # User already provided the name
+  # For /new-domain: domain = user_args
+  # For /new-service: service = user_args
+  # For /new-feature: initiative_name = user_args
+else:
+  # Ask the user — but NEVER invent a value
+  ask: initiative_name
+```
+</critical>
+
+---
+
 ## Execution Sequence
 
 ### 0. Verify Git State (Pre-flight Check)
@@ -184,6 +207,31 @@ else:
 ```
 ${endif}
 
+### 0c. Load User Profile Preferences  # REQ-2, REQ-3
+
+```yaml
+# Load user profile to source default preferences.
+# Profile preferences act as defaults — can be overridden per-initiative.
+profile_path = "{project-root}/_bmad-output/lens-work/personal/profile.yaml"
+
+if exists(profile_path):
+  profile = load(profile_path)
+  profile_question_mode = profile.preferences.question_mode || "interactive"   # REQ-2
+  profile_tracker       = profile.preferences.tracker       || "none"          # REQ-3
+else:
+  profile_question_mode = "interactive"   # REQ-2 default
+  profile_tracker       = "none"          # REQ-3 default
+
+# For domain / microservice layers, profile values become the defaults
+# (override happens in Step 1a). For service / feature layers, parent
+# inheritance from Steps 0a/0b takes precedence.
+if layer != "service" && layer != "feature":
+  question_mode = profile_question_mode   # REQ-2
+
+# Store tracker value for downstream use (S2.3 Jira ticket prompt)  # REQ-3
+tracker = profile_tracker
+```
+
 ### 1. Gather Initiative Details
 
 ${if layer == "service"}
@@ -243,7 +291,7 @@ ${endif}
 ```
 ${endif}
 
-### 1a. Choose Question Mode
+### 1a. Choose Question Mode  # REQ-2
 
 ${if layer != "service" && layer != "feature"}
 ```
@@ -252,11 +300,16 @@ How would you like to answer phase questions?
 **[1] Interactive (chat)** — Current guided flow
 **[2] Batch MD** — Single file per phase, filled in one shot
 
-Select mode: [1] or [2]
+Default from profile: ${question_mode}   (press Enter to keep)
+Select mode: [1] or [2] (default: ${question_mode == "batch" ? "2" : "1"})
 ```
 
 ```yaml
-question_mode = selection == "2" ? "batch" : "interactive"
+# question_mode was pre-loaded from profile in Step 0c (REQ-2)
+# User may override; if they press Enter the profile default is kept.
+if selection != "":
+  question_mode = selection == "2" ? "batch" : "interactive"
+# else: question_mode retains the profile-sourced default from Step 0c
 ```
 ${else}
 ```yaml
@@ -265,9 +318,72 @@ ${else}
 ```
 ${endif}
 
+### 1.5 Confirmation Gate
+
+```yaml
+# ANTI-HALLUCINATION: Echo back ALL captured values for user confirmation
+# before ANY branch creation or state mutation.
+
+${if layer == "domain"}
+output: |
+  📋 Confirm initiative details:
+  
+  Type: Domain
+  Domain name: ${domain || initiative_name}
+  Question mode: ${question_mode}
+  
+  Proceed? [Y/n/edit]
+${elif layer == "service"}
+output: |
+  📋 Confirm initiative details:
+  
+  Type: Service
+  Parent domain: ${domain} (${domain_prefix})
+  Service name: ${service}
+  Target repos: ${target_repos}
+  
+  Proceed? [Y/n/edit]
+${elif layer == "feature"}
+output: |
+  📋 Confirm initiative details:
+  
+  Type: Feature
+  Parent: ${parent_layer == "service" ? service + " (" + domain + ")" : domain}
+  Feature name: ${initiative_name}
+  Target repos: ${target_repos}
+  
+  Proceed? [Y/n/edit]
+${else}
+output: |
+  📋 Confirm initiative details:
+  
+  Name: ${initiative_name}
+  Layer: ${layer}
+  Question mode: ${question_mode}
+  
+  Proceed? [Y/n/edit]
+${endif}
+
+if response == "n":
+  exit: "Initiative creation cancelled by user."
+elif response == "edit":
+  # Return to Step 1 to re-gather details
+  goto: step_1
+```
+
 ### 2. Generate Initiative ID
 
 ```bash
+# REQ-1, REQ-3: Jira ticket prompt for feature-layer when tracker=jira
+jira_ticket=""
+if [ "${layer}" == "feature" ] && [ "${tracker}" == "jira" ]; then
+  # REQ-3: Prompt for optional Jira ticket ID
+  ask: "Jira ticket (optional, e.g., BMAD-123):"
+  if [ -n "${answer}" ]; then
+    jira_ticket="${answer}"  # REQ-3: Store raw Jira ticket ID
+  fi
+fi
+
 if [ "${layer}" == "domain" ]; then
   # Domain-layer: use domain_prefix as the initiative ID (no random suffix).
   # The domain name IS the identity — no separate initiative config file needed.
@@ -277,12 +393,80 @@ elif [ "${layer}" == "service" ]; then
   # The service name IS the identity — Service.yaml replaces separate initiative config.
   service_prefix=$(echo "${service}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//')
   initiative_id="${domain_prefix}/${service_prefix}"  # initiative_id uses / for file paths; branch name uses -
-  initiative_name="${initiative_name:-${service}}"else
-  # Feature/microservice layers: generate random suffix
+  initiative_name="${initiative_name:-${service}}"
+elif [ "${layer}" == "feature" ]; then
+  # REQ-1: Feature ID = sanitized name only (no random suffix)
+  sanitized_name=$(echo "${initiative_name}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//')
+  # REQ-1, REQ-3: Prepend Jira ticket ID if provided
+  if [ -n "${jira_ticket}" ]; then
+    initiative_id="${jira_ticket}-${sanitized_name}"  # e.g., BMAD-123-onboarding-enhancements
+  else
+    initiative_id="${sanitized_name}"
+  fi
+else
+  # Microservice layers: generate random suffix
   # Format: {sanitized_name}-{random_6char}
   # Example: rate-limit-x7k2m9
   initiative_id=$(echo "${initiative_name}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | cut -c1-20)-$(openssl rand -hex 3)
 fi
+```
+
+### 2a. Duplicate Initiative Detection
+
+```yaml
+# REQ-1: Duplicate initiative detection
+# Check if an initiative with this ID already exists before creating anything.
+# Applies to ALL layers (domain, service, feature, microservice).
+
+initiatives_root = "{project-root}/_bmad-output/lens-work/initiatives"
+
+if layer == "domain":
+  # REQ-1: Domain — check nested path: initiatives/{domain_prefix}/Domain.yaml
+  initiative_path = "${initiatives_root}/${domain_prefix}/Domain.yaml"
+elif layer == "service":
+  # REQ-1: Service — check nested path: initiatives/{domain_prefix}/{service_prefix}/Service.yaml
+  initiative_path = "${initiatives_root}/${domain_prefix}/${service_prefix}/Service.yaml"
+elif layer == "feature":
+  # REQ-1: Feature — check flat path: initiatives/{initiative_id}.yaml
+  initiative_path = "${initiatives_root}/${initiative_id}.yaml"
+else:
+  # REQ-1: Microservice/other — check flat path: initiatives/{initiative_id}.yaml
+  initiative_path = "${initiatives_root}/${initiative_id}.yaml"
+
+if file_exists(initiative_path):
+  error: |
+    ❌ Initiative already exists: ${initiative_id}
+    ├── Config: ${initiative_path}
+    └── Choose a different name or archive the existing initiative
+
+  ask: "Enter a different name (or 'cancel' to abort):"
+  if answer == "cancel":
+    exit: 0
+  else:
+    # Re-sanitize the new name and re-check
+    name = answer
+    if layer == "domain":
+      domain = name
+      domain_prefix = normalize_domain_prefix(name)
+      initiative_id = domain_prefix
+      initiative_path = "${initiatives_root}/${domain_prefix}/Domain.yaml"
+    elif layer == "service":
+      service = name
+      service_prefix = $(echo "${name}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//')
+      initiative_id = "${domain_prefix}/${service_prefix}"
+      initiative_path = "${initiatives_root}/${domain_prefix}/${service_prefix}/Service.yaml"
+    elif layer == "feature":
+      initiative_name = name
+      initiative_id = $(echo "${name}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//')
+      initiative_path = "${initiatives_root}/${initiative_id}.yaml"
+    else:
+      initiative_name = name
+      initiative_id = $(echo "${name}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | cut -c1-20)-$(openssl rand -hex 3)
+      initiative_path = "${initiatives_root}/${initiative_id}.yaml"
+
+    if file_exists(initiative_path):
+      error: "Still a duplicate: ${initiative_id}. Please archive the existing initiative first."
+      exit: 1
 ```
 
 ### 3. Resolve Target Repos
@@ -386,8 +570,19 @@ if layer == "service":
   docs_repo = ""
   docs_feature = ""
 
-docs_segments = [docs_domain, docs_service, docs_repo, docs_feature].filter(seg => seg != "")
+# REQ-11: Type-discriminator directories for self-describing path hierarchy
+segments = [docs_domain, docs_service]
+if docs_repo != "":
+  segments.push("repo")
+  segments.push(docs_repo)
+if docs_feature != "":
+  segments.push("feature")
+  segments.push(docs_feature)
+docs_segments = segments.filter(seg => seg != "")
 docs_path = "docs/" + docs_segments.join("/")
+
+# REQ-10: Compute BmadDocs path for co-located per-initiative output
+bmad_docs = docs_path + "/BmadDocs"   # REQ-10
 ```
 
 ### 4b. Resolve Service Prefix (Service-Layer)
@@ -500,6 +695,7 @@ domain_prefix: ${domain_prefix}
 service: ${service}
 service_prefix: ${service_prefix}
 question_mode: ${question_mode}
+jira_ticket: ${jira_ticket || ""}          # REQ-1, REQ-3: Jira ticket ID (feature-layer, tracker=jira)
 created_at: "${ISO_TIMESTAMP}"
 created_by: ${git_user}
 target_repos:
@@ -513,6 +709,7 @@ docs:
   repo: "${docs_repo}"
   feature: "${docs_feature}"
   path: "${docs_path}"
+  bmad_docs: "${bmad_docs}"   # REQ-10: BmadDocs co-located output path
 review_audience_map:           # Phase → review audience size
   p1: small
   p2: medium
@@ -660,6 +857,23 @@ blocks: []
 
 ${endif}
 
+### 6b. Create BmadDocs Directory & Copy Initiative Config  # REQ-10
+
+${if layer != "domain" && layer != "service"}
+```bash
+# REQ-10: Create BmadDocs directory for co-located per-initiative output
+mkdir -p "${bmad_docs}"
+
+# REQ-10: Copy canonical initiative config to BmadDocs for co-location
+cp "_bmad-output/lens-work/initiatives/${initiative_id}.yaml" "${bmad_docs}/initiative.yaml"
+```
+
+> **Note:** BmadDocs co-locates per-initiative output (dev stories, sprint backlog,
+> initiative config copy) with the initiative's planning docs. The canonical
+> initiative config remains at `_bmad-output/lens-work/initiatives/` for backward
+> compatibility; the BmadDocs copy is a convenience snapshot.
+${endif}
+
 ### 7. Write Personal State (Git-Ignored)
 
 Write to `{project-root}/_bmad-output/lens-work/state.yaml`:
@@ -776,6 +990,7 @@ git checkout "${featureBranchRoot}"
 # Stage initiative config and event log (NOT state.yaml — it's git-ignored)
 git add "_bmad-output/lens-work/initiatives/${initiative_id}.yaml"
 git add "_bmad-output/lens-work/event-log.jsonl"
+git add "${bmad_docs}/"   # REQ-10: BmadDocs initiative config copy
 
 # Create targeted commit
 git commit -m "init(${initiative_id}): Create ${layer} initiative '${initiative_name}'

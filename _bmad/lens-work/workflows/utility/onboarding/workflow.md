@@ -2,7 +2,7 @@
 name: onboarding
 description: Create profile + run bootstrap
 agent: scout
-trigger: "@scout onboard" or "@lens-work onboard"
+trigger: '@scout onboard or @lens-work onboard'
 category: utility
 first_run: true
 ---

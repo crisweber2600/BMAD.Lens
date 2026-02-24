@@ -38,9 +38,19 @@ if user_role != "Scrum Master":
 
 ## Execution Sequence
 
-### 0. Git Discipline — Verify Clean State
+### 0. Pre-Flight [REQ-9]
 
 ```yaml
+# PRE-FLIGHT (mandatory, never skip) [REQ-9]
+# 1. Verify working directory is clean
+# 2. Load two-file state (state.yaml + initiative config)
+# 3. Check previous phase status (if applicable)
+# 4. Confirm current branch
+# 5. Pull latest
+# 6. Confirm to user: "Now on branch: {branch_name}"
+# GATE: All steps must pass before proceeding to gate checks
+# NOTE: /review is a gate phase — no new branch creation
+
 # Verify working directory is clean
 invoke: casey.verify-clean-state
 
@@ -67,10 +77,58 @@ if docs_path == null or docs_path == "":
 output_path = "${docs_path}/reviews/"
 ensure_directory("${docs_path}/reviews/")
 
+# REQ-10: Resolve BmadDocs path for per-initiative output co-location
+bmad_docs = initiative.docs.bmad_docs   # REQ-10
+if bmad_docs != null and bmad_docs != "":
+  ensure_directory("${bmad_docs}")   # REQ-10: Auto-create BmadDocs if missing
+
+# REQ-7/REQ-9: Validate previous phase PR merged [S1.5]
+prev_phase = "p3"
+prev_phase_audience = initiative.review_audience_map.p3
+prev_phase_branch = "${initiative.featureBranchRoot}-${prev_phase_audience}-p3"
+prev_audience_branch = initiative.branches.audiences[prev_phase_audience]
+
+if initiative.phases[prev_phase] exists:
+  if initiative.phases[prev_phase].status == "pr_pending":
+    # Check if the audience branch contains the phase commits (merged via PR)
+    result = casey.exec("git merge-base --is-ancestor origin/${prev_phase_branch} origin/${prev_audience_branch}")
+    
+    if result.exit_code == 0:
+      # PR was merged! Auto-update status
+      invoke: tracey.update-initiative
+      params:
+        initiative_id: ${initiative.id}
+        updates:
+          phases:
+            p3:
+              status: "complete"
+              completed_at: "${ISO_TIMESTAMP}"
+      output: "✅ Previous phase (p3 plan) PR merged — status updated to complete"
+    else:
+      # PR not merged yet — warn but allow proceeding
+      pr_url = initiative.phases[prev_phase].pr_url || "(no PR URL recorded)"
+      output: |
+        ⚠️  Previous phase (p3 plan) PR not yet merged
+        ├── Status: pr_pending
+        ├── PR: ${pr_url}
+        └── You may continue, but phase artifacts may not be on the audience branch
+      
+      ask: "Continue anyway? [Y]es / [N]o"
+      if no:
+        exit: 0  # User chose to wait for merge
+
 # Validate we're on the correct branch
 # /review operates on the current phase branch (typically small-3 or base)
 current_branch = casey.get-current-branch()
 invoke: casey.pull-latest
+
+# Confirm to user [REQ-9]
+output: |
+  📋 Pre-flight complete [REQ-9]
+  ├── Initiative: ${initiative.name} (${initiative.id})
+  ├── Phase: Implementation Gate (review)
+  ├── Branch: ${current_branch}
+  └── Working directory: clean ✅
 ```
 
 ### 1. Validate Prerequisites & Gate Check
@@ -216,12 +274,14 @@ if compliance_failures.length > 0:
 invoke: bmm.sprint-planning
 params:
   stories: "${docs_path}/stories.md"
+  output_path: "${bmad_docs}"   # REQ-10: Sprint backlog to BmadDocs
   constitutional_context: ${constitutional_context}
   
 output: |
   📋 Sprint Planning
   ├── Stories prioritized
   ├── Capacity allocated
+  ├── Sprint backlog: ${bmad_docs}/sprint-backlog.md   # REQ-10
   └── Sprint backlog created
 ```
 
@@ -231,12 +291,13 @@ output: |
 invoke: bmm.create-dev-story
 params:
   story_id: "${selected_story}"
-  output_path: "_bmad-output/implementation-artifacts/"
+  output_path: "${bmad_docs}"   # REQ-10: Dev stories to BmadDocs
   constitutional_context: ${constitutional_context}
   
 output: |
-  📝 Dev Story Created
+  📝 Dev Story Created   # REQ-10
   ├── Story: ${story_id}
+  ├── Location: ${bmad_docs}/dev-story-${story_id}.md   # REQ-10
   ├── Acceptance Criteria: ✅
   ├── Technical Notes: ✅
   └── Ready for developer pickup
@@ -318,6 +379,7 @@ params:
 ### 9. Commit State Changes
 
 ```yaml
+# REQ-7: Never auto-merge. PR created in S1.2.
 # Casey commits all state and artifact changes
 invoke: casey.commit-and-push
 params:
@@ -325,7 +387,7 @@ params:
     - "_bmad-output/lens-work/state.yaml"
     - "_bmad-output/lens-work/initiatives/${initiative.id}.yaml"
     - "_bmad-output/lens-work/event-log.jsonl"
-    - "_bmad-output/implementation-artifacts/"
+    - "${bmad_docs}/"   # REQ-10: BmadDocs (dev stories, sprint backlog)
     - "${docs_path}/"
   message: "[lens-work] /review: Implementation Gate ${gate_status} — ${initiative.id}"
   branch: ${current_branch}
@@ -357,8 +419,8 @@ Hand off to developer? [Y]es / [N]o
 
 | Artifact | Location |
 |----------|----------|
-| Dev Story | `_bmad-output/implementation-artifacts/dev-story-${id}.md` |
-| Sprint Backlog | `${docs_path}/sprint-backlog.md` |
+| Dev Story | `${initiative.docs.bmad_docs}/dev-story-${id}.md` |   <!-- REQ-10 -->
+| Sprint Backlog | `${initiative.docs.bmad_docs}/sprint-backlog.md` |   <!-- REQ-10 -->
 | Initiative State | `_bmad-output/lens-work/initiatives/${id}.yaml` |
 | Event Log | `_bmad-output/lens-work/event-log.jsonl` |
 

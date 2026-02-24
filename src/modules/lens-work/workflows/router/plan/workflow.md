@@ -31,9 +31,19 @@ phase_name: Solutioning
 
 ## Execution Sequence
 
-### 0. Git Discipline — Verify Clean State
+### 0. Pre-Flight [REQ-9]
 
 ```yaml
+# PRE-FLIGHT (mandatory, never skip) [REQ-9]
+# 1. Verify working directory is clean
+# 2. Load two-file state (state.yaml + initiative config)
+# 3. Check previous phase status (if applicable)
+# 4. Determine correct phase branch: {featureBranchRoot}-{audience}-p{N}
+# 5. Create phase branch if it doesn't exist
+# 6. Checkout phase branch
+# 7. Confirm to user: "Now on branch: {branch_name}"
+# GATE: All steps must pass before proceeding to artifact work
+
 # Verify working directory is clean
 invoke: casey.verify-clean-state
 
@@ -41,9 +51,14 @@ invoke: casey.verify-clean-state
 state = load("_bmad-output/lens-work/state.yaml")
 initiative = load("_bmad-output/lens-work/initiatives/${state.active_initiative}.yaml")
 
-# Read size from initiative config (shared, canonical)
+# Read initiative config
 size = initiative.size
 domain_prefix = initiative.domain_prefix
+
+# Derive audience for P3 from review_audience_map [REQ-9]
+audience = initiative.review_audience_map.p3
+featureBranchRoot = initiative.featureBranchRoot
+audience_branch = initiative.branches.audiences[audience]
 
 # === Path Resolver (S01-S06: Context Enhancement) ===
 docs_path = initiative.docs.path    # e.g., "docs/BMAD/LENS/BMAD.Lens/context-enhancement-9bfe4e"
@@ -75,18 +90,70 @@ if repo_docs_path != null:
 else:
   repo_context = null
 
-# Validate we're on the correct branch (or can switch)
-# Branch pattern: {featureBranchRoot}-{audience}-p{N}
-expected_branch: "${initiative.featureBranchRoot}-${audience}-p3"
-current_branch = casey.get-current-branch()
+# REQ-7/REQ-9: Validate previous phase PR merged [S1.5]
+prev_phase = "p2"
+prev_phase_audience = initiative.review_audience_map.p2
+prev_phase_branch = "${initiative.featureBranchRoot}-${prev_phase_audience}-p2"
+prev_audience_branch = initiative.branches.audiences[prev_phase_audience]
 
-if current_branch != expected_branch:
-  if branch_exists(expected_branch):
-    invoke: casey.checkout-branch
-    params:
-      branch: ${expected_branch}
-    invoke: casey.pull-latest
-  # else: branch will be created in Step 2
+if initiative.phases[prev_phase] exists:
+  if initiative.phases[prev_phase].status == "pr_pending":
+    # Check if the audience branch contains the phase commits (merged via PR)
+    result = casey.exec("git merge-base --is-ancestor origin/${prev_phase_branch} origin/${prev_audience_branch}")
+    
+    if result.exit_code == 0:
+      # PR was merged! Auto-update status
+      invoke: tracey.update-initiative
+      params:
+        initiative_id: ${initiative.id}
+        updates:
+          phases:
+            p2:
+              status: "complete"
+              completed_at: "${ISO_TIMESTAMP}"
+      output: "✅ Previous phase (p2 spec) PR merged — status updated to complete"
+    else:
+      # PR not merged yet — warn but allow proceeding
+      pr_url = initiative.phases[prev_phase].pr_url || "(no PR URL recorded)"
+      output: |
+        ⚠️  Previous phase (p2 spec) PR not yet merged
+        ├── Status: pr_pending
+        ├── PR: ${pr_url}
+        └── You may continue, but phase artifacts may not be on the audience branch
+      
+      ask: "Continue anyway? [Y]es / [N]o"
+      if no:
+        exit: 0  # User chose to wait for merge
+
+# Determine phase branch [REQ-9]
+phase_branch = "${initiative.featureBranchRoot}-${audience}-p3"
+
+# Step 5: Create phase branch if it doesn't exist [REQ-9]
+if not branch_exists(phase_branch):
+  invoke: casey.start-phase
+  params:
+    phase_number: 3
+    phase_name: "Solutioning"
+    initiative_id: ${initiative.id}
+    audience: ${audience}
+    featureBranchRoot: ${initiative.featureBranchRoot}
+    parent_branch: ${audience_branch}
+  if start_phase.exit_code != 0:
+    FAIL("❌ Pre-flight failed: Could not create branch ${phase_branch}")
+
+# Step 6: Checkout phase branch
+invoke: casey.checkout-branch
+params:
+  branch: ${phase_branch}
+invoke: casey.pull-latest
+
+# Step 7: Confirm to user
+output: |
+  📋 Pre-flight complete [REQ-9]
+  ├── Initiative: ${initiative.name} (${initiative.id})
+  ├── Phase: P3 Solutioning
+  ├── Branch: ${phase_branch}
+  └── Working directory: clean ✅
 ```
 
 ### 1. Validate Prerequisites & Gate Check
@@ -139,28 +206,12 @@ params:
 # Warnings are surfaced to user but do not block workflow progression
 ```
 
-### 2. Start Phase 3 — Auto-Branch Creation
+### 2. Branch Verification (consolidated into Pre-Flight)
 
 ```yaml
-# Casey creates P3 branch if it doesn't exist
-# Branch pattern: {featureBranchRoot}-{audience}-p{N}
-if not branch_exists("${initiative.featureBranchRoot}-${audience}-p3"):
-  invoke: casey.start-phase
-  params:
-    phase_number: 3
-    phase_name: "Solutioning"
-    initiative_id: ${initiative.id}
-    audience: ${audience}
-    featureBranchRoot: ${initiative.featureBranchRoot}
-  # Casey creates: ${featureBranchRoot}-${audience}-p3 and pushes to remote
-
-  invoke: casey.pull-latest
-else:
-  # Branch exists, ensure we're on it
-  invoke: casey.checkout-branch
-  params:
-    branch: "${initiative.featureBranchRoot}-${audience}-p3"
-  invoke: casey.pull-latest
+# Branch creation and checkout handled in Step 0 Pre-Flight [REQ-9]
+# Phase branch ${phase_branch} is already checked out at this point.
+assert: current_branch == phase_branch
 ```
 
 ### 2a. Constitutional Context Injection (Required)
@@ -281,17 +332,54 @@ params:
 invoke: casey.finish-workflow
 ```
 
-### 4. Phase Completion
+### 4. Phase Completion — Push Only
 
 ```yaml
+# REQ-7: Never auto-merge. PR created in S1.2.
 if all_workflows_complete("p3"):
-  invoke: casey.finish-phase
-  invoke: casey.open-final-pbr  # PR: large → base
-  
+  invoke: casey.commit-and-push
+  params:
+    branch: ${phase_branch}
+    message: "[${initiative.id}] P3 Solutioning complete"
+  # Phase branch remains alive — PR handles merge to audience branch
+
+  # REQ-8: Create PR for phase merge
+  invoke: casey.create-pr
+  params:
+    head: ${phase_branch}
+    base: ${audience_branch}
+    title: "[P3] Solutioning: ${initiative.name}"
+    body: "Phase 3 (Solutioning) complete for ${initiative.id}.\n\nArtifacts: epics.md, stories.md, readiness-checklist.md"
+  capture: pr_result  # { url, number } or fallback message
+
+  # REQ-7/REQ-8: Phase enters pr_pending after PR creation
+  invoke: tracey.update-initiative
+  params:
+    initiative_id: ${initiative.id}
+    updates:
+      phases:
+        p3:
+          status: "pr_pending"
+          pr_url: "${pr_result.url}"
+          pr_number: ${pr_result.number}
+  # If manual fallback (no PAT), still set pr_pending with null PR info
+  if pr_result.fallback:
+    invoke: tracey.update-initiative
+    params:
+      initiative_id: ${initiative.id}
+      updates:
+        phases:
+          p3:
+            status: "pr_pending"
+            pr_url: null
+            pr_number: null
+
   output: |
     ✅ /plan complete
     ├── Phase 3 (Solutioning) finished
-    ├── Final PBR PR opened (large → base)
+    ├── Branch pushed: ${phase_branch}
+    ├── PR: ${pr_result}
+    ├── Status: pr_pending (awaiting merge)
     ├── Stories ready for sprint planning
     └── Next: Run /review for implementation gate
 ```
@@ -324,6 +412,7 @@ params:
   updates:
     current_phase: "p3"
     current_phase_name: "Solutioning"
+    workflow_status: "pr_pending"
     active_branch: "${initiative.featureBranchRoot}-${audience}-p3"
 ```
 
@@ -383,13 +472,12 @@ params:
 ## Post-Conditions
 
 - [ ] Working directory clean (all changes committed)
-- [ ] On correct branch: `{featureBranchRoot}-{audience}-p3`
+- [ ] On phase branch: `{featureBranchRoot}-{audience}-p3` (REQ-7: no auto-merge)
 - [ ] state.yaml updated with phase p3
 - [ ] initiatives/{id}.yaml updated with p3 status and p2 gate passed
 - [ ] event-log.jsonl entry appended
 - [ ] Planning artifacts written to `${docs_path}/` (epics, stories, readiness-checklist)
 - [ ] Epic adversarial review executed and passed
 - [ ] Epic party-mode review executed and report generated
-- [ ] Final PBR PR opened (large → base)
 - [ ] All changes pushed to origin
 
