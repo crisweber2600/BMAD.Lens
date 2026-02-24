@@ -1,0 +1,57 @@
+# State Template for lens-work (v2 — Lifecycle Contract)
+# =============================================================================
+# Schema for _bmad-output/lens-work/state.yaml
+# This is the personal runtime state file (git-ignored).
+# =============================================================================
+
+# --- Lifecycle Version ---
+lifecycle_version: 2              # Determines phase naming convention
+
+lens_contract_version: "2.0"
+
+# --- Active Context ---
+active_initiative: null           # Initiative ID currently active
+current_phase: null               # v2: preplan|businessplan|techplan|devproposal|sprintplan
+active_track: null                # v2: full|feature|tech-change|hotfix|spike
+workflow_status: idle             # Current workflow: idle|running|error
+
+# --- Phase Status (v2: named phases, dual-written to initiative config) ---
+phase_status:
+  preplan: null                   # null|passed|blocked
+  businessplan: null
+  techplan: null
+  devproposal: null
+  sprintplan: null
+
+# --- Audience Promotion Status (v2) ---
+audience_status:
+  small_to_medium: null           # null|passed|blocked (adversarial review gate)
+  medium_to_large: null           # null|passed|blocked (stakeholder approval gate)
+  large_to_base: null             # null|passed|blocked (constitution gate)
+
+# --- Checklist tracking (managed by checklist-update background workflow) ---
+checklist:
+  current_gate: null              # Which gate checklist is active
+  items: []                       # Array of {item, status, required, detected_at}
+  gate_ready: false
+  gate_ready_pct: 0
+
+# --- Background error accumulator (cleared by /fix or /sync) ---
+background_errors: []
+# Each entry: {ts: ISO8601, error: string, context: string, missing: []}
+
+# --- Timestamps ---
+created_at: null
+last_activity: null
+
+# --- User context ---
+user:
+  name: null                      # From git config user.name
+  email: null                     # From git config user.email
+
+# --- Personal profile reference ---
+personal_profile: "_bmad-output/personal/profile.yaml"
+
+# =============================================================================
+# End of state template (v2.0.0 — Lifecycle Contract)
+# =============================================================================

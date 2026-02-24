@@ -2,19 +2,19 @@
 
 ## Overview
 
-lens-work's branch topology maps naturally to CI/CD pipelines. Each branch level (workflow, phase, lane) represents a different validation scope, enabling progressively stricter checks as work flows toward the base branch.
+lens-work's branch topology maps naturally to CI/CD pipelines. Each branch level (workflow, phase, size) represents a different validation scope, enabling progressively stricter checks as work flows toward the base branch.
 
-> **IMPORTANT:** Replace `{Domain}` in all branch patterns with your actual domain prefix (e.g., `lens`, `payment`, `auth`). For example, `{Domain}/*/small-*-*` becomes `lens/*/small-*-*` or `payment/*/small-*-*`. See [lane-topology.md](lane-topology.md) for branch naming conventions.
+> **IMPORTANT:** Branch patterns use flat, hyphen-separated naming (no `/` separators). For example, `*-small-p*-*` matches workflow branches like `chat-spark-xyz-small-p1-brainstorm`. See [size-topology.md](size-topology.md) for branch naming conventions.
 
 ## Branch-Level CI Strategy
 
 | Branch Level | CI Scope | Trigger |
 |---|---|---|
-| `{Domain}/*/small-*-*` | Fast checks: lint, unit tests, format | Push |
-| `{Domain}/*/small-*` | Full validation: integration tests, artifact checks | PR merge from workflow |
-| `{Domain}/*/small` | Lane validation: cross-phase consistency | PR merge from phase |
-| `{Domain}/*/large` | Large review: full regression, security scan | PR merge from small |
-| `{Domain}/*/base` | Release candidate: E2E, deploy preview | PR merge from large |
+| `*-small-p*-*` | Fast checks: lint, unit tests, format | Push |
+| `*-small-p*` | Full validation: integration tests, artifact checks | PR merge from workflow |
+| `*-small` | Audience validation: cross-phase consistency | PR merge from phase |
+| `*-large` | Large review: full regression, security scan | PR merge from small |
+| `{featureBranchRoot}` | Release candidate: E2E, deploy preview | PR merge from large |
 
 ## GitHub Actions Example
 
@@ -25,12 +25,12 @@ name: lens-work CI
 on:
   push:
     branches:
-      - '{Domain}/*/small-*-*'
+      - '*-small-p*-*'
   pull_request:
     branches:
-      - '{Domain}/*/small-*'
-      - '{Domain}/*/small'
-      - '{Domain}/*/large'
+      - '*-small-p*'
+      - '*-small'
+      - '*-large'
 
 jobs:
   fast-checks:
@@ -67,9 +67,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate Planning Artifacts
         run: |
-          # Extract phase number from branch name: {Domain}/{id}/small-{N}
-          # Example: payment/rate-limit-x7k2m9/small-2 → phase=2
-          PHASE_NUM=$(echo "${{ github.base_ref }}" | sed -E 's|.*/small-([0-9]+)$|\1|')
+          # Extract phase number from branch name: {featureBranchRoot}-small-p{N}
+          # Example: chat-spark-xyz-small-p2 → phase=p2
+          PHASE_NUM=$(echo "${{ github.base_ref }}" | grep -oP 'p[0-9]+$')
           PHASE="p${PHASE_NUM}"
           ./.github/scripts/validate-artifacts.sh "$PHASE"
 
@@ -144,14 +144,14 @@ CI can automatically update lens-work gates when workflows complete:
 trigger:
   branches:
     include:
-      - '{Domain}/*/small-*-*'
+      - '*-small-p*-*'
 
 pr:
   branches:
     include:
-      - '{Domain}/*/small-*'
-      - '{Domain}/*/small'
-      - '{Domain}/*/large'
+      - '*-small-p*'
+      - '*-small'
+      - '*-large'
 
 stages:
   - stage: Validate

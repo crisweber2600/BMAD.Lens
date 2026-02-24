@@ -1,20 +1,25 @@
 ```prompt
 ---
-description: Complete Solutioning phase with Epics, Stories, and Readiness checklists
+description: Launch DevProposal phase with Epics, Stories, and Readiness checklists
 ---
 
-Activate Compass agent and execute /plan:
+Activate Compass agent and execute /devproposal:
 
 1. Load agent: `_bmad/lens-work/agents/compass.agent.yaml`
-2. Execute `/plan` command to complete Solutioning phase
+2. Execute `/devproposal` command to launch DevProposal phase
 3. Offer workflow options: Epics → Stories → Readiness Checklist
 
 Use `#think` before story breakdown or acceptance criteria definition.
 
+**Phase:** devproposal (audience: medium, agent: John/PM)
+
 **Prerequisites:**
-- `/spec` phase complete (Phase 2 merged)
-- Architecture approved by large review
+- Small → Medium audience promotion complete (adversarial review gate passed)
+- `/techplan` complete (all small-audience phases merged)
+- Architecture approved
 
 **Authorized Roles:** PO, Architect, Tech Lead
+
+**Next:** Run `/promote` (medium → large), then `/sprintplan`
 
 ```

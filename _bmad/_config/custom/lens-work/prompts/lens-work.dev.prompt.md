@@ -12,11 +12,11 @@ Activate Compass agent and execute /dev:
 Use `#think` before implementation decisions or code review findings.
 
 **Prerequisites:**
-- `/review` gate passed
+- `/sprintplan` gate passed (large → base audience promotion complete)
 - Sprint backlog approved
 - Developer assigned to story
 
-**Authorized Roles:** Developer (post-review only)
+**Authorized Roles:** Developer (post-sprintplan only)
 
 **Note:** Implementation happens in TargetProjects, but all /dev commands run from BMAD directory.
 

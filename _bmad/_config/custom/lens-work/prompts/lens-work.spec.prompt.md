@@ -1,20 +1,24 @@
 ```prompt
 ---
-description: Launch Planning phase with PRD, UX, and Architecture specification workflows
+description: Launch BusinessPlan phase with PRD, UX, and Architecture specification workflows
 ---
 
-Activate Compass agent and execute /spec:
+Activate Compass agent and execute /businessplan:
 
 1. Load agent: `_bmad/lens-work/agents/compass.agent.yaml`
-2. Execute `/spec` command to launch Planning phase
+2. Execute `/businessplan` command to launch BusinessPlan phase
 3. Offer workflow options: PRD → UX → Architecture
 
 Use `#think` before making architectural decisions or scope definitions.
 
+**Phase:** businessplan (audience: small, agent: John/PM + Sally/UX)
+
 **Prerequisites:**
-- `/pre-plan` phase complete (Phase 1 merged)
+- `/preplan` phase complete (preplan PR merged into small audience branch)
 - Product brief approved
 
 **Authorized Roles:** PO, Architect, Tech Lead
+
+**Next:** `/techplan` to continue to TechPlan phase
 
 ```

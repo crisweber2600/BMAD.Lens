@@ -43,11 +43,12 @@ created: 2026-02-05
 | # | Test | Expected Result |
 |---|------|-----------------|
 | 1.1.1 | Init initiative creates `state.yaml` | File exists at `_bmad-output/lens-work/state.yaml` |
-| 1.1.2 | Init initiative creates `initiatives/{id}.yaml` | File exists at `_bmad-output/lens-work/initiatives/{id}.yaml` |
-| 1.1.3 | `state.yaml` has `active_initiative` field | YAML key `active_initiative` is present and matches `{id}` |
-| 1.1.4 | `initiatives/{id}.yaml` has required fields | Fields: `id`, `name`, `layer`, `gates`, `blocks` all present |
-| 1.1.5 | `state.yaml` is NOT committed (git-ignored) | `.gitignore` contains `_bmad-output/lens-work/state.yaml` or equivalent pattern |
-| 1.1.6 | `initiatives/{id}.yaml` IS committed | File tracked by git after init-initiative completes |
+| 1.1.2 | Init initiative creates `initiatives/{id}.yaml` (service/feature) | File exists at `_bmad-output/lens-work/initiatives/{id}.yaml` |
+| 1.1.3 | Init initiative creates `initiatives/{domain}/Domain.yaml` (domain-layer) | File exists at `_bmad-output/lens-work/initiatives/{domain_prefix}/Domain.yaml` |
+| 1.1.4 | `state.yaml` has `active_initiative` field | YAML key `active_initiative` is present and matches `{id}` (or `{domain_prefix}` for domain-layer) |
+| 1.1.5 | `initiatives/{id}.yaml` has required fields | Fields: `id`, `name`, `layer`, `gates`, `blocks` all present |
+| 1.1.6 | `state.yaml` is NOT committed (git-ignored) | `.gitignore` contains `_bmad-output/lens-work/state.yaml` or equivalent pattern |
+| 1.1.7 | `initiatives/{id}.yaml` IS committed | File tracked by git after init-initiative completes |
 
 ### 1.2 State Loading
 
@@ -89,9 +90,9 @@ created: 2026-02-05
 
 | # | Test | Expected Result |
 |---|------|-----------------|
-| 2.1.1 | Lists all initiatives from `initiatives/*.yaml` | Menu shows all initiative files with name, ID, layer |
+| 2.1.1 | Lists all initiatives from `initiatives/*.yaml` and `initiatives/*/Domain.yaml` | Menu shows all initiative files with name, ID, layer |
 | 2.1.2 | Updates `state.yaml` `active_initiative` | After switch, `active_initiative` matches selected ID |
-| 2.1.3 | Casey checks out correct branch | `git branch --show-current` matches `{Domain}/{id}/...` pattern |
+| 2.1.3 | Casey checks out correct branch | `git branch --show-current` matches expected flat branch name pattern |
 | 2.1.4 | Handles non-existent initiative gracefully | Error: "Initiative '{id}' not found" with available options listed |
 | 2.1.5 | Switching to already-active initiative is a no-op | Message: "Already on initiative {id}" |
 
@@ -103,25 +104,25 @@ created: 2026-02-05
 
 | # | Test | Expected Result |
 |---|------|-----------------|
-| 2.2.1 | Creates phase branch via Casey if missing | New branch created matching `{Domain}/{id}/{lane}-{N}` |
+| 2.2.1 | Creates phase branch via Casey if missing | New branch created matching `{featureBranchRoot}-{audience}-p{N}` |
 | 2.2.2 | Validates phase ordering (can't skip phases) | Attempting to skip from p1 to p3 shows gate violation error |
 | 2.2.3 | Updates `state.yaml` `current.phase` | Phase field updated to target phase number |
-| 2.2.4 | Branch pattern matches `{Domain}/{id}/{lane}-{N}` | Regex validation passes for created branch name |
+| 2.2.4 | Branch pattern matches `{featureBranchRoot}-{audience}-p{N}` | Regex validation passes for created branch name |
 | 2.2.5 | Cannot switch to phase without passing previous gate | Gate check blocks advancement; shows required artifacts |
 | 2.2.6 | Switching to current phase is a no-op | Message: "Already on phase {N}" |
 
-### 2.3 Switch Lane
+### 2.3 Switch Audience
 
 **Priority:** P1  
-**Category:** Branch / Lane  
+**Category:** Branch / Audience  
 **Automation:** Git-verifiable
 
 | # | Test | Expected Result |
 |---|------|-----------------|
-| 2.3.1 | Creates lane branch if missing | New branch created for lane |
-| 2.3.2 | Updates initiative config `lane` | `initiatives/{id}.yaml` lane updated to target lane |
-| 2.3.3 | Validates lane name against allowed values | Invalid lane names rejected with list of valid options |
-| 2.3.4 | Lane switch preserves phase context | Phase doesn't reset when switching lanes |
+| 2.3.1 | Creates audience branch if missing | New branch created for audience group |
+| 2.3.2 | Updates initiative config review_audience_map | `initiatives/{id}.yaml` review_audience_map reflects correct phase-audience mapping |
+| 2.3.3 | Validates audience name against allowed values | Invalid audience names rejected with list of valid options (small, medium, large) |
+| 2.3.4 | Audience switch preserves phase context | Phase doesn't reset when switching audience groups |
 
 ---
 
@@ -135,15 +136,22 @@ created: 2026-02-05
 
 | # | Test | Expected Result |
 |---|------|-----------------|
-| 3.1.1 | Generates valid initiative ID | Format: `{sanitized-name}-{6-random-chars}`, no spaces/special chars |
-| 3.1.2 | Creates base branch | `{Domain}/{id}/base` branch exists |
-| 3.1.3 | Creates small branch | `{Domain}/{id}/small` branch exists |
-| 3.1.4 | Creates large branch | `{Domain}/{id}/large` branch exists |
-| 3.1.5 | Creates p1 branch | `{Domain}/{id}/{lane}-1` branch exists |
-| 3.1.6 | Writes initiative config with required fields | `initiatives/{id}.yaml` contains: `id`, `name`, `layer`, `target_repos`, `gates`, `blocks` |
-| 3.1.7 | Logs init event to `event-log.jsonl` | Last entry has `event: init-initiative`, matching `initiative_id` |
-| 3.1.8 | Returns control to Compass | After init, Compass menu is displayed |
-| 3.1.9 | Duplicate initiative name generates unique ID | Two inits with same name produce different IDs (random suffix differs) |
+| 3.1.1 | Generates valid initiative ID (feature) | Format: `{sanitized-name}-{6-random-chars}`, no spaces/special chars |
+| 3.1.2 | Creates root branch (feature) | `{featureBranchRoot}` branch exists and pushed |
+| 3.1.3 | Creates small audience branch (feature) | `{featureBranchRoot}-small` branch exists and pushed |
+| 3.1.4 | Creates medium audience branch (feature) | `{featureBranchRoot}-medium` branch exists and pushed |
+| 3.1.5 | Creates large audience branch (feature) | `{featureBranchRoot}-large` branch exists and pushed |
+| 3.1.6 | No phase branches created at init (feature) | No `-small-p1` or other phase branches exist after init |
+| 3.1.7 | Writes initiative config with required fields (feature) | `initiatives/{id}.yaml` contains: `id`, `name`, `layer`, `target_repos`, `featureBranchRoot`, `branches`, `review_audience_map`, `gates`, `blocks` |
+| 3.1.8 | Logs init event to `event-log.jsonl` | Last entry has `event: init-initiative`, matching `initiative_id` |
+| 3.1.9 | Returns control to Compass | After init, Compass menu is displayed |
+| 3.1.10 | Duplicate initiative name generates unique ID (feature) | Two inits with same name produce different IDs (random suffix differs) |
+| 3.1.11 | Domain-layer uses `domain_prefix` as initiative ID | `initiative_id` equals `domain_prefix` (no random suffix) |
+| 3.1.12 | Domain-layer creates only `{domain_prefix}` branch | Only one branch created and pushed — no audience/phase branches |
+| 3.1.13 | Domain-layer creates Domain.yaml | `initiatives/{domain_prefix}/Domain.yaml` exists with initiative config fields |
+| 3.1.14 | Domain-layer scaffolds domain folders | `initiatives/{domain_prefix}/.gitkeep`, `TargetProjects/{domain_prefix}/.gitkeep`, `Docs/{domain_prefix}/.gitkeep` all exist |
+| 3.1.15 | Service-layer creates `{domain_prefix}-{service_prefix}` branch | Single branch with hyphen separator, pushed immediately |
+| 3.1.16 | All branches pushed immediately after creation | `git branch -r` shows all created branches on remote |
 
 ### 3.2 Layer-Specific Init
 
@@ -153,13 +161,15 @@ created: 2026-02-05
 
 | # | Test | Expected Result |
 |---|------|-----------------|
-| 3.2.1 | Domain layer creates domain folder structure | `TargetProjects/{DOMAIN}/` directory created |
-| 3.2.2 | Domain layer prompts for domain name | Interactive prompt asks for domain identifier |
-| 3.2.3 | Service layer resolves target repo | Target repo resolved from `service-map.yaml` |
-| 3.2.4 | Service layer creates service subfolder | `TargetProjects/{DOMAIN}/{SERVICE}/{REPO}` structure created |
-| 3.2.5 | Feature layer validates parent initiative | Error if referenced parent initiative doesn't exist |
-| 3.2.6 | Feature layer inherits parent target repos | Feature initiative gets `target_repos` from parent |
-| 3.2.7 | Layer defaults to 'feature' when not specified | Omitting layer in init defaults to feature layer |
+| 3.2.1 | Domain layer creates domain folder structure | `TargetProjects/{DOMAIN}/`, `initiatives/{DOMAIN}/`, `Docs/{DOMAIN}/` directories created with `.gitkeep` files |
+| 3.2.2 | Domain layer creates Domain.yaml with initiative config | `initiatives/{DOMAIN}/Domain.yaml` contains: `id`, `name`, `layer`, `domain`, `docs`, `branch`, `gates`, `blocks` |
+| 3.2.3 | Domain layer prompts for domain name | Interactive prompt asks for domain identifier |
+| 3.2.4 | Domain layer creates only domain branch | Only `{domain_prefix}` branch — no audience/phase branches |
+| 3.2.5 | Service layer resolves target repo | Target repo resolved from `service-map.yaml` |
+| 3.2.6 | Service layer creates service subfolder | `TargetProjects/{DOMAIN}/{SERVICE}/{REPO}` structure created |
+| 3.2.7 | Feature layer validates parent initiative | Error if referenced parent initiative doesn't exist |
+| 3.2.8 | Feature layer inherits parent target repos | Feature initiative gets `target_repos` from parent |
+| 3.2.9 | Layer defaults to 'feature' when not specified | Omitting layer in init defaults to feature layer |
 
 ---
 
@@ -177,9 +187,10 @@ created: 2026-02-05
 |---|------|-----------------|
 | 4.1.1.1 | Loads two-file state | Both `state.yaml` and active initiative file read |
 | 4.1.1.2 | Gate check allows entry at p1 | Pre-plan available when on phase 1 |
-| 4.1.1.3 | Auto-creates phase branch if missing | Branch `{Domain}/{id}/{lane}-1` created if not present |
+| 4.1.1.3 | Auto-creates phase branch if missing | Branch `{featureBranchRoot}-{audience}-p1` created if not present |
 | 4.1.1.4 | State updates persist after execution | `state.yaml` updated with workflow progress |
 | 4.1.1.5 | Git discipline validates clean state | Dirty working directory blocks workflow start |
+| 4.1.1.6 | Constitutional context is injected | `constitutional_context` is resolved and available before analysis workflow calls |
 
 #### 4.1.2 Spec Router (`/spec`)
 
@@ -187,9 +198,10 @@ created: 2026-02-05
 |---|------|-----------------|
 | 4.1.2.1 | Loads two-file state | Both files read successfully |
 | 4.1.2.2 | Gate check requires p1 completion | Cannot enter spec without pre-plan artifacts |
-| 4.1.2.3 | Creates p2 branch via Casey | Branch `{Domain}/{id}/{lane}-2` created |
+| 4.1.2.3 | Creates p2 branch via Casey | Branch `{featureBranchRoot}-{audience}-p2` created |
 | 4.1.2.4 | State updates persist | Phase advanced to p2 in state |
 | 4.1.2.5 | Git discipline validates clean state | Blocks on dirty working directory |
+| 4.1.2.6 | Constitutional context is injected | `constitutional_context` is resolved before PRD/UX/architecture workflows run |
 
 #### 4.1.3 Plan Router (`/plan`)
 
@@ -197,9 +209,12 @@ created: 2026-02-05
 |---|------|-----------------|
 | 4.1.3.1 | Loads two-file state | Both files read successfully |
 | 4.1.3.2 | Gate check requires p2 completion | Cannot enter plan without spec artifacts |
-| 4.1.3.3 | Creates p3 branch via Casey | Branch `{Domain}/{id}/{lane}-3` created |
+| 4.1.3.3 | Creates p3 branch via Casey | Branch `{featureBranchRoot}-{audience}-p3` created |
 | 4.1.3.4 | State updates persist | Phase advanced to p3 in state |
 | 4.1.3.5 | Git discipline validates clean state | Blocks on dirty working directory |
+| 4.1.3.6 | Constitutional context is injected | `constitutional_context` is resolved before epics/stories/readiness workflows run |
+| 4.1.3.7 | Epic adversarial stress gate runs | `bmm.check-implementation-readiness` executes after epics generation and blocks on fail |
+| 4.1.3.8 | Epic party-mode teardown runs per epic | `core.party-mode` executes for each epic and writes `epic-*-party-mode-review.md` files |
 
 #### 4.1.4 Review Router (`/review`)
 
@@ -210,6 +225,8 @@ created: 2026-02-05
 | 4.1.4.3 | Creates review branch if needed | Branch created following naming convention |
 | 4.1.4.4 | State updates persist | Review status tracked in state |
 | 4.1.4.5 | Git discipline validates clean state | Blocks on dirty working directory |
+| 4.1.4.6 | Constitutional context is injected | `constitutional_context` is resolved before readiness and compliance checks |
+| 4.1.4.7 | Compliance gate blocks constitutional FAILs | Any FAIL from compliance checks exits `/review` with gate blocked |
 
 #### 4.1.5 Dev Router (`/dev`)
 
@@ -217,9 +234,17 @@ created: 2026-02-05
 |---|------|-----------------|
 | 4.1.5.1 | Loads two-file state | Both files read successfully |
 | 4.1.5.2 | Gate check requires review completion | Cannot enter dev without review pass |
-| 4.1.5.3 | Creates p4 branch via Casey | Branch `{Domain}/{id}/{lane}-4` created |
+| 4.1.5.3 | Creates p4 branch via Casey | Branch `{featureBranchRoot}-{audience}-p4` created |
 | 4.1.5.4 | State updates persist | Phase advanced to p4 in state |
 | 4.1.5.5 | Git discipline validates clean state | Blocks on dirty working directory |
+| 4.1.5.6 | Constitutional context is injected | `constitutional_context` is resolved before implementation guidance and review loops |
+| 4.1.5.7 | Dev story compliance gate blocks FAILs | `scribe.compliance-check` on dev story exits `/dev` on any FAIL |
+| 4.1.5.8 | Adversarial code review is mandatory | `bmm.code-review` executes when implementation is signaled complete |
+| 4.1.5.9 | Code-review compliance gate blocks FAILs | `scribe.compliance-check` on code review report exits `/dev` on any FAIL |
+| 4.1.5.10 | Party-mode teardown runs after code review | `core.party-mode` executes and writes `party-mode-review-${story_id}.md` |
+| 4.1.5.11 | Epic completion is detected in `/dev` | Current story resolves to parent epic and epic completion is evaluated before workflow exit |
+| 4.1.5.12 | Epic adversarial review runs on epic completion | `bmm.check-implementation-readiness` executes for completed epic and blocks `/dev` on fail |
+| 4.1.5.13 | Epic party-mode teardown runs on epic completion | `core.party-mode` writes `epic-*-party-mode-review.md` and blocks `/dev` on unresolved issues |
 
 ### 4.2 Utility Workflows
 
@@ -230,11 +255,11 @@ created: 2026-02-05
 | # | Test | Expected Result |
 |---|------|-----------------|
 | 4.2.1 | Status shows both files | Output includes `state.yaml` summary AND initiative details |
-| 4.2.2 | Resume loads correct context | Initiative, phase, lane, and workflow restored from state |
+| 4.2.2 | Resume loads correct context | Initiative, phase, size, and workflow restored from state |
 | 4.2.3 | Resume re-enters workflow at correct step | Workflow step counter matches saved progress |
 | 4.2.4 | Check-repos validates all repos | Each repo in `service-map.yaml` checked for existence and git state |
 | 4.2.5 | Onboarding creates profile | User profile file created in `_bmad-output/lens-work/` |
-| 4.2.6 | Switch workflow handles all target types | Supports `initiative`, `phase`, and `lane` switch targets |
+| 4.2.6 | Switch workflow handles all target types | Supports `initiative`, `phase`, and `size` switch targets |
 | 4.2.7 | Fix-state corrects inconsistencies | Detects and repairs state/branch mismatches |
 | 4.2.8 | Archive marks initiative as archived | Initiative file updated with `archived: true`, branches cleaned |
 | 4.2.9 | Sync workflow synchronizes state to remote | State pushed to correct branch after sync |
@@ -279,7 +304,7 @@ created: 2026-02-05
 | 5.2.3 | `create-branch-if-missing` sets upstream | New branch tracks remote after creation |
 | 5.2.4 | `fetch-and-checkout` fetches then checks out | Remote fetched first, then local checkout |
 | 5.2.5 | `show-branch` displays tracking info | Branch name, remote tracking, commit info shown |
-| 5.2.6 | Branch naming follows convention | All created branches match `{Domain}/{id}/...` pattern |
+| 5.2.6 | Branch naming follows convention | All created branches match `{featureBranchRoot}[-{audience}[-p{N}]]` pattern |
 | 5.2.7 | Handles detached HEAD state | Clear error with recovery instructions |
 | 5.2.8 | Handles merge conflicts | Conflict detected, user prompted for resolution |
 
@@ -389,9 +414,10 @@ created: 2026-02-05
 | 7.5 | Final step creates targeted commit | init-initiative, finish-workflow | Commit message includes initiative_id, phase, and workflow context |
 | 7.6 | Final step pushes to remote | init-initiative, finish-workflow | `git push` executed after commit |
 | 7.7 | Commit message format consistent | All committing workflows | Format: `lens-work: {workflow} [{initiative_id}] {description}` |
-| 7.8 | Branch name parsed correctly | finish-workflow | Initiative ID, lane, phase extracted from `{Domain}/{id}/{lane}-{N}-{workflow}` |
-| 7.9 | Non-mutating workflows skip commit | repo-discover, repo-document, repo-status | No git commits created by read-only workflows |
-| 7.10 | Utility workflows commit state changes | bootstrap, reconcile | State file changes committed with context |
+| 7.8 | Branch name parsed correctly (service/feature) | finish-workflow | Initiative ID, audience, phase extracted from `{featureBranchRoot}-{audience}-p{N}-{workflow}` |
+| 7.9 | Branch name parsed correctly (domain-layer) | init-initiative (domain) | Domain prefix extracted from `{domain_prefix}` (no subpath) |
+| 7.10 | Non-mutating workflows skip commit | repo-discover, repo-document, repo-status | No git commits created by read-only workflows |
+| 7.11 | Utility workflows commit state changes | bootstrap, reconcile | State file changes committed with context |
 
 ---
 
@@ -464,16 +490,16 @@ created: 2026-02-05
 
 | Category | P0 | P1 | P2 | P3 | Total |
 |----------|-----|-----|-----|-----|-------|
-| 1. State Management | 6 | 6 | 0 | 0 | 12 |
+| 1. State Management | 7 | 6 | 0 | 0 | 13 |
 | 2. Branch Switching | 10 | 4 | 0 | 0 | 14 |
-| 3. Initiative Creation | 9 | 7 | 0 | 0 | 16 |
-| 4. Workflow Execution | 25 | 11 | 0 | 0 | 36 |
+| 3. Initiative Creation | 13 | 9 | 0 | 0 | 22 |
+| 4. Workflow Execution | 40 | 11 | 0 | 0 | 51 |
 | 5. Agent Integration | 18 | 15 | 0 | 0 | 33 |
 | 6. Error Handling | 8 | 8 | 0 | 0 | 16 |
-| 7. Git Discipline | 10 | 0 | 0 | 0 | 10 |
+| 7. Git Discipline | 11 | 0 | 0 | 0 | 11 |
 | 8. Module Structure | 0 | 0 | 10 | 0 | 10 |
 | 9. Cross-Cutting | 0 | 0 | 12 | 0 | 12 |
-| **Total** | **86** | **51** | **22** | **0** | **159** |
+| **Total** | **107** | **53** | **22** | **0** | **182** |
 
 ---
 

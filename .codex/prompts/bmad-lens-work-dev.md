@@ -1,6 +1,0 @@
----
-description: 'Implementation loop (dev-story/code-review/retro)'
-disable-model-invocation: true
----
-
-IT IS CRITICAL THAT YOU FOLLOW THIS COMMAND: LOAD the FULL @_bmad/lens-work/workflows/router/dev/workflow.md, READ its entire contents and follow its directions exactly!

@@ -1,8 +1,9 @@
 ---
-phase: 3
-phase_name: Solutioning
+phase: devproposal
+phase_name: DevProposal
 initiative_id: "{initiative_id}"
 initiative_name: "{initiative_name}"
+track: "{track}"
 layer: "{layer}"
 domain: "{domain}"
 service: "{service}"
@@ -12,14 +13,15 @@ created_at: "{timestamp}"
 mode: batch
 instructions: |
   Fill out every section in one pass. Remove all [ANSWER HERE] placeholders.
-  When complete, save the file and re-run /plan to process it.
+  When complete, save the file and re-run /devproposal to process it.
 ---
 
-# Phase 3: Solutioning (Batch)
+# DevProposal: Solutioning (Batch)
 
-**Initiative:** {initiative_name} ({initiative_id})  
-**Layer:** {layer}  
-**Domain/Service:** {domain} / {service}  
+**Initiative:** {initiative_name} ({initiative_id})
+**Track:** {track}
+**Layer:** {layer}
+**Domain/Service:** {domain} / {service}
 **Target Repos:** {target_repos}
 
 ---

@@ -10,6 +10,42 @@ This document defines the canonical directory structure, file naming conventions
 
 ---
 
+## Docs Path Resolution Logic
+
+### Usage
+Include this in any workflow that needs to resolve initiative docs paths.
+
+### Resolution Algorithm
+
+```pseudocode
+function resolve_docs_path(initiative):
+  if initiative.docs and initiative.docs.path:
+    docs_path = initiative.docs.path
+    repo_docs_path = "docs/${initiative.docs.domain}/${initiative.docs.service}/${initiative.docs.repo}"
+  else:
+    # Legacy fallback
+    docs_path = "_bmad-output/planning-artifacts/"
+    repo_docs_path = null
+    emit_warning("⚠️ DEPRECATED: Initiative missing docs.path. Using legacy path.")
+  
+  return { docs_path, repo_docs_path }
+```
+
+### Repo Docs Allowlist
+The `repo_docs_path` enables loading context from the target repository's own docs folder.
+Valid doc types from repo: `README.md`, `CONTRIBUTING.md`, `SETUP.md`, `ARCHITECTURE.md`, `API.md`
+
+Only load repo docs if:
+1. `repo_docs_path` is resolved (not null)
+2. The file exists at the resolved path
+3. The file is in the allowlist above
+
+### Migration Note
+Initiatives created before context enhancement will not have a `docs.path` block.
+The fallback ensures backward compatibility while surfacing deprecation warnings.
+
+---
+
 ## Directory Structure
 
 ```
@@ -29,15 +65,17 @@ This document defines the canonical directory structure, file naming conventions
 │   │           └── component-map.md
 │   ├── planning-artifacts/                      # Planning phase outputs
 │   │   └── {initiative_id}/
-│   │       ├── p1-product-brief.md
-│   │       ├── p1-research-notes.md
-│   │       ├── p1-brainstorm-notes.md
-│   │       ├── p2-prd.md
-│   │       ├── p2-ux-design.md
-│   │       ├── p2-architecture.md
-│   │       ├── p3-epics.md
-│   │       ├── p3-readiness-checklist.md
-│   │       ├── p3-stories/
+│   │       ├── preplan-product-brief.md
+│   │       ├── preplan-research-notes.md
+│   │       ├── preplan-brainstorm-notes.md
+│   │       ├── businessplan-prd.md
+│   │       ├── businessplan-ux-design.md
+│   │       ├── techplan-architecture.md
+│   │       ├── techplan-tech-decisions.md
+│   │       ├── techplan-api-contracts.md
+│   │       ├── devproposal-epics.md
+│   │       ├── devproposal-readiness-checklist.md
+│   │       ├── devproposal-stories/
 │   │       │   ├── story-001.md
 │   │       │   ├── story-002.md
 │   │       │   └── ...
@@ -45,13 +83,13 @@ This document defines the canonical directory structure, file naming conventions
 │   │       └── epics.csv
 │   └── implementation-artifacts/                # Implementation phase outputs
 │       └── {initiative_id}/
-│           ├── p4-sprint-plan.md
-│           ├── p4-dev-stories/
+│           ├── sprintplan-sprint-plan.md
+│           ├── dev-stories/
 │           │   ├── dev-story-001.md
 │           │   ├── dev-story-002.md
 │           │   └── ...
-│           ├── p4-review-notes.md
-│           └── p4-retro.md
+│           ├── dev-review-notes.md
+│           └── dev-retro.md
 ├── docs/
 │   ├── discovery/                               # Discovery scan outputs
 │   │   ├── initial-discovery-report.md
@@ -61,14 +99,14 @@ This document defines the canonical directory structure, file naming conventions
 │   │   └── {service}/
 │   │       └── {repo}/
 │   │           └── {initiative_id}/
-│   │               ├── phase-1-analysis-questions.md
-│   │               ├── phase-1-review.md
-│   │               ├── phase-2-planning-questions.md
-│   │               ├── phase-2-review.md
-│   │               ├── phase-3-solutioning-questions.md
-│   │               ├── phase-3-review.md
-│   │               ├── phase-4-implementation-questions.md
-│   │               └── phase-4-review.md
+│   │               ├── preplan-analysis-questions.md
+│   │               ├── preplan-review.md
+│   │               ├── businessplan-planning-questions.md
+│   │               ├── businessplan-review.md
+│   │               ├── devproposal-solutioning-questions.md
+│   │               ├── devproposal-review.md
+│   │               ├── dev-implementation-questions.md
+│   │               └── dev-review.md
 │   └── lens-sync/                               # Synced repo documentation
 │       └── {repo_name}/
 │           └── ...
@@ -84,21 +122,23 @@ This document defines the canonical directory structure, file naming conventions
 _bmad-output/planning-artifacts/{initiative_id}/
 ```
 
-All planning artifacts (P1–P3) are stored here. Files are prefixed with the phase number.
+All planning artifacts are stored here. Files are prefixed with the phase name.
 
 | Phase | File | Path |
 |-------|------|------|
-| P1 | Product Brief | `_bmad-output/planning-artifacts/{id}/p1-product-brief.md` |
-| P1 | Research Notes | `_bmad-output/planning-artifacts/{id}/p1-research-notes.md` |
-| P1 | Brainstorm Notes | `_bmad-output/planning-artifacts/{id}/p1-brainstorm-notes.md` |
-| P2 | PRD | `_bmad-output/planning-artifacts/{id}/p2-prd.md` |
-| P2 | UX Design | `_bmad-output/planning-artifacts/{id}/p2-ux-design.md` |
-| P2 | Architecture | `_bmad-output/planning-artifacts/{id}/p2-architecture.md` |
-| P3 | Epics | `_bmad-output/planning-artifacts/{id}/p3-epics.md` |
-| P3 | Stories (dir) | `_bmad-output/planning-artifacts/{id}/p3-stories/` |
-| P3 | Readiness Checklist | `_bmad-output/planning-artifacts/{id}/p3-readiness-checklist.md` |
-| P3 | Stories CSV | `_bmad-output/planning-artifacts/{id}/stories.csv` |
-| P3 | Epics CSV | `_bmad-output/planning-artifacts/{id}/epics.csv` |
+| PrePlan | Product Brief | `_bmad-output/planning-artifacts/{id}/preplan-product-brief.md` |
+| PrePlan | Research Notes | `_bmad-output/planning-artifacts/{id}/preplan-research-notes.md` |
+| PrePlan | Brainstorm Notes | `_bmad-output/planning-artifacts/{id}/preplan-brainstorm-notes.md` |
+| BusinessPlan | PRD | `_bmad-output/planning-artifacts/{id}/businessplan-prd.md` |
+| BusinessPlan | UX Design | `_bmad-output/planning-artifacts/{id}/businessplan-ux-design.md` |
+| TechPlan | Architecture | `_bmad-output/planning-artifacts/{id}/techplan-architecture.md` |
+| TechPlan | Tech Decisions | `_bmad-output/planning-artifacts/{id}/techplan-tech-decisions.md` |
+| TechPlan | API Contracts | `_bmad-output/planning-artifacts/{id}/techplan-api-contracts.md` |
+| DevProposal | Epics | `_bmad-output/planning-artifacts/{id}/devproposal-epics.md` |
+| DevProposal | Stories (dir) | `_bmad-output/planning-artifacts/{id}/devproposal-stories/` |
+| DevProposal | Readiness Checklist | `_bmad-output/planning-artifacts/{id}/devproposal-readiness-checklist.md` |
+| DevProposal | Stories CSV | `_bmad-output/planning-artifacts/{id}/stories.csv` |
+| DevProposal | Epics CSV | `_bmad-output/planning-artifacts/{id}/epics.csv` |
 
 ### Implementation Artifacts
 
@@ -106,14 +146,14 @@ All planning artifacts (P1–P3) are stored here. Files are prefixed with the ph
 _bmad-output/implementation-artifacts/{initiative_id}/
 ```
 
-All implementation artifacts (P4) are stored here.
+All implementation artifacts are stored here. Files are prefixed with the phase name.
 
 | Phase | File | Path |
 |-------|------|------|
-| P4 | Sprint Plan | `_bmad-output/implementation-artifacts/{id}/p4-sprint-plan.md` |
-| P4 | Dev Stories (dir) | `_bmad-output/implementation-artifacts/{id}/p4-dev-stories/` |
-| P4 | Review Notes | `_bmad-output/implementation-artifacts/{id}/p4-review-notes.md` |
-| P4 | Retrospective | `_bmad-output/implementation-artifacts/{id}/p4-retro.md` |
+| SprintPlan | Sprint Plan | `_bmad-output/implementation-artifacts/{id}/sprintplan-sprint-plan.md` |
+| Dev | Dev Stories (dir) | `_bmad-output/implementation-artifacts/{id}/dev-stories/` |
+| Dev | Review Notes | `_bmad-output/implementation-artifacts/{id}/dev-review-notes.md` |
+| Dev | Retrospective | `_bmad-output/implementation-artifacts/{id}/dev-retro.md` |
 
 ### Canonical Docs
 
@@ -153,21 +193,21 @@ Synced documentation from target repos via `sync` workflow.
 
 ### File Names
 
-- **Format:** `kebab-case` with phase prefix
-- **Pattern:** `p{N}-{artifact-name}.md`
+- **Format:** `kebab-case` with phase name prefix
+- **Pattern:** `{phase}-{artifact-name}.md`
 - **Examples:**
-  - `p1-product-brief.md`
-  - `p2-architecture.md`
-  - `p3-readiness-checklist.md`
-  - `p4-retro.md`
+  - `preplan-product-brief.md`
+  - `techplan-architecture.md`
+  - `devproposal-readiness-checklist.md`
+  - `dev-retro.md`
 
 ### Directory Names
 
-- **Format:** `kebab-case` with phase prefix
-- **Pattern:** `p{N}-{collection-name}/`
+- **Format:** `kebab-case` with phase name prefix
+- **Pattern:** `{phase}-{collection-name}/`
 - **Examples:**
-  - `p3-stories/`
-  - `p4-dev-stories/`
+  - `devproposal-stories/`
+  - `dev-stories/`
 
 ### Story Files
 
@@ -226,8 +266,8 @@ git add "docs/${domain}/${service}/${repo}/${initiative_id}/"
 | Context | Message Format |
 |---------|----------------|
 | Workflow artifact | `workflow({workflow_name}): {description} ({initiative_id})` |
-| Phase start | `phase(p{N}): Start {phase_name} ({initiative_id})` |
-| Phase finish | `phase(p{N}): Finish {phase_name} ({initiative_id})` |
+| Phase start | `phase({phase_name}): Start {phase_name} ({initiative_id})` |
+| Phase finish | `phase({phase_name}): Finish {phase_name} ({initiative_id})` |
 | Discovery | `discovery: {scan_type} for {repo_name}` |
 | State update | `state: Update {field} ({initiative_id})` |
 
@@ -252,8 +292,8 @@ All path patterns use these tokens:
 ### Example Resolution
 
 ```
-Template: _bmad-output/planning-artifacts/{initiative_id}/p2-prd.md
-Resolved: _bmad-output/planning-artifacts/rate-limit-x7k2m9/p2-prd.md
+Template: _bmad-output/planning-artifacts/{initiative_id}/businessplan-prd.md
+Resolved: _bmad-output/planning-artifacts/rate-limit-x7k2m9/businessplan-prd.md
 ```
 
 ---
@@ -262,4 +302,4 @@ Resolved: _bmad-output/planning-artifacts/rate-limit-x7k2m9/p2-prd.md
 
 - **artifact-validator.md** — Validates artifacts at these paths
 - **jira-integration.md** — CSV files stored in planning-artifacts
-- **lane-topology.md** — Branch structure artifacts are committed to
+- **size-topology.md** — Branch structure artifacts are committed to

@@ -1,8 +1,9 @@
 ---
-phase: 2
-phase_name: Planning
+phase: businessplan
+phase_name: BusinessPlan
 initiative_id: "{initiative_id}"
 initiative_name: "{initiative_name}"
+track: "{track}"
 layer: "{layer}"
 domain: "{domain}"
 service: "{service}"
@@ -12,14 +13,15 @@ created_at: "{timestamp}"
 mode: batch
 instructions: |
   Fill out every section in one pass. Remove all [ANSWER HERE] placeholders.
-  When complete, save the file and re-run /spec to process it.
+  When complete, save the file and re-run /businessplan to process it.
 ---
 
-# Phase 2: Planning (Batch)
+# BusinessPlan: Planning (Batch)
 
-**Initiative:** {initiative_name} ({initiative_id})  
-**Layer:** {layer}  
-**Domain/Service:** {domain} / {service}  
+**Initiative:** {initiative_name} ({initiative_id})
+**Track:** {track}
+**Layer:** {layer}
+**Domain/Service:** {domain} / {service}
 **Target Repos:** {target_repos}
 
 ---
@@ -115,7 +117,7 @@ instructions: |
 
 ## 5) Planning Sign-off
 
-### 5.1 Definition of Done (Phase 2)
+### 5.1 Definition of Done (BusinessPlan)
 
 - [ ] PRD complete
 - [ ] UX decisions documented (if applicable)

@@ -1,8 +1,9 @@
 ---
-phase: 1
-phase_name: Analysis
+phase: preplan
+phase_name: PrePlan
 initiative_id: "{initiative_id}"
 initiative_name: "{initiative_name}"
+track: "{track}"
 layer: "{layer}"
 domain: "{domain}"
 service: "{service}"
@@ -12,14 +13,15 @@ created_at: "{timestamp}"
 mode: batch
 instructions: |
   Fill out every section in one pass. Remove all [ANSWER HERE] placeholders.
-  When complete, save the file and re-run /pre-plan to process it.
+  When complete, save the file and re-run /preplan to process it.
 ---
 
-# Phase 1: Analysis (Batch)
+# PrePlan: Analysis (Batch)
 
-**Initiative:** {initiative_name} ({initiative_id})  
-**Layer:** {layer}  
-**Domain/Service:** {domain} / {service}  
+**Initiative:** {initiative_name} ({initiative_id})
+**Track:** {track}
+**Layer:** {layer}
+**Domain/Service:** {domain} / {service}
 **Target Repos:** {target_repos}
 
 ---
@@ -107,7 +109,7 @@ instructions: |
 | [ANSWER HERE] | [ANSWER HERE] | [ANSWER HERE] |
 | [ANSWER HERE] | [ANSWER HERE] | [ANSWER HERE] |
 
-### 4.2 Definition of Done (Phase 1)
+### 4.2 Definition of Done (PrePlan)
 
 - [ ] Problem statement validated with stakeholders
 - [ ] Research complete
@@ -129,7 +131,7 @@ instructions: |
 
 ## 6) Planning Preview
 
-### 6.1 Open Questions for Phase 2
+### 6.1 Open Questions for BusinessPlan
 
 - [ANSWER HERE]
 - [ANSWER HERE]

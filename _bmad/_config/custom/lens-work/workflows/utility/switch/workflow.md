@@ -8,15 +8,15 @@ category: utility
 
 # Switch Context Workflow
 
-**Purpose:** Interactively switch between initiatives, lenses (domain/service/microservice/feature), phases (P0–P4), and lanes (small/medium/large), with branch checkout and state synchronization.
+**Purpose:** Interactively switch between initiatives, lenses (org/domain/service/repo), phases (named phases per lifecycle.yaml), and audiences (small/medium/large/base), with branch checkout and state synchronization.
 
 ---
 
 ## Input Parameters
 
 ```yaml
-sub_command: enum | null   # initiative | lens | phase | lane — if omitted, show interactive menu
-target: string | null      # Optional direct target (initiative id, phase number, lane name, etc.)
+sub_command: enum | null   # initiative | lens | phase | audience — if omitted, show interactive menu
+target: string | null      # Optional direct target (initiative id, phase number, size name, etc.)
 ```
 
 ---
@@ -101,7 +101,7 @@ else:
 current_branch = exec("git branch --show-current")
 current_phase = state.current.phase or "unknown"
 current_phase_name = state.current.phase_name or "Unknown"
-current_lane = initiative.lane or "unknown"       # Lane from shared initiative config
+current_size = initiative.size or "unknown"       # Size from shared initiative config
 current_layer = initiative.layer or "unknown"
 
 # Resolve domain prefix without hardcoding lens defaults.
@@ -120,7 +120,7 @@ if domain_prefix == "":
   domain_prefix = normalize_domain_prefix(initiative.domain)
 
 if domain_prefix == "":
-  parsed = parse_branch(current_branch)  # {domain_prefix}/{initiative_id}/{segment}
+  parsed = parse_branch(current_branch)  # flat hyphen-separated: {domain}-{service}-{feature}[-{audience}[-p{N}]]
   domain_prefix = normalize_domain_prefix(parsed.domain_prefix)
 
 if domain_prefix == "":
@@ -133,7 +133,7 @@ output: |
   ├── Initiative: ${initiative.name} (${initiative.id})
   ├── Layer: ${current_layer}
   ├── Phase: ${current_phase} (${current_phase_name})
-  ├── Lane: ${current_lane}
+  ├── Size: ${current_size}
   └── Branch: ${current_branch}
   ${if legacy_warning}
   ⚠️  Legacy state format detected. Consider running @tracey migrate.
@@ -151,9 +151,9 @@ if sub_command == null:
   output: |
     🧭 Switch Context
     ├── [1] Switch Initiative (change active initiative)
-    ├── [2] Switch Lens (domain/service/microservice/feature)
-    ├── [3] Switch Phase (P0-P4)
-    ├── [4] Switch Lane (small/medium/large)
+    ├── [2] Switch Lens (org/domain/service/repo)
+    ├── [3] Switch Phase (named phases per track)
+    ├── [4] Switch Audience (small/medium/large/base)
     └── [0] Cancel
   
   read: menu_choice
@@ -162,7 +162,7 @@ if sub_command == null:
     "1": goto Step 3 (Switch Initiative)
     "2": goto Step 4 (Switch Lens)
     "3": goto Step 5 (Switch Phase)
-    "4": goto Step 6 (Switch Lane)
+    "4": goto Step 6 (Switch Size)
     "0": |
       output: "Cancelled. No changes made."
       exit: 0
@@ -175,9 +175,10 @@ else:
     "initiative": goto Step 3
     "lens": goto Step 4
     "phase": goto Step 5
-    "lane": goto Step 6
+    "audience": goto Step 6
     default: |
-      output: "Unknown sub-command: ${sub_command}. Use: initiative | lens | phase | lane"
+      output: "Unknown sub-command: ${sub_command}. Use: initiative | lens | phase | audience"
+
       exit: 1
 ```
 
@@ -270,7 +271,7 @@ else
   else
     error "Branch '${target_branch}' not found locally or on remote."
     echo "Available branches for this initiative:"
-    git branch -a | grep "${selected.id}/"
+    git branch -a | grep "${selected.id}"
     exit 1
   fi
 fi
@@ -283,7 +284,7 @@ state.current.phase = selected.phase
 state.current.workflow = null
 state.current.workflow_status = null
 
-# Note: lane is read from initiative config, NOT stored in personal state
+# Note: size is read from initiative config, NOT stored in personal state
 
 # Continue to Step 7 for state sync
 goto: Step 7
@@ -297,21 +298,21 @@ goto: Step 7
 # Change the layer/lens focus within current initiative
 output: |
   🔍 Switch Lens — Current: ${current_layer}
-  
+
   Available layers:
-  ├── [1] Domain   — Full domain scope (all repos)
-  ├── [2] Service  — Single service focus
-  ├── [3] Microservice — Sub-service component
-  ├── [4] Feature  — Feature-level scope
+  ├── [1] Org      — Organization scope (cross-domain)
+  ├── [2] Domain   — Full domain scope (all repos)
+  ├── [3] Service  — Single service focus
+  ├── [4] Repo     — Repository-level scope
   └── [0] Cancel
 
 read: lens_choice
 
 lens_map:
-  "1": "domain"
-  "2": "service"
-  "3": "microservice"
-  "4": "feature"
+  "1": "org"
+  "2": "domain"
+  "3": "service"
+  "4": "repo"
 
 if lens_choice == "0" or lens_choice == null:
   output: "Cancelled. Lens unchanged."
@@ -367,27 +368,31 @@ goto: Step 7
 
 ```yaml
 # Show available phases with current position
-phase_map = {
-  "0": { code: "p0", name: "Pre-Plan",       description: "Discovery & initial analysis" },
-  "1": { code: "p1", name: "Analysis",        description: "Deep analysis & product brief" },
-  "2": { code: "p2", name: "Planning",        description: "PRD & UX design" },
-  "3": { code: "p3", name: "Solutioning",     description: "Architecture & epics/stories" },
-  "4": { code: "p4", name: "Implementation",  description: "Sprint planning & development" }
+# Load phase list from lifecycle.yaml for initiative's track
+track = initiative.track or "full"
+lifecycle = load("lifecycle.yaml")
+track_phases = lifecycle.tracks[track].phases
+
+phase_display = {
+  "preplan":      { name: "PrePlan",      audience: "small",  description: "Brainstorm, research, product brief" },
+  "businessplan": { name: "BusinessPlan", audience: "small",  description: "PRD & UX design" },
+  "techplan":     { name: "TechPlan",     audience: "small",  description: "Architecture & tech decisions" },
+  "devproposal":  { name: "DevProposal",  audience: "medium", description: "Epics, stories, readiness" },
+  "sprintplan":   { name: "SprintPlan",   audience: "large",  description: "Sprint planning & story selection" },
+  "dev":          { name: "Dev",          audience: "base",   description: "Implementation & code review" }
 }
 
-current_phase_num = extract_phase_number(current_phase)
-
 output: |
-  📐 Switch Phase — Current: ${current_phase} (${current_phase_name})
-  
-  Available phases:
-  ${for num, phase in phase_map}
-  ${num == current_phase_num ? "▶" : " "} [${num}] P${num} — ${phase.name}
-       ${phase.description}
+  📐 Switch Phase — Current: ${current_phase} (Track: ${track})
+
+  Available phases for ${track} track:
+  ${for i, phase_key in enumerate(track_phases)}
+  ${phase_key == current_phase ? "▶" : " "} [${i+1}] ${phase_display[phase_key].name}
+       ${phase_display[phase_key].description} (audience: ${phase_display[phase_key].audience})
   ${endfor}
-  
+
   ⚠️  Switching phase will create/checkout the phase branch.
-  
+
   [C] Cancel
 
 read: phase_choice
@@ -396,21 +401,24 @@ if phase_choice == "C" or phase_choice == "c" or phase_choice == null:
   output: "Cancelled. Phase unchanged."
   exit: 0
 
-selected_phase = phase_map[phase_choice]
-
-if selected_phase == null:
-  output: "Invalid choice. Please select 0-4 or C to cancel."
+selected_idx = int(phase_choice) - 1
+if selected_idx < 0 or selected_idx >= track_phases.length:
+  output: "Invalid choice. Please select 1-${track_phases.length} or C to cancel."
   goto: Step 5
 
-if phase_choice == current_phase_num:
-  output: "Already on P${phase_choice} (${selected_phase.name}). No change needed."
+selected_phase_key = track_phases[selected_idx]
+selected_phase = phase_display[selected_phase_key]
+
+if selected_phase_key == current_phase:
+  output: "Already on ${selected_phase.name}. No change needed."
   exit: 0
 
 # Determine target branch for selected phase
-# New branch pattern: {Domain}/{InitiativeId}/{lane}-{phaseNumber}
-target_branch = "${domain_prefix}/${initiative.id}/${current_lane}-${phase_choice}"
+# Branch pattern: {initiative_root}-{audience}-{phase_name}
+target_audience = selected_phase.audience
+target_branch = "${initiative.initiative_root}-${target_audience}-${selected_phase_key}"
 
-output: "🔀 Switching to phase P${phase_choice} (${selected_phase.name})..."
+output: "🔀 Switching to phase ${selected_phase.name} (${target_audience})..."
 ```
 
 ```bash
@@ -429,18 +437,19 @@ elif git show-ref --verify --quiet "refs/remotes/origin/${target_branch}"; then
   git checkout -b "${target_branch}" "origin/${target_branch}"
 
 else
-  # Branch doesn't exist — create it from current lane branch
+  # Branch doesn't exist — create it from current size branch
   echo "Branch '${target_branch}' does not exist. Creating..."
   
-  lane_branch="${domain_prefix}/${initiative_id}/${current_lane}"
+  # Audience branch is the parent for phase branches
+  audience_branch="${initiative.initiative_root}-${target_audience}"
   
-  # Ensure lane branch exists
-  if git show-ref --verify --quiet "refs/heads/${lane_branch}"; then
-    git checkout "${lane_branch}"
-  elif git show-ref --verify --quiet "refs/remotes/origin/${lane_branch}"; then
-    git checkout -b "${lane_branch}" "origin/${lane_branch}"
+  # Ensure audience branch exists
+  if git show-ref --verify --quiet "refs/heads/${audience_branch}"; then
+    git checkout "${audience_branch}"
+  elif git show-ref --verify --quiet "refs/remotes/origin/${audience_branch}"; then
+    git checkout -b "${audience_branch}" "origin/${audience_branch}"
   else
-    echo "Error: Lane branch '${lane_branch}' not found."
+    echo "Error: Audience branch '${audience_branch}' not found."
     exit 1
   fi
   
@@ -452,16 +461,16 @@ fi
 
 ```yaml
 # Update state with new phase
-state.current.phase = "P${phase_choice}"
+state.current.phase = selected_phase_key
 state.current.phase_name = selected_phase.name
 state.current.workflow = null
 state.current.workflow_status = null
 
 # Update initiative config
-initiative.current_phase = "P${phase_choice}"
+initiative.current_phase = selected_phase_key
 initiative.branches.active = target_branch
 
-output: "✅ Phase switched: ${current_phase} → P${phase_choice} (${selected_phase.name})"
+output: "✅ Phase switched: ${current_phase} → ${selected_phase.name} (${target_audience})"
 
 # Continue to Step 7 for state sync
 goto: Step 7
@@ -469,118 +478,123 @@ goto: Step 7
 
 ---
 
-### Step 6: Switch Lane
+### Step 6: Switch Audience
 
 ```yaml
-# Available lanes
-lane_map = {
-  "1": { code: "small",  description: "Small team — planning & development lane" },
-  "2": { code: "medium", description: "Medium team — multi-track coordination" },
-  "3": { code: "large",  description: "Large team — review & governance" }
+# Available audiences
+audience_map = {
+  "1": { code: "small",  description: "IC creation — preplan, businessplan, techplan" },
+  "2": { code: "medium", description: "Lead review — devproposal" },
+  "3": { code: "large",  description: "Stakeholder — sprintplan" },
+  "4": { code: "base",   description: "Execution — dev" }
 }
 
+current_audience = initiative.current_audience or "small"
+
 output: |
-  🛤️  Switch Lane — Current: ${current_lane}
-  
-  Available lanes:
-  ${for num, lane in lane_map}
-  ${num == current_lane_idx ? "▶" : " "} [${num}] ${lane.code}
-       ${lane.description}
+  🛤️  Switch Audience — Current: ${current_audience}
+
+  Available audiences:
+  ${for num, aud in audience_map}
+  ${aud.code == current_audience ? "▶" : " "} [${num}] ${aud.code}
+       ${aud.description}
   ${endfor}
-  
-  ⚠️  Switching lane will create/checkout the lane branch.
-  
+
+  ⚠️  Switching audience will checkout the audience branch.
+
   [C] Cancel
 
-read: lane_choice
+read: audience_choice
 
-if lane_choice == "C" or lane_choice == "c" or lane_choice == null:
-  output: "Cancelled. Lane unchanged."
+if audience_choice == "C" or audience_choice == "c" or audience_choice == null:
+  output: "Cancelled. Audience unchanged."
   exit: 0
 
-selected_lane = lane_map[lane_choice]
+selected_audience = audience_map[audience_choice]
 
-if selected_lane == null:
-  output: "Invalid choice. Please select 1-3 or C to cancel."
+if selected_audience == null:
+  output: "Invalid choice. Please select 1-4 or C to cancel."
   goto: Step 6
 
-if selected_lane.code == current_lane:
-  output: "Already on ${current_lane} lane. No change needed."
+if selected_audience.code == current_audience:
+  output: "Already on ${current_audience} audience. No change needed."
   exit: 0
 
-# Determine target branch for selected lane
-# New branch pattern: {Domain}/{InitiativeId}/{lane}
-lane_branch = "${domain_prefix}/${initiative.id}/${selected_lane.code}"
+# Determine target branch for selected audience
+# Branch pattern: {initiative_root}-{audience}
+audience_branch = "${initiative.initiative_root}-${selected_audience.code}"
 
-# If currently on a phase branch, also create the phase branch under the new lane
-current_phase_num = extract_phase_number(current_phase)
-if current_phase_num != null:
-  phase_branch = "${domain_prefix}/${initiative.id}/${selected_lane.code}-${current_phase_num}"
-  target_branch = phase_branch
+# If currently on a phase branch, find the current phase in the new audience
+if current_phase != null and current_phase != "unknown":
+  phase_audience = phase_display[current_phase].audience
+  if phase_audience == selected_audience.code:
+    target_branch = "${initiative.initiative_root}-${selected_audience.code}-${current_phase}"
+  else:
+    target_branch = audience_branch
 else:
-  target_branch = lane_branch
+  target_branch = audience_branch
 
-output: "🔀 Switching to ${selected_lane.code} lane..."
+output: "🔀 Switching to ${selected_audience.code} audience..."
 ```
 
 ```bash
 # Casey integration: checkout-branch or create-branch
 target_branch="${target_branch}"
-lane_branch="${lane_branch}"
+size_branch="${size_branch}"
 
 git fetch origin
 
-# First ensure lane branch exists
-if git show-ref --verify --quiet "refs/heads/${lane_branch}"; then
-  : # lane branch exists locally
-elif git show-ref --verify --quiet "refs/remotes/origin/${lane_branch}"; then
-  git checkout -b "${lane_branch}" "origin/${lane_branch}"
+# First ensure size branch exists
+if git show-ref --verify --quiet "refs/heads/${size_branch}"; then
+  : # size branch exists locally
+elif git show-ref --verify --quiet "refs/remotes/origin/${size_branch}"; then
+  git checkout -b "${size_branch}" "origin/${size_branch}"
   git checkout -  # go back, we'll checkout target below
 else
-  # Create lane branch from base
-  base_branch="${domain_prefix}/${initiative_id}/base"
-  if git show-ref --verify --quiet "refs/heads/${base_branch}"; then
-    git checkout "${base_branch}"
-  elif git show-ref --verify --quiet "refs/remotes/origin/${base_branch}"; then
-    git checkout -b "${base_branch}" "origin/${base_branch}"
+  # Create audience branch from initiative_root
+  root_branch="${initiative.initiative_root}"
+  if git show-ref --verify --quiet "refs/heads/${root_branch}"; then
+    git checkout "${root_branch}"
+  elif git show-ref --verify --quiet "refs/remotes/origin/${root_branch}"; then
+    git checkout -b "${root_branch}" "origin/${root_branch}"
   else
-    echo "Error: Base branch '${base_branch}' not found."
+    echo "Error: Root branch '${root_branch}' not found."
     exit 1
   fi
-  git checkout -b "${lane_branch}"
-  git push -u origin "${lane_branch}"
-  echo "✅ Created lane branch: ${lane_branch}"
+  git checkout -b "${size_branch}"
+  git push -u origin "${size_branch}"
+  echo "✅ Created audience branch: ${size_branch}"
 fi
 
-# Now checkout the target branch (lane or lane+phase)
-if [ "${target_branch}" != "${lane_branch}" ]; then
-  # Need a phase branch under the new lane
+# Now checkout the target branch (size or size+phase)
+if [ "${target_branch}" != "${size_branch}" ]; then
+  # Need a phase branch under the new size
   if git show-ref --verify --quiet "refs/heads/${target_branch}"; then
     git checkout "${target_branch}"
     git pull origin "${target_branch}"
   elif git show-ref --verify --quiet "refs/remotes/origin/${target_branch}"; then
     git checkout -b "${target_branch}" "origin/${target_branch}"
   else
-    # Create phase branch from lane branch
-    git checkout "${lane_branch}"
+    # Create phase branch from size branch
+    git checkout "${size_branch}"
     git checkout -b "${target_branch}"
     git push -u origin "${target_branch}"
     echo "✅ Created phase branch: ${target_branch}"
   fi
 else
-  git checkout "${lane_branch}"
-  git pull origin "${lane_branch}" 2>/dev/null || true
+  git checkout "${size_branch}"
+  git pull origin "${size_branch}" 2>/dev/null || true
 fi
 ```
 
 ```yaml
-# Update lane in initiative config (stored in shared config, not personal state)
-initiative.lane = selected_lane.code
+# Update audience in initiative config
+initiative.current_audience = selected_audience.code
 
 # Update initiative config
 initiative.branches.active = target_branch
 
-output: "✅ Lane switched: ${current_lane} → ${selected_lane.code}"
+output: "✅ Audience switched: ${current_audience} → ${selected_audience.code}"
 
 # Continue to Step 7 for state sync
 goto: Step 7
@@ -598,13 +612,13 @@ state.last_switch = {
   from: {
     initiative: previous_initiative_id or initiative.id,
     phase: previous_phase or current_phase,
-    lane: previous_lane or current_lane,
+    size: previous_size or current_size,
     branch: previous_branch or current_branch
   },
   to: {
     initiative: state.active_initiative or initiative.id,
     phase: state.current.phase,
-      lane: initiative.lane,
+      size: initiative.size,
     branch: exec("git branch --show-current")
   }
 }
@@ -659,11 +673,12 @@ fi
 ```yaml
 # Determine next suggested command based on new position
 phase_commands = {
-  "P0": "/pre-plan",
-  "P1": "/pre-plan or /spec",
-  "P2": "/spec or /plan",
-  "P3": "/plan or /review",
-  "P4": "/dev"
+  "preplan": "/preplan",
+  "businessplan": "/businessplan",
+  "techplan": "/techplan",
+  "devproposal": "/devproposal",
+  "sprintplan": "/sprintplan",
+  "dev": "/dev"
 }
 
 new_branch = exec("git branch --show-current")
@@ -674,7 +689,7 @@ output: |
   ├── Initiative: ${initiative.name} (${initiative.id})
   ├── Lens: ${initiative.layer}
   ├── Phase: ${state.current.phase} (${state.current.phase_name})
-  ├── Lane: ${initiative.lane}
+  ├── Audience: ${initiative.current_audience}
   ├── Branch: ${new_branch}
   └── Ready for: ${next_command}
   
@@ -694,9 +709,9 @@ output: |
 | State file missing | Prompt to create initiative |
 | Initiative config not found | Suggest @tracey migrate or check initiatives/ |
 | Branch not found locally | Attempt fetch from remote |
-| Branch not found on remote | Create from parent (lane or base branch) |
-| Lane branch missing | Create from base branch |
-| Phase branch missing | Create from lane branch |
+| Branch not found on remote | Create from parent (size or base branch) |
+| Size branch missing | Create from base branch |
+| Phase branch missing | Create from size branch |
 | Git fetch/push failure | Check remote connectivity, retry |
 | Invalid menu selection | Re-display menu with guidance |
 | Legacy state format | Warn and suggest @tracey migrate |
@@ -705,8 +720,8 @@ output: |
 
 ## Post-Conditions
 
-- [ ] state.yaml updated with new position (initiative, phase, lane)
-- [ ] Initiative config updated if layer/lens changed
+- [ ] state.yaml updated with new position (initiative, phase, audience)
+- [ ] Initiative config updated if layer/lens/audience changed
 - [ ] Git branch checked out matching new position
 - [ ] event-log.jsonl entry appended for switch event
 - [ ] State changes committed and pushed

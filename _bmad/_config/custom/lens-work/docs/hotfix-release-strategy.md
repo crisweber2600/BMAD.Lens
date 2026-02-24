@@ -4,7 +4,7 @@
 
 lens-work's branch topology is designed for structured lifecycle flow, but real-world emergencies require escape hatches. This guide covers how to handle hotfixes, releases, and merge-back operations without breaking initiative state.
 
-> **IMPORTANT:** Replace `{Domain}` in all commands with your actual domain prefix (e.g., `lens`, `payment`, `auth`). For example, `{Domain}/{initiative_id}/base` becomes `lens/rate-limit-x7k2m9/base` or `payment/checkout-0a1k2m/base`.
+> **IMPORTANT:** Replace `{featureBranchRoot}` in all commands with your actual initiative root branch name (e.g., `chat-spark-backend-alignment-50cf37`). For example, `{featureBranchRoot}-small-p1` becomes `chat-spark-backend-alignment-50cf37-small-p1`.
 
 ## Emergency Hotfix Flow
 
@@ -36,20 +36,20 @@ git push -u origin hotfix/{description}
 After the hotfix is merged to `main`, propagate it into any active initiative branches:
 
 ```bash
-# Update the initiative's base branch
-git checkout {Domain}/{initiative_id}/base
-git merge main --no-ff -m "merge: hotfix/{description} into initiative base"
-git push origin {Domain}/{initiative_id}/base
+# Update the initiative's root branch
+git checkout {featureBranchRoot}
+git merge main --no-ff -m "merge: hotfix/{description} into initiative root"
+git push origin {featureBranchRoot}
 
-# Cascade to lane branches
-git checkout {Domain}/{initiative_id}/small
-git merge {Domain}/{initiative_id}/base --no-ff
-git push origin {Domain}/{initiative_id}/small
+# Cascade to audience branches
+git checkout {featureBranchRoot}-small
+git merge {featureBranchRoot} --no-ff
+git push origin {featureBranchRoot}-small
 
 # Cascade to active phase branch
-git checkout {Domain}/{initiative_id}/small-{N}
-git merge {Domain}/{initiative_id}/small --no-ff
-git push origin {Domain}/{initiative_id}/small-{N}
+git checkout {featureBranchRoot}-small-p{N}
+git merge {featureBranchRoot}-small --no-ff
+git push origin {featureBranchRoot}-small-p{N}
 ```
 
 ### 4. Log the Hotfix Event
@@ -91,7 +91,7 @@ git push origin v{version}
 
 When merging hotfixes or cross-branch changes create conflicts:
 
-1. **Always resolve on the _receiving_ branch** — never force-push lane or phase branches
+1. **Always resolve on the _receiving_ branch** — never force-push size or phase branches
 2. **Prefer the hotfix for production-critical code** — the fix was already validated in production
 3. **Re-run CI after resolution** — ensure the merge didn't break initiative work
 4. **Log the conflict resolution** in the event log for audit trail
@@ -100,13 +100,13 @@ When merging hotfixes or cross-branch changes create conflicts:
 # After resolving conflicts
 git add -A
 git commit -m "merge: resolve conflicts from hotfix/{description}"
-git push origin {Domain}/{initiative_id}/small-{N}
+git push origin {featureBranchRoot}-small-p{N}
 ```
 
 ## Summary
 
 | Scenario | Branch From | Merge To | Cascade? |
 |----------|-------------|----------|----------|
-| Hotfix | `main` | `main` → `{Domain}/*/base` → down | Yes, all active initiatives |
+| Hotfix | `main` | `main` → `{featureBranchRoot}` → down | Yes, all active initiatives |
 | Release | `main` | Tag only | No |
-| Initiative release | `{Domain}/*/base` → `main` | `main` + tag | Archive initiative |
+| Initiative release | `{featureBranchRoot}` → `main` | `main` + tag | Archive initiative |

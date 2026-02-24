@@ -1,8 +1,9 @@
 ---
-phase: 4
-phase_name: Implementation
+phase: dev
+phase_name: Dev
 initiative_id: "{initiative_id}"
 initiative_name: "{initiative_name}"
+track: "{track}"
 layer: "{layer}"
 domain: "{domain}"
 service: "{service}"
@@ -15,11 +16,12 @@ instructions: |
   When complete, save the file and re-run /dev to process it.
 ---
 
-# Phase 4: Implementation (Batch)
+# Dev: Implementation (Batch)
 
-**Initiative:** {initiative_name} ({initiative_id})  
-**Layer:** {layer}  
-**Domain/Service:** {domain} / {service}  
+**Initiative:** {initiative_name} ({initiative_id})
+**Track:** {track}
+**Layer:** {layer}
+**Domain/Service:** {domain} / {service}
 **Target Repos:** {target_repos}
 
 ---

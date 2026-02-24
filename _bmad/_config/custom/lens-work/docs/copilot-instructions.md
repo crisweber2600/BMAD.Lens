@@ -123,49 +123,67 @@ Agent definition files are loaded **at runtime, never pre-loaded**. This enables
 - `module-builder` — Create/edit BMAD modules
 - `workflow-builder` — Create/edit workflows
 
-**LENS Workbench:**
-- `compass` — Phase router for `/pre-plan`, `/spec`, `/plan`, `/review`, `/dev`
+**LENS Workbench (v2.0.0 — Lifecycle Contract):**
+- `compass` — Phase router for `/preplan`, `/spec`, `/techplan`, `/plan`, `/review`, `/dev`
 - `casey` — Git branch orchestration
 - `tracey` — State management and recovery
 - `scout` — Bootstrap and discovery
+- `scribe` — Constitutional governance guardian
 
-## BMAD Lifecycle Phases
+## BMAD Lifecycle Phases (v2 — Lifecycle Contract)
 
-The planning-to-implementation lifecycle follows ordered sequential phases:
+The planning-to-implementation lifecycle uses named phases with agent ownership and audience-based promotion gates:
 
-1. **Analysis** (Phase 1, P1)
-   - Brainstorm → Research → Product Brief
-   - Focus: Understanding the problem space
+### Phases (within small audience)
 
-2. **Planning** (Phase 2, P2)
-   - PRD → UX Design
-   - Focus: Solution strategy and specifications
+| Phase | Agent | Description |
+|-------|-------|-------------|
+| **PrePlan** | Mary (Analyst) | Brainstorm, research, product brief |
+| **BusinessPlan** | John (PM) + Sally (UX) | PRD creation, UX design |
+| **TechPlan** | Winston (Architect) | Architecture document, technical decisions |
 
-3. **Solutioning** (Phase 3, P3)
-   - Architecture → Epics & Stories → Implementation Readiness Check
-   - Focus: Detailed solution design and readiness validation
+### Promotion Gates
 
-4. **Implementation** (Phase 4, P4)
-   - Sprint Planning → Create Story → Dev Story → Code Review → Retrospective
-   - Focus: Execution and delivery
+| Gate | From → To | Type |
+|------|-----------|------|
+| Adversarial Review | small → medium | Party mode multi-agent review |
+| Stakeholder Approval | medium → large | Stakeholder sign-off |
+| Constitution Gate | large → base | Scribe validates governance |
 
-**Artifacts flow to:**
-- Analysis/Planning: `_bmad-output/planning-artifacts/`
-- Implementation: `_bmad-output/implementation-artifacts/`
+### Post-Promotion Phases
+
+| Phase | Agent | Audience | Description |
+|-------|-------|----------|-------------|
+| **DevProposal** | John (PM) | medium | Epics, stories, readiness check |
+| **SprintPlan** | Bob (SM) | large | Sprint planning, story files |
+| **Dev** | Amelia (Dev) + Quinn (QA) | TargetProjects | Implementation loop |
+
+### Initiative Tracks
+
+| Track | Phases | Use Case |
+|-------|--------|----------|
+| full | All phases | Complete lifecycle |
+| feature | BusinessPlan → Dev | Known business context |
+| tech-change | TechPlan → Dev | Pure technical change |
+| hotfix | TechPlan only | Urgent fix, fast to execution |
+| spike | PrePlan only | Research only, no implementation |
+
+**Artifacts flow to:** `_bmad-output/lens-work/initiatives/`
 
 ## LENS Workbench Commands
 
 ### Phase Router Commands (via Compass)
 
-LENS Workbench provides guided phase navigation through Compass:
+LENS Workbench v2 provides guided phase navigation through Compass using named phases:
 
-| Command | Phase | Function |
-|---------|-------|----------|
-| `/pre-plan` | P1 | Pre-flight check, bootstrap, discovery |
-| `/spec` | P1-P2 | Specification review and refinement |
-| `/plan` | P2 | Planning and design |
-| `/review` | P3 | Architecture and readiness review |
-| `/dev` | P4 | Development and implementation |
+| Command | Phase | Agent | Audience | Function |
+|---------|-------|-------|----------|----------|
+| `/preplan` | PrePlan | Mary | small | Analysis — brainstorm, research, product brief |
+| `/spec` | BusinessPlan | John + Sally | small | Business planning — PRD, UX design |
+| `/techplan` | TechPlan | Winston | small | Technical design — architecture document |
+| `/plan` | DevProposal | John | medium | Solutioning — epics, stories, readiness |
+| `/review` | SprintPlan | Bob | large | Sprint planning — sprint status, story files |
+| `/dev` | Dev | Amelia + Quinn | target | Implementation loop |
 
 ### Initiative Commands
 
@@ -173,10 +191,11 @@ Create and manage initiatives:
 
 | Command | Function |
 |---------|----------|
-| `#new-domain` | Create domain-scoped initiative |
-| `#new-service` | Create service within domain |
-| `#new-feature` | Create feature initiative |
-| `#fix-story` | Create hotfix or bug story |
+| `/new-domain` | Create domain-scoped initiative |
+| `/new-service` | Create service within domain |
+| `/new-feature` | Create feature initiative |
+| `/fix-story` | Create hotfix or bug story |
+| `/migrate` | Migrate v1 initiatives to v2 lifecycle |
 
 ### Supporting Files
 
@@ -206,7 +225,7 @@ Command guidance and templates:
 ### Runtime State (LENS Workbench)
 - Location: `_bmad-output/lens-work/`
 - Files:
-  - `state.yaml` — Current initiative, phase, lane, gate status
+  - `state.yaml` — Current initiative, phase, size, gate status
   - `event-log.jsonl` — Append-only audit trail
 - Management: Read by Tracey (state manager), written by all workflows
 
@@ -304,22 +323,44 @@ Discovery docs:
 
 The LENS Workbench enforces strict git-based workflow control:
 
-### Branch Topology
+### Branch Topology (v2 — Named Phases)
 
-Branches mirror the BMAD lifecycle phases and lanes:
+Branches mirror the lifecycle contract's named phases and audience levels:
 
+**Domain-layer (single branch):**
 ```
 main
-└── {domain_prefix}/{initiative_id}/base           ← Baseline
-    ├── {domain_prefix}/{initiative_id}/small      ← Small review lane
-    │   ├── .../small-1                            ← Phase 1 (Analysis)
-    │   │   └── .../small-1-{workflow}             ← Workflow branch
-    │   ├── .../small-2
-    │   ├── .../small-3
-    │   └── .../small-4
-    └── {domain_prefix}/{initiative_id}/large      ← Large review lane
-        └── .../large-{N}-{workflow}
+└── {domain_prefix}                                        ← Domain organizational branch
 ```
+
+**Service-layer (single branch):**
+```
+main
+└── {domain_prefix}-{service_prefix}                       ← Service organizational branch
+```
+
+**Initiative layers (full topology with named phases):**
+```
+main
+└── {initiative_root}                                      ← Initiative root
+    ├── {initiative_root}-small                             ← Small audience (IC creation)
+    │   ├── {initiative_root}-small-preplan                 ← PrePlan phase
+    │   ├── {initiative_root}-small-businessplan            ← BusinessPlan phase
+    │   └── {initiative_root}-small-techplan                ← TechPlan phase
+    ├── {initiative_root}-medium                            ← Medium audience (lead review)
+    │   └── {initiative_root}-medium-devproposal            ← DevProposal phase
+    └── {initiative_root}-large                             ← Large audience (stakeholder)
+        └── {initiative_root}-large-sprintplan              ← SprintPlan phase
+```
+
+**Promotion PRs (audience gates):**
+```
+{initiative_root}-small     → PR → {initiative_root}-medium   (adversarial review)
+{initiative_root}-medium    → PR → {initiative_root}-large    (stakeholder approval)
+{initiative_root}-large     → PR → base                       (constitution gate)
+```
+
+All branches use flat hyphen-separated naming (no `/` separators). All branches pushed to remote immediately on creation.
 
 **Design principle:** The entire project lifecycle can be reconstructed from `git log` alone.
 
@@ -332,7 +373,7 @@ All lens-work workflows enforce:
 
 Example commit message:
 ```
-{domain}/{initiative_id}/{lane}/{phase}[/{workflow}]: description of changes
+{type}({initiative_id}): description of changes
 ```
 
 ## Using Copilot Effectively in BMAD Repos
@@ -375,8 +416,9 @@ Copilot works alongside BMAD agents:
 To get started with a BMAD control repo using LENS Workbench:
 
 1. **Load Compass agent:** `@compass` in GitHub Copilot Chat
-2. **Run preflight:** `/pre-plan` to bootstrap and discover repos
-3. **Start first initiative:** `#new-feature` or `#new-domain` via Compass
-4. **Follow phase routing:** Use `/spec`, `/plan`, `/review`, `/dev` as needed
+2. **Run preflight:** `/preplan` to bootstrap and discover repos
+3. **Start first initiative:** `/new-feature` or `/new-domain` via Compass
+4. **Follow phase routing:** `/spec` → `/techplan` → `/plan` → `/review` → `/dev`
+5. **Migrate existing initiatives:** `/migrate` to upgrade v1 initiatives to v2 lifecycle
 
 For questions about specific agents or workflows, ask Copilot directly with context about what you're trying to accomplish.

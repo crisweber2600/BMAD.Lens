@@ -1,0 +1,133 @@
+# LENS Workbench v2.0.0 - Automation Configuration
+# =============================================================================
+# Configuration for automated branch management and daily merges
+# =============================================================================
+
+# Chat Startup Configuration
+chat_startup:
+  enabled: true
+  script: chat-startup-branch-check.ps1  # or .sh for Unix
+  auto_switch: true                       # Automatically switch to correct branch
+  create_if_missing: false                # Create branch if it doesn't exist
+  check_on:
+    - chat_start                          # When chat session starts
+    - initiative_change                   # When switching initiatives
+    - phase_change                        # When changing phases
+
+# Daily Merge Automation
+daily_merge:
+  enabled: true
+  script: daily-upstream-merge.ps1        # or .sh for Unix
+  schedule:
+    time: "02:00"                         # 2 AM daily
+    timezone: "local"                     # or specific like "UTC", "America/New_York"
+    days: ["Mon", "Tue", "Wed", "Thu", "Fri"]  # Skip weekends
+
+  # Merge hierarchy configuration
+  hierarchy:
+    - level: "feature-to-service"
+      pattern: "^([a-z0-9]+)-([a-z0-9]+)-(.+)$"  # e.g., ecom-chkt-payment
+      target_pattern: "{domain}-{service}"       # e.g., ecom-chkt
+      create_prs: true
+      auto_merge: false                          # Require manual review
+
+    - level: "service-to-domain"
+      pattern: "^([a-z0-9]+)-([a-z0-9]+)$"      # e.g., ecom-chkt
+      target_pattern: "{domain}"                 # e.g., ecom
+      create_prs: true
+      auto_merge: false
+
+    - level: "domain-to-default"
+      pattern: "^([a-z0-9]+)$"                  # e.g., ecom
+      target_branch: "main"                      # or "master", "develop"
+      create_prs: true
+      auto_merge: false
+
+    - level: "release-to-default"
+      pattern: "^release/(.+)$"                 # e.g., release/2.0.0
+      target_branch: "main"
+      create_prs: true
+      auto_merge: true                          # Auto-merge if checks pass
+
+  # PR settings
+  pull_requests:
+    labels:
+      - "daily-upstream-sync"
+      - "automated"
+    auto_merge_labels:
+      - "auto-merge"
+    require_checks: true                        # Wait for CI/CD checks
+    require_reviews: 1                          # Number of required reviews
+    delete_branch_on_merge: false               # Keep feature branches
+
+  # Notification settings
+  notifications:
+    on_success: false                           # Don't notify on successful merges
+    on_failure: true                           # Notify on failures
+    on_conflict: true                          # Notify on merge conflicts
+    channels:
+      - type: "log"
+        path: "_bmad-output/lens-work/merge-logs/"
+      # Uncomment and configure for other notifications:
+      # - type: "email"
+      #   to: ["team@example.com"]
+      # - type: "slack"
+      #   webhook: "https://hooks.slack.com/services/..."
+
+# GitHub Settings
+github:
+  pat_env_var: "GITHUB_PAT"                   # Environment variable for PAT
+  api_base_url: "https://api.github.com"      # GitHub API URL (change for enterprise)
+
+# Logging
+logging:
+  level: "INFO"                                # DEBUG, INFO, WARNING, ERROR
+  directory: "_bmad-output/lens-work/automation-logs/"
+  retention_days: 30                          # Keep logs for 30 days
+
+# Windows Task Scheduler Setup (for reference)
+windows_task_scheduler:
+  # Run this in elevated PowerShell to create scheduled task:
+  # $trigger = New-ScheduledTaskTrigger -Daily -At 2am
+  # $action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "-ExecutionPolicy Bypass -File C:\path\to\daily-upstream-merge.ps1"
+  # Register-ScheduledTask -TaskName "LENS Daily Merge" -Trigger $trigger -Action $action -RunLevel Highest
+
+# Cron Setup (for Unix/Linux)
+cron_setup:
+  # Add to crontab with: crontab -e
+  # 0 2 * * 1-5 /path/to/daily-upstream-merge.sh
+  # This runs Monday-Friday at 2 AM
+
+# Hooks for IDE/Editor Integration
+ide_hooks:
+  vscode:
+    # Add to .vscode/tasks.json
+    task_name: "LENS Branch Check"
+    command: "${workspaceFolder}/_bmad/_config/custom/lens-work/scripts/chat-startup-branch-check.ps1"
+    run_on: "folderOpen"
+
+  jetbrains:
+    # Add to .idea/startup.xml
+    script: "chat-startup-branch-check.sh"
+    trigger: "project_open"
+
+# Validation Rules
+validation:
+  branch_patterns:
+    initiative_root: "^[a-z0-9-]+$"
+    phase_branch: "^[a-z0-9-]+-(?:small|medium|large)-(?:preplan|businessplan|techplan|devproposal|sprintplan)$"
+    audience_branch: "^[a-z0-9-]+-(?:small|medium|large)$"
+
+  protected_branches:
+    - main
+    - master
+    - develop
+    - "release/*"
+
+# Emergency Override
+emergency:
+  bypass_checks: false                        # Set to true in emergencies
+  admin_users: []                            # Users who can bypass automation
+
+---
+# End of automation configuration

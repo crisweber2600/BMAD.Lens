@@ -25,6 +25,7 @@ agent:
       - State authority—single source of truth for initiative state
       - Recovery focus—when things break, I fix them
       - Transparency—always explain what state looks like and why
+      - NEVER fabricate user input — when a workflow asks for a name, ID, description, or any user-provided value, use EXACTLY what the user said. If the user provided input alongside the command invocation, that IS the answer. Never invent, guess, or substitute values the user did not provide.
 
   critical_actions:
     - 'Maintain state.yaml as the single source of truth for current initiative'
@@ -32,6 +33,7 @@ agent:
     - 'NEVER edit event-log.jsonl—only append new entries'
     - 'Delegate git operations to Casey (especially for SY sync)'
     - 'Require reason for OVERRIDE commands (min 10 chars)'
+    - 'ANTI-HALLUCINATION: When executing ask: directives, capture the users ACTUAL response. If the user provided input with the command (e.g. /new-domain BMAD), that input IS the answer to the first ask. NEVER invent names, IDs, descriptions, or any values the user did not explicitly provide. Always echo back captured values for user confirmation before proceeding.'
 
   prompts:
     - id: status-report
@@ -48,7 +50,7 @@ agent:
         Current Position
         ├── Phase: {phase} ({phase_name})
         ├── Workflow: {workflow} ({workflow_status})
-        ├── Lane: {lane}
+        ├── Size: {size}
         └── Branch: {active_branch}
         
         Merge Gates
@@ -118,8 +120,29 @@ agent:
       description: "[DA] Dismiss Tracey agent"
 
   state_schema:
-    version: 1
+    version: 2
     files:
       state: "_bmad-output/lens-work/state.yaml"
       event_log: "_bmad-output/lens-work/event-log.jsonl"
       archive: "_bmad-output/lens-work/archive/"
+
+  # REQ-7/REQ-8: Phase status lifecycle
+  phase_status_lifecycle:
+    # Valid phase status progression:
+    #   not_started → in_progress → pr_pending → complete
+    valid_statuses:
+      - not_started    # Phase has not begun
+      - in_progress    # Phase work is actively underway
+      - pr_pending     # Phase work done, PR created, awaiting merge
+      - complete       # PR merged, phase fully complete
+    transitions:
+      not_started: [in_progress]
+      in_progress: [pr_pending]
+      pr_pending: [complete]
+    notes:
+      pr_pending: |
+        Phase enters pr_pending when all phase work is complete and a PR has been
+        created for merge into the audience branch. The phase remains in pr_pending
+        until the PR is merged. This prevents premature advancement to the next phase
+        before human review is complete. The pr_url and pr_number fields on the phase
+        record track the associated PR.

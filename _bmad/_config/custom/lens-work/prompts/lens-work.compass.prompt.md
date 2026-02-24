@@ -13,12 +13,14 @@ Load and activate the Compass agent:
 If the user requests a multi-step plan, create and maintain a task list with `manage_todo_list`.
 
 **Available Commands:**
-- `/pre-plan` — Analysis phase
-- `/spec` — Planning phase
-- `/plan` — Solutioning phase
-- `/review` — Gate phase
-- `/dev` — Implementation phase
-- `#new-domain`, `#new-service`, `#new-feature` — Create initiatives
+- `/preplan` — PrePlan phase (brainstorm/research/product brief)
+- `/businessplan` — BusinessPlan phase (PRD/UX Design)
+- `/techplan` — TechPlan phase (architecture/technical design)
+- `/devproposal` — DevProposal phase (epics/stories/readiness)
+- `/sprintplan` — SprintPlan phase (sprint planning/dev handoff)
+- `/promote` — Audience promotion (small→medium→large→base gates)
+- `/dev` — Implementation loop
+- `/new-domain`, `/new-service`, `/new-feature` — Create initiatives
 - `?` — Status check
 
 ```

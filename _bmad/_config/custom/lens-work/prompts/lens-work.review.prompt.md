@@ -1,26 +1,30 @@
 ```prompt
 ---
-description: Implementation gate with readiness validation and sprint planning
+description: Launch SprintPlan phase — sprint planning, dev-ready stories, and dev handoff
 ---
 
-Activate Compass agent and execute /review:
+Activate Compass agent and execute /sprintplan:
 
 1. Load agent: `_bmad/lens-work/agents/compass.agent.yaml`
-2. Execute `/review` command for implementation gate
-3. Validate readiness and approve for sprint planning
+2. Execute `/sprintplan` command for sprint planning and dev handoff
+3. Validate readiness and create dev-ready stories
 
 Use `#think` before approving readiness or flagging blockers.
 
-**Prerequisites:**
-- `/plan` phase complete (Phase 3 merged)
-- Stories validated and estimated
-- Lead review merged to base
+**Phase:** sprintplan (audience: large, agent: Bob/SM)
 
-**Authorized Roles:** Scrum Master (gate owner)
+**Prerequisites:**
+- Medium → Large audience promotion complete (stakeholder approval gate passed)
+- `/devproposal` complete (devproposal PR merged into medium audience branch)
+- Stories validated and estimated
+
+**Authorized Roles:** Scrum Master (phase owner: Bob/SM)
 
 **Outputs:**
 - Sprint backlog approved
-- Implementation permission granted
-- PR link for large → base merge
+- Dev-ready story files
+- Developer handoff
+
+**Next:** Run `/promote` (large → base) for constitution gate, then `/dev`
 
 ```

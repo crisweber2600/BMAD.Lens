@@ -7,7 +7,39 @@ description: Run LENS Workbench preflight check and activate Compass for lifecyc
 
 Execute preflight check of all lens-work systems, then activate Compass for workflow guidance.
 
-## Phase 1: Core System Check
+---
+
+## Phase 0: Daily Sync Check (Optional)
+
+### 0.1 Load User Profile
+- [ ] Check for profile: `_bmad-output/personal/profile.yaml`
+- [ ] Load last sync timestamp from `profile.lens_work.last_sync.date`
+- [ ] Compare to today's date
+
+### 0.2 Decide Sync Action
+```
+if profile.lens_work.last_sync.date == today:
+  Already synced today
+  Use cached branch selection from profile
+
+else:
+  First sync today
+  [1] Run sync-and-select-branch workflow (recommended)
+  [2] Skip and continue with cached selection
+  [3] Skip sync entirely
+```
+
+### 0.3 If User Selects [1] Sync
+- Invoke: `{project-root}/_bmad/lens-work/workflows/utility/sync-and-select-branch/workflow.md`
+- Pass: active_initiative, target_repo from state
+- Receive: selected_branch, commit_date, commit_hash
+- Proceed to Core System Check with freshly selected branch
+
+> **Note:** Profile-tracked sync runs at most once per day per user. Use `/sync-now` command in Compass to force immediate re-sync after first run.
+
+---
+
+## Step 1: Core System Check
 
 ### 1.1 Module Configuration
 - [ ] Check for module config: `_bmad/lens-work/module.yaml`
@@ -19,29 +51,32 @@ Execute preflight check of all lens-work systems, then activate Compass for work
 - [ ] Casey (Git Conductor) — `agents/casey.agent.yaml`
 - [ ] Tracey (State Manager) — `agents/tracey.agent.yaml`
 - [ ] Scout (Bootstrap & Discovery) — `agents/scout.agent.yaml`
+- [ ] Scribe (Constitutional Guardian) — `agents/scribe.agent.yaml`
 
-### 1.3 Core Workflows
-- [ ] `workflows/router/pre-plan/` — Analysis phase
-- [ ] `workflows/router/spec/` — Planning phase
-- [ ] `workflows/router/plan/` — Solutioning phase
-- [ ] `workflows/router/review/` — Gate phase
-- [ ] `workflows/router/dev/` — Implementation phase
+### 1.3 Core Workflows (v2 named phases)
+- [ ] `workflows/router/pre-plan/` — PrePlan phase (Mary/Analyst)
+- [ ] `workflows/router/spec/` — BusinessPlan phase (John/PM + Sally/UX)
+- [ ] `workflows/router/tech-plan/` — TechPlan phase (Winston/Architect)
+- [ ] `workflows/router/plan/` — DevProposal phase (John/PM)
+- [ ] `workflows/router/sprintplan/` — SprintPlan phase (Bob/SM)
+- [ ] `workflows/router/dev/` — Implementation loop
+- [ ] `workflows/core/audience-promotion/` — Audience promotion gates
 - [ ] `workflows/discovery/repo-discover/` — Repo inventory
 - [ ] `workflows/utility/bootstrap/` — Initial setup
 
-## Phase 2: State Check (Two-File Pattern)
+## Step 2: State Check (Two-File Pattern)
 
 ### 2.1 Active Initiative
 - [ ] Check for state file: `_bmad-output/lens-work/state.yaml` (active initiative pointer)
 - [ ] Check for initiative configs: `_bmad-output/lens-work/initiatives/{initiative_id}.yaml`
 - [ ] Check for event log: `_bmad-output/lens-work/event-log.jsonl`
-- [ ] Detect current phase and branch from active initiative config
+- [ ] Detect current phase, track, and branch from active initiative config
 
 ### 2.2 Repo Inventory
 - [ ] Check for repo inventory: `_bmad-output/lens-work/repo-inventory.yaml`
 - [ ] Check TargetProjects path from config
 
-## Phase 3: Activate Compass
+## Step 3: Activate Compass
 
 If preflight passes:
 1. Load Compass agent: `_bmad/lens-work/agents/compass.agent.yaml`
@@ -50,11 +85,12 @@ If preflight passes:
 
 If state exists, show current position:
 ```
-📍 Current Position
-├── Initiative: {id}
-├── Phase: {phase}
-├── Workflow: {workflow}
-└── Next: {recommendation}
+Current Position
+  Initiative: {id}
+  Track: {track}
+  Phase: {phase} (audience: {audience})
+  Branch: {branch}
+  Next: {recommendation}
 ```
 
 **Additional Commands:**

@@ -27,6 +27,7 @@ agent:
       - Phase discipline—enforce proper ordering, no shortcuts
       - Layer awareness—use signal hierarchy for detection
       - Separation of concerns—delegate git to Casey, state to Tracey
+      - NEVER fabricate user input — when a workflow asks for a name, ID, description, or any user-provided value, use EXACTLY what the user said. If the user provided input alongside the command invocation, that IS the answer. Never invent, guess, or substitute values the user did not provide.
 
   critical_actions:
     - 'Execute ALL commands from the BMAD directory (control repo)—never cd into TargetProjects'
@@ -34,12 +35,13 @@ agent:
     - 'Check role authorization before proceeding with phase commands'
     - 'Update Tracey with state changes after phase transitions'
     - 'Validate merge gates before allowing phase progression'
+    - 'ANTI-HALLUCINATION: When executing ask: directives, capture the users ACTUAL response. If the user provided input with the command (e.g. /new-domain BMAD), that input IS the answer to the first ask. NEVER invent names, IDs, descriptions, or any values the user did not explicitly provide. Always echo back captured values for user confirmation before proceeding.'
 
   prompts:
     - id: layer-detect
       content: |
         Detect the architectural layer using this signal hierarchy (priority order):
-        1. Branch pattern: If on {domain}/{id}/... branch, parse layer from id
+        1. Branch pattern: Parse flat branch name using initiative config's featureBranchRoot
         2. Session state: Check state.yaml for active initiative
         3. Path heuristics: Infer from current working directory structure
         4. User prompt: Extract layer keywords from command
@@ -63,12 +65,18 @@ agent:
       content: |
         Display current context from two-file state:
         1. Load state.yaml for personal position
-        2. Load initiatives/{active_initiative}.yaml for initiative config
-        3. Display:
+        2. Load initiative config:
+           - Domain-layer: initiatives/{active_initiative}/Domain.yaml
+           - Service-layer: initiatives/{active_initiative}/Service.yaml
+           - Feature/microservice: initiatives/{active_initiative}.yaml
+        3. If feature/microservice layer: derive review_size from initiative.review_audience_map[state.current.phase]
+           If domain-layer: no review audience (domain is organizational only)
+           If service-layer: no review audience (service is organizational only)
+        4. Display:
            Initiative: {name} ({id})
            Lens: {layer}
-           Phase: P{N} ({phase_name})
-           Lane: {lane}
+           Phase: P{N} ({phase_name})  [domain/service-layer: N/A — no phases]
+           Review audience: {review_size} (derived from phase)  [domain/service-layer: N/A]
            Branch: {branch}
            Gates: {gate_status_summary}
 
@@ -85,6 +93,14 @@ agent:
     - trigger: /plan or fuzzy match on solutioning or stories
       workflow: "{project-root}/_bmad/lens-work/workflows/router/plan/workflow.md"
       description: "[/plan] Complete Solutioning (Epics/Stories/Readiness)"
+    
+    - trigger: /tech-plan or fuzzy match on technical planning or architecture design
+      workflow: "{project-root}/_bmad/lens-work/workflows/router/tech-plan/workflow.md"
+      description: "[/tech-plan] Technical Planning (Architecture/Tech Decisions/API Contracts)"
+    
+    - trigger: /story-gen or fuzzy match on story generation or generate stories
+      workflow: "{project-root}/_bmad/lens-work/workflows/router/story-gen/workflow.md"
+      description: "[/story-gen] Story Generation (Stories/Estimates/Dependencies)"
     
     - trigger: /review or fuzzy match on review or gate
       workflow: "{project-root}/_bmad/lens-work/workflows/router/review/workflow.md"
@@ -120,26 +136,71 @@ agent:
     # Context Commands
     - trigger: /switch or fuzzy match on switch or change context
       workflow: "{project-root}/_bmad/lens-work/workflows/utility/switch/workflow.md"
-      description: "[/switch] Switch active initiative, lens, phase, or lane"
+      description: "[/switch] Switch active initiative, lens, or phase"
     
     - trigger: /context or fuzzy match on context or where am I
       action: "display_context"
-      description: "[/context] Display current context (initiative, lens, phase, lane, branch)"
+      description: "[/context] Display current context (initiative, lens, phase, review audience, branch)"
     
-    - trigger: /constitution or fuzzy match on constitution or rules
-      action: "display_constitution"
-      description: "[/constitution] Display lens-work constitution and operating rules"
-    
+    - trigger: /constitution or fuzzy match on constitution or governance
+      workflow: "{project-root}/_bmad/lens-work/workflows/governance/constitution/workflow.md"
+      description: "[/constitution] Constitutional governance — create, amend, or view constitutions"
+
+    - trigger: /compliance or fuzzy match on compliance or check rules
+      workflow: "{project-root}/_bmad/lens-work/workflows/governance/compliance-check/workflow.md"
+      description: "[/compliance] Check artifact compliance against constitutions"
+
+    - trigger: /resolve or fuzzy match on resolve constitution
+      workflow: "{project-root}/_bmad/lens-work/workflows/governance/resolve-constitution/workflow.md"
+      description: "[/resolve] Resolve accumulated rules for current context"
+
+    - trigger: /ancestry or fuzzy match on ancestry or heritage or lineage
+      workflow: "{project-root}/_bmad/lens-work/workflows/governance/ancestry/workflow.md"
+      description: "[/ancestry] Display constitution inheritance chain"
+
     - trigger: /lens or fuzzy match on lens or layer or scope
       action: "display_lens"
       description: "[/lens] Show/change current lens focus (domain/service/microservice/feature)"
-    
+
+    # Sync Commands (Daily Rate-Limited)
+    - trigger: /sync-now or fuzzy match on force sync or sync now
+      workflow: "{project-root}/_bmad/lens-work/workflows/utility/sync-and-select-branch/workflow.md"
+      description: "[/sync-now] Force immediate branch sync (overrides daily limit)"
+      params:
+        force_sync: true
+
+    # Discovery Commands
+    - trigger: /domain-map or fuzzy match on domain map or architecture map
+      workflow: "{project-root}/_bmad/lens-work/workflows/discovery/domain-map/workflow.md"
+      description: "[/domain-map] View/edit domain architecture map"
+
+    - trigger: /impact or fuzzy match on impact analysis or cross-boundary
+      workflow: "{project-root}/_bmad/lens-work/workflows/discovery/impact-analysis/workflow.md"
+      description: "[/impact] Cross-boundary impact analysis"
+
+    - trigger: /recreate-branches or fuzzy match on recreate or recovery branches
+      workflow: "{project-root}/_bmad/lens-work/workflows/utility/recreate-branches/workflow.md"
+      description: "[/recreate-branches] Recreate missing git branches (recovery)"
+
+    # Credential & Configuration Commands
+    - trigger: /credentials or fuzzy match on pat or token or credentials
+      workflow: "{project-root}/_bmad/lens-work/workflows/utility/manage-credentials/workflow.md"
+      description: "[/credentials] Add, update, or view git host credentials (PATs)"
+
+    - trigger: /onboard or fuzzy match on setup or onboard
+      workflow: "{project-root}/_bmad/lens-work/workflows/utility/onboarding/workflow.md"
+      description: "[/onboard] Full onboarding (profile + credentials + repo reconciliation)"
+
     # Utility Commands
     - trigger: H or fuzzy match on help or menu
       action: "display_menu"
       description: "[H] Display menu and guidance"
     
-    - trigger: '? or fuzzy match on status or where'
+    - trigger: /help or fuzzy match on help commands or command list
+      action: "display_full_help"
+      description: "[/help] Display full command reference with context and next step"
+    
+    - trigger: "? or fuzzy match on status or where"
       action: '@tracey ST'
       description: "[?] Quick status check (delegates to Tracey)"
     

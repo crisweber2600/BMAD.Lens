@@ -1,5 +1,7 @@
 # LENS Workbench (lens-work)
 
+**Version 2.0.0** — Lifecycle Contract with Named Phases
+
 **Guided lifecycle router with git-orchestrated discipline for BMAD workflows.**
 
 ---
@@ -8,9 +10,9 @@
 
 LENS Workbench transforms BMAD from a "large framework you must learn" into a **guided system people can use immediately**. It acts as the front door to BMAD by providing:
 
-- **Phase Router Commands** — `/pre-plan`, `/spec`, `/plan`, `/review`, `/dev`
-- **Automated Git Orchestration** — Branch topology mirrors BMAD phases
-- **Layer-Aware Context** — Auto-detects domain/service/microservice/feature layers
+- **Phase Router Commands** — `/preplan`, `/businessplan`, `/techplan`, `/devproposal`, `/sprintplan`, `/dev`
+- **Automated Git Orchestration** — Branch topology mirrors lifecycle phases and audiences
+- **Layer-Aware Context** — Auto-detects org/domain/service/repo layers
 - **Repo Discovery & Documentation** — Inventories and documents repos before planning
 - **Lifecycle Telemetry** — Tracks phase progress with dashboard visibility
 - **Context Switching** — Seamlessly move between initiatives, lenses, and phases
@@ -24,11 +26,11 @@ LENS Workbench transforms BMAD from a "large framework you must learn" into a **
 LENS Workbench is designed for **GitHub Copilot Chat integration** in BMAD control repos. When installed, the module includes comprehensive Copilot guidance:
 
 - **Documentation:** [Copilot Instructions](docs/copilot-instructions.md) — How to work effectively with Copilot in BMAD repos
-- **Agent Loading:** Copilot loads LENS agents (Compass, Casey, Tracey, Scout) from `.github/agents/` stubs
+- **Agent Loading:** Copilot loads LENS agents (Compass, Casey, Tracey, Scout, Scribe) from `.github/agents/` stubs
 - **Workflow Guidance:** Copilot provides context for phase routing, git operations, and state management
 - **Command Reference:** See `.github/prompts/` for prompt files used by Compass routing commands
 
-**Start here:** Load Compass in Copilot Chat (`@compass`) and run `/pre-plan` to bootstrap your repository.
+**Start here:** Load Compass in Copilot Chat (`@compass`) and run `/preplan` to bootstrap your repository.
 
 ---
 
@@ -40,29 +42,53 @@ LENS Workbench maintains all runtime state in exactly two files — no database,
 
 ```
 _bmad-output/lens-work/
-├── state.yaml          ← Current initiative context, phase, lane, gate status
+├── state.yaml          ← Current initiative context, phase, audience, track, gate status
 └── event-log.jsonl     ← Append-only audit trail of every lifecycle event
 ```
 
-**`state.yaml`** is the single source of truth for "where are we now?" — active initiative, current phase, lane, workflow status, and gate progression. Every workflow reads it at start and writes it at end.
+**`state.yaml`** is the single source of truth for "where are we now?" — active initiative, current phase, audience, track, workflow status, and gate progression. Every workflow reads it at start and writes it at end.
 
 **`event-log.jsonl`** is the immutable history. Each line is a timestamped JSON event recording what happened, who did it, and what changed. Used for recovery, auditing, and telemetry dashboards.
 
 ### Branch Topology
 
-Git branches mirror the BMAD lifecycle. See `workflows/includes/lane-topology.md` for the full specification.
+Git branches mirror the BMAD lifecycle. See `workflows/includes/size-topology.md` for the full specification.
 
+**Domain-Layer (single branch):**
 ```
 main
-└── {domain_prefix}/{initiative_id}/base      ← Initiative baseline
-    ├── {domain_prefix}/{initiative_id}/small ← Small lane
-    │   ├── .../small-1                       ← Phase 1 (Analysis)
-    │   │   └── .../small-1-{workflow}        ← Workflow branch
-    │   ├── .../small-2                       ← Phase 2 (Planning)
-    │   ├── .../small-3                       ← Phase 3 (Solutioning)
-    │   └── .../small-4                       ← Phase 4 (Implementation)
-    └── {domain_prefix}/{initiative_id}/large ← Large review lane
+└── {domain_prefix}                               ← Domain organizational branch (only branch)
+    (Domain.yaml, .gitkeep in initiatives/, TargetProjects/, Docs/)
 ```
+
+Domain-layer initiatives create only the `{domain_prefix}` branch. No audience, phase, or workflow branches. Service/feature initiatives within this domain create their own topology.
+
+**Service-Layer (single branch):**
+```
+main
+└── {domain_prefix}-{service_prefix}              ← Service organizational branch (only branch)
+    (Service.yaml, .gitkeep in initiatives/, TargetProjects/, Docs/)
+```
+
+**Feature/Repo Layers (full topology):**
+```
+main
+└── {initiative_root}                              ← Initiative root
+    ├── {initiative_root}-small                    ← Small audience (IC creation)
+    │   ├── {initiative_root}-small-preplan        ← PrePlan phase
+    │   │   └── ...-small-preplan-{workflow}       ← Workflow branch
+    │   ├── {initiative_root}-small-businessplan   ← BusinessPlan phase
+    │   └── {initiative_root}-small-techplan       ← TechPlan phase
+    ├── {initiative_root}-medium                   ← Medium audience (lead review)
+    │   └── {initiative_root}-medium-devproposal   ← DevProposal phase
+    ├── {initiative_root}-large                    ← Large audience (stakeholder)
+    │   └── {initiative_root}-large-sprintplan     ← SprintPlan phase
+    └── base                                       ← Execution target
+```
+
+Where `{initiative_root}` = `{domain_prefix}-{service_prefix}-{initiative_id}` (service parent) or `{domain_prefix}-{initiative_id}` (domain parent).
+
+All branches use flat hyphen-separated names (no `/` separators). All branches pushed to remote immediately on creation. Phase branches (e.g., `-small-preplan`) created by phase routers, not at init.
 
 **Key design principle:** You can reconstruct the entire project lifecycle from the git log alone.
 
@@ -70,10 +96,11 @@ main
 
 | Agent | Role | Trigger | Responsibility |
 |-------|------|---------|----------------|
-| **Compass** | Phase Router | User commands | Routes `/pre-plan` through `/dev`, detects layers, manages context switches, enforces role gates |
+| **Compass** | Phase Router | User commands | Routes `/preplan` through `/dev`, manages tracks, context switches, audience promotions |
 | **Casey** | Git Conductor | Auto-triggered | Creates/validates branches, commits state, pushes to remote — never invoked directly by users |
 | **Tracey** | State Manager | User shortcodes | Reads/writes `state.yaml`, manages recovery, provides status, handles overrides and archival |
 | **Scout** | Discovery Lead | User commands | Bootstraps repos, runs discovery scans, generates canonical docs, reconciles repo inventory |
+| **Scribe** | Constitutional Guardian | Auto-triggered | 4-level governance (org/domain/service/repo), track enforcement, compliance checks |
 
 ---
 
@@ -81,39 +108,54 @@ main
 
 ### Phase Flow
 
-The BMAD lifecycle progresses through five phases, each gated by explicit progression criteria:
+The lifecycle uses named phases grouped by audience level, with promotion gates between audiences:
 
 ```
-P0 (Bootstrap)  →  P1 (Analysis)  →  P2 (Planning)  →  P3 (Solutioning)  →  P4 (Implementation)
-   Scout               Compass           Compass            Compass              Compass
-   onboard             /pre-plan          /spec              /plan                /dev
-                                                             /review (gate)
+Small Audience (IC creation):
+  PrePlan (Mary) → BusinessPlan (John+Sally) → TechPlan (Winston)
+         ↓ [adversarial review gate — party mode]
+Medium Audience (lead review):
+  DevProposal (John)
+         ↓ [stakeholder approval gate]
+Large Audience (stakeholder):
+  SprintPlan (Bob)
+         ↓ [constitution gate — Scribe]
+Base (execution):
+  Dev → Code Review → Retro
 ```
 
-| Phase | Name | Key Artifacts | Gate |
-|-------|------|---------------|------|
-| **P0** | Bootstrap | repo-inventory.yaml, bootstrap-report.md | Repos discovered & profiled |
-| **P1** | Analysis | brainstorm-notes.md, product-brief.md | Product brief approved |
-| **P2** | Planning | PRD, UX design docs | PRD approved |
-| **P3** | Solutioning | Architecture doc, epics & stories | Implementation readiness check passed |
-| **P4** | Implementation | Code, tests, deployments | Story acceptance criteria met |
+| Phase | Agent | Audience | Key Artifacts | Promotion Gate |
+|-------|-------|----------|---------------|----------------|
+| **PrePlan** | Mary/Analyst | small | brainstorm-notes, product-brief | — |
+| **BusinessPlan** | John/PM + Sally/UX | small | PRD, UX design | — |
+| **TechPlan** | Winston/Architect | small | Architecture, tech decisions, API contracts | adversarial review (→medium) |
+| **DevProposal** | John/PM | medium | Epics, stories, readiness checklist | stakeholder approval (→large) |
+| **SprintPlan** | Bob/SM | large | Sprint plan, story assignments | constitution gate (→base) |
+| **Dev** | Dev Team | base | Code, tests, deployments | — |
 
-### Gate Progression
+### Initiative Tracks
 
-Gates enforce quality and authorization between phases:
+Tracks control which phases are required (defined in `lifecycle.yaml`):
 
-1. **Large Review** (`open-large-review`) — PO/Architect reviews phase artifacts before transition
-2. **Final PBR** (`open-final-pbr`) — Full team review at solutioning completion
-3. **Phase Transition** (`phase-transition`) — Automated state update when gate passes
+| Track | Phases | Use Case |
+|-------|--------|----------|
+| `full` | preplan → businessplan → techplan → devproposal → sprintplan | New product/major initiative |
+| `feature` | businessplan → devproposal | Feature addition |
+| `tech-change` | techplan → devproposal | Technical migration/upgrade |
+| `hotfix` | devproposal only | Critical bug fix |
+| `spike` | preplan only | Research/exploration |
 
-### Lane Management
+### Audience Promotion Gates
 
-| Lane | Use Case | Branch Pattern |
-|------|----------|----------------|
-| **small** | Solo developer, small features | `{domain}/{id}/small-{n}` |
-| **large** | Team work, requires reviews | `{domain}/{id}/large-{n}` |
+| Promotion | Gate Type | Mechanism |
+|-----------|-----------|-----------|
+| small → medium | Adversarial Review | Party-mode cross-agent review |
+| medium → large | Stakeholder Approval | PR approval from stakeholders |
+| large → base | Constitution Gate | Scribe compliance check (4-level) |
 
-Lane is selected during `init-initiative` based on initiative complexity and team size.
+Audience branches are created at `init-initiative`. Phase branches (e.g., `-small-preplan`) are created by phase routers.
+
+> **Note:** Domain and service layers do not use audience groups. Domain creates only `{domain_prefix}`, service creates only `{domain_prefix}-{service_prefix}`.
 
 ---
 
@@ -123,20 +165,24 @@ Lane is selected during `init-initiative` based on initiative complexity and tea
 
 #### Phase Router Commands (Compass)
 
-| Command | Agent | Description |
-|---------|-------|-------------|
-| `/pre-plan` | Compass | Launch Analysis phase (P1) — brainstorm, research, product brief |
-| `/spec` | Compass | Launch Planning phase (P2) — PRD, UX design |
-| `/plan` | Compass | Complete Solutioning (P3) — architecture, epics, stories |
-| `/review` | Compass | Implementation readiness gate — SM/lead approval required |
-| `/dev` | Compass | Implementation loop (P4) — sprint planning, story dev, code review |
+| Command | Phase | Audience | Agent | Description |
+|---------|-------|----------|-------|-------------|
+| `/preplan` | PrePlan | small | Mary/Analyst | Brainstorm, research, product brief |
+| `/businessplan` | BusinessPlan | small | John/PM + Sally/UX | PRD, UX design |
+| `/techplan` | TechPlan | small | Winston/Architect | Architecture, tech decisions, API contracts |
+| `/promote` | — | — | Compass | Audience promotion gate |
+| `/devproposal` | DevProposal | medium | John/PM | Epics, stories, readiness checklist |
+| `/sprintplan` | SprintPlan | large | Bob/SM | Sprint planning, story selection |
+| `/dev` | Dev | base | Dev Team | Sprint execution, code review, retro |
+
+**Aliases:** `/pre-plan`→`/preplan`, `/spec`→`/businessplan`, `/tech-plan`→`/techplan`, `/plan`→`/devproposal`, `/review`→`/sprintplan`
 
 #### Context Commands (Compass)
 
 | Command | Agent | Description |
 |---------|-------|-------------|
-| `/switch` | Compass | Switch context — initiative, lens, phase, or lane |
-| `/context` | Compass | Display current context (active initiative, phase, lane, workflow) |
+| `/switch` | Compass | Switch context — initiative, lens, phase, or size |
+| `/context` | Compass | Display current context (active initiative, phase, size, workflow) |
 | `/constitution` | Compass | Display operating rules and compliance constraints |
 | `/lens` | Compass | Show or change the current lens focus |
 
@@ -176,9 +222,10 @@ Lane is selected during `init-initiative` based on initiative complexity and tea
 
 | Phase | Authorized Roles |
 |-------|------------------|
-| `#new-*` through `/plan` | PO, Architect, Tech Lead |
-| `/review` | Scrum Master (gate owner) |
-| `/dev` | Developer (post-review only) |
+| `#new-*` through `/techplan` | PO, Architect, Tech Lead |
+| `/devproposal` | PM, Architect |
+| `/sprintplan` | Scrum Master (gate owner) |
+| `/dev` | Developer (post-sprintplan only) |
 
 ---
 
@@ -187,32 +234,43 @@ Lane is selected during `init-initiative` based on initiative complexity and tea
 ### Starting a New Feature
 
 ```
-# 1. Create the initiative
+# 1. Create the initiative (select track: feature)
 #new-feature "rate-limiting"
 
-# Compass auto-detects layer, Casey creates branches:
-#   lens/rate-limit-x7k2m9/base
-#   lens/rate-limit-x7k2m9/small/p1
+# Compass auto-detects layer, Casey creates and pushes branches:
+#   bmaddomain-lens-rate-limit-x7k2m9         (root)
+#   bmaddomain-lens-rate-limit-x7k2m9-small   (small audience)
+#   bmaddomain-lens-rate-limit-x7k2m9-medium  (medium audience)
+#   bmaddomain-lens-rate-limit-x7k2m9-large   (large audience)
 
-# 2. Begin analysis
-/pre-plan
-# → Guided through brainstorming, research, product brief
+# 2. Begin planning (feature track starts at businessplan)
+/businessplan
+# → Creates -small-businessplan phase branch
+# → Guided through PRD, UX design
+# → At end: PR from -small-businessplan → -small
 
-# 3. Move to planning
-/spec
-# → PRD creation, UX design
+# 3. Technical planning
+/techplan
+# → Architecture, tech decisions, API contracts
 
-# 4. Complete solutioning
-/plan
-# → Architecture doc, epics & stories, implementation readiness
+# 4. Promote audience: small → medium
+/promote
+# → Adversarial review (party mode) gate
 
-# 5. Gate review
-/review
-# → SM reviews artifacts, approves for implementation
+# 5. Dev proposal
+/devproposal
+# → Creates -medium-devproposal phase branch
+# → Epics, stories, readiness checklist
 
-# 6. Implement
+# 6. Promote: medium → large, then sprint plan
+/promote
+/sprintplan
+# → Sprint planning, story selection
+
+# 7. Promote: large → base, then implement
+/promote
 /dev
-# → Sprint planning, story development, code review cycles
+# → Sprint execution, code review, retro cycles
 ```
 
 ### Switching Contexts
@@ -222,13 +280,13 @@ Lane is selected during `init-initiative` based on initiative complexity and tea
 /switch
 
 # Compass presents active initiatives:
-#   1. rate-limit-x7k2m9  (P3 - Solutioning)
-#   2. auth-refactor-b3j1  (P1 - Analysis)
+#   1. rate-limit-x7k2m9  (DevProposal - medium)
+#   2. auth-refactor-b3j1  (PrePlan - small)
 # Select: 2
 
 # You're now in auth-refactor context
 /context
-# → Initiative: auth-refactor-b3j1 | Phase: P1 | Lane: small
+# → Initiative: auth-refactor-b3j1 | Phase: PrePlan | Audience: small | Track: full
 ```
 
 ### Checking Status
@@ -236,7 +294,7 @@ Lane is selected during `init-initiative` based on initiative complexity and tea
 ```
 # Quick check
 @tracey ?
-# → rate-limit-x7k2m9 | P3/Solutioning | small | architecture-doc in progress
+# → rate-limit-x7k2m9 | DevProposal | medium | track:full | epics in progress
 
 # Full status
 @tracey ST
@@ -258,14 +316,20 @@ Lane is selected during `init-initiative` based on initiative complexity and tea
 
 # New initiative
 #new-domain "payment-platform"
-# → Sets up multi-repo initiative with domain folder structure
+# → Sets up domain branch (payment-platform), creates Domain.yaml,
+#   scaffolds domain folders (initiatives/, TargetProjects/, Docs/)
+#   Only one branch created — no base/small/large/p1 branches
 
-# Phase progression
-/pre-plan     # P1: Analysis — brainstorm, research, brief
-/spec         # P2: Planning — PRD, UX
-/plan         # P3: Solutioning — architecture, stories
-/review       # Gate: SM approval
-/dev          # P4: Implementation — sprint loop
+# Phase progression (full track)
+/preplan        # PrePlan: brainstorm, research, brief
+/businessplan   # BusinessPlan: PRD, UX
+/techplan       # TechPlan: architecture, tech decisions
+/promote        # small → medium (adversarial review)
+/devproposal    # DevProposal: epics, stories, readiness
+/promote        # medium → large (stakeholder approval)
+/sprintplan     # SprintPlan: sprint planning
+/promote        # large → base (constitution gate)
+/dev            # Dev: sprint execution loop
 
 # When done
 @tracey AR    # Archive the completed initiative
@@ -336,7 +400,8 @@ lens-work/
 │   ├── compass.agent.yaml               # Phase router agent
 │   ├── casey.agent.yaml                 # Git conductor agent
 │   ├── tracey.agent.yaml               # State manager agent
-│   └── scout.agent.yaml                # Discovery & bootstrap agent
+│   ├── scout.agent.yaml                # Discovery & bootstrap agent
+│   └── scribe.agent.yaml              # Constitutional guardian agent
 │
 ├── workflows/
 │   ├── core/                            # Auto-triggered lifecycle operations
@@ -351,11 +416,13 @@ lens-work/
 │   │   └── open-final-pbr/             # Open final PBR gate
 │   │
 │   ├── router/                          # Phase router commands (user-facing)
-│   │   ├── pre-plan/                    # /pre-plan → P1 Analysis
-│   │   ├── spec/                        # /spec → P2 Planning
-│   │   ├── plan/                        # /plan → P3 Solutioning
-│   │   ├── review/                      # /review → Gate
-│   │   ├── dev/                         # /dev → P4 Implementation
+│   │   ├── pre-plan/                    # /preplan → PrePlan (small)
+│   │   ├── spec/                        # /businessplan → BusinessPlan (small)
+│   │   ├── tech-plan/                   # /techplan → TechPlan (small)
+│   │   ├── plan/                        # /devproposal → DevProposal (medium)
+│   │   ├── sprintplan/                  # /sprintplan → SprintPlan (large)
+│   │   ├── review/                      # /review → (alias for /sprintplan)
+│   │   ├── dev/                         # /dev → Dev (base)
 │   │   └── init-initiative/             # Router-level initiative init
 │   │
 │   ├── discovery/                       # Repo discovery & documentation
@@ -380,7 +447,7 @@ lens-work/
 │   │   └── migrate-state/              # Migrate state format
 │   │
 │   └── includes/                        # Shared reference files
-│       ├── lane-topology.md             # Lane & branch rules
+│       ├── size-topology.md             # Size & branch rules
 │       ├── jira-integration.md          # Jira workflow mapping
 │       ├── gate-event-template.md       # Gate event format
 │       ├── pr-links.md                  # PR linking conventions
@@ -450,6 +517,7 @@ lens-work/
 | `_bmad-output/lens-work/repo-inventory.yaml` | Discovered repo metadata |
 | `_bmad-output/lens-work/bootstrap-report.md` | Bootstrap scan results |
 | `_bmad-output/lens-work/initiatives/` | Per-initiative artifacts and state |
+| `_bmad-output/lens-work/initiatives/{domain}/Domain.yaml` | Domain-layer initiative config (domain-layer only) |
 | `_bmad-output/lens-work/dashboards/` | Telemetry dashboard data |
 | `_bmad-output/personal/profile.yaml` | User profile and preferences |
 
