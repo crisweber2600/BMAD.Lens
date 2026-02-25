@@ -2,7 +2,7 @@
 # Lens-Work Lifecycle Contract v2.0
 # =============================================================================
 # The single source of truth for lens-work lifecycle behavior.
-# All agents (Compass, Casey, Tracey, Scout, Scribe) and workflows import
+# The @lens agent (with 5 skills) and all workflows import
 # this contract. No lifecycle semantics should be hardcoded elsewhere.
 #
 # Derived from architectural brainstorming session 2026-02-23.
@@ -39,22 +39,22 @@ lens_hierarchy:
 audiences:
   small:
     role: "IC creation work"
-    description: "Where phases happen — individual contributor generates artifacts"
-    phases: [preplan, businessplan, techplan]
+    description: "Where ALL 5 planning phases happen — individual contributor generates artifacts"
+    phases: [preplan, businessplan, techplan, devproposal, sprintplan]
   medium:
     role: "Lead review"
-    description: "Adversarial review gate using party mode"
-    phases: [devproposal]
+    description: "Adversarial review gate using party mode — promotion carries planning artifacts"
+    phases: []
     entry_gate: adversarial-review
     entry_gate_mode: party
   large:
     role: "Stakeholder approval"
-    description: "Stakeholder sign-off plus sprint planning"
-    phases: [sprintplan]
+    description: "Stakeholder sign-off — promotion carries planning artifacts"
+    phases: []
     entry_gate: stakeholder-approval
   base:
     role: "Ready for execution"
-    description: "Constitution-gated — Scribe validates before promotion"
+    description: "Constitution-gated — @lens validates before promotion"
     phases: []
     entry_gate: constitution-gate
 
@@ -114,7 +114,7 @@ phases:
       - epics
       - stories
       - implementation-readiness
-    audience: medium
+    audience: small
     legacy_phase_number: 4
     legacy_gate_key: story_gen
 
@@ -127,7 +127,7 @@ phases:
     artifacts:
       - sprint-status
       - story-files
-    audience: large
+    audience: small
     legacy_phase_number: 5
     legacy_gate_key: review
 
