@@ -9,7 +9,7 @@ active_initiative: upgrade-cjki9q
 # v2: Named phase tracking
 current_phase: sprintplan
 active_track: full
-workflow_status: running
+workflow_status: pr_pending
 
 # v2: Phase status (dual-written to initiative config)
 phase_status:
@@ -17,7 +17,7 @@ phase_status:
   businessplan: complete
   techplan: complete
   devproposal: complete
-  sprintplan: in_progress
+  sprintplan: pr_pending
 
 # v2: Audience promotion status
 audience_status:
