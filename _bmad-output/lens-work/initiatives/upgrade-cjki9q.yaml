@@ -38,12 +38,12 @@ audiences:
 
 # v2: Named phase status
 phase_status:
-  preplan: null
-  businessplan: null
-  techplan: null
-  devproposal: null
-  sprintplan: null
-current_phase: null
+  preplan: complete
+  businessplan: complete
+  techplan: complete
+  devproposal: complete
+  sprintplan: complete
+current_phase: dev
 
 # v2: Initiative root (replaces featureBranchRoot)
 initiative_root: "lens-lens-work-upgrade-cjki9q"
