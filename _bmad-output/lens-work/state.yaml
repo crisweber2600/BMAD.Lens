@@ -7,25 +7,25 @@ active_initiative: upgrade-cjki9q
 # Load via: initiatives/upgrade-cjki9q.yaml
 
 # v2: Named phase tracking
-current_phase: techplan
+current_phase: devproposal
 active_track: full
-workflow_status: review_complete
+workflow_status: running
 
 # v2: Phase status (dual-written to initiative config)
 phase_status:
   preplan: complete
   businessplan: complete
-  techplan: review_complete
-  devproposal: null
+  techplan: complete
+  devproposal: pr_pending
   sprintplan: null
 
 # v2: Audience promotion status
 audience_status:
-  small_to_medium: null
+  small_to_medium: passed
   medium_to_large: null
   large_to_base: null
 
 background_errors: []
 created_at: "2026-02-24T00:00:00Z"
-last_activity: "2026-02-25T17:00:00Z"
+last_activity: "2026-02-25T18:00:00Z"
 last_pr: "https://github.com/crisweber2600/BMAD.Lens/pull/15"
