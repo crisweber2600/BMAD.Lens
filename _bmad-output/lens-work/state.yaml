@@ -16,7 +16,7 @@ phase_status:
   preplan: complete
   businessplan: complete
   techplan: complete
-  devproposal: in_progress
+  devproposal: pr_pending
   sprintplan: null
 
 # v2: Audience promotion status
