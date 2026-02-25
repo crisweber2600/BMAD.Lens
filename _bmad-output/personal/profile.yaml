@@ -1,0 +1,28 @@
+name: "Cris Weber"
+email: "Cris@Weber.center"
+role: "Developer"
+preferred_lane: "small"
+created_at: "2026-02-24T00:00:00Z"
+preferences:
+  communication_style: "professional"
+  auto_fetch: true
+  status_on_start: true
+  color_output: true
+  question_mode: "interactive"
+  tracker: "none"
+  jira_base_url: null
+lens_work:
+  last_sync:
+    date: "2026-02-25"
+    timestamp: "2026-02-25T00:13:57Z"
+    user: "Cris Weber"
+    initiative_id: "lens-work"
+    target_repo: "bmad.lens.src"
+  selected_branch:
+    initiative_id: "lens-work"
+    target_repo: "bmad.lens.src"
+    branch: "main"
+    commit_hash: "afb1a15"
+    commit_date: "2026-02-24T18:09:59-06:00"
+    commit_author: "Cris Weber"
+    timestamp: "2026-02-25T00:13:57Z"

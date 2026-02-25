@@ -1,0 +1,319 @@
+# =============================================================================
+# Lens-Work Lifecycle Contract v1.0 (Draft)
+# =============================================================================
+# Derived from brainstorming session 2026-02-23
+# This is the single source of truth for lens-work lifecycle behavior.
+# Casey, Compass, Scribe, Tracey, and all agents import this contract.
+# =============================================================================
+
+version: 1
+
+# -----------------------------------------------------------------------------
+# FUNDAMENTAL TRUTHS (non-negotiable design axioms)
+# -----------------------------------------------------------------------------
+fundamental_truths:
+  ft1: "Planning artifacts must exist and be reviewed before code is written"
+  ft2: "AI agents must work within disciplined constraints, not freestyle"
+  ft3: "Multi-service initiatives must have coordinated lifecycle governance"
+
+# Design principle: Enforce constraints through structure (branches, gates,
+# required files) rather than instructions (prompts, documentation, conventions).
+
+# -----------------------------------------------------------------------------
+# LENS HIERARCHY
+# -----------------------------------------------------------------------------
+lens_hierarchy:
+  levels: [org, domain, service, repo]
+  constitution_inheritance: additive  # lower levels can only ADD, never remove
+  # Resolution: merge all levels, union of all requirements, most specific adds
+
+# -----------------------------------------------------------------------------
+# AUDIENCES (promotion backbone)
+# -----------------------------------------------------------------------------
+audiences:
+  small:
+    role: "IC creation work"
+    description: "Where phases happen — individual contributor generates artifacts"
+    phases: [preplan, businessplan, techplan]
+  medium:
+    role: "Lead review"
+    description: "Adversarial review gate using party mode"
+    phases: [devproposal]
+    entry_gate: adversarial-review
+    entry_gate_mode: party
+  large:
+    role: "Stakeholder approval"
+    description: "Stakeholder sign-off plus sprint planning"
+    phases: [sprintplan]
+    entry_gate: stakeholder-approval
+  base:
+    role: "Ready for execution"
+    description: "Constitution-gated — Scribe validates before promotion"
+    entry_gate: constitution-gate
+
+# -----------------------------------------------------------------------------
+# PHASES
+# -----------------------------------------------------------------------------
+phases:
+  preplan:
+    display_name: "PrePlan"
+    agent: mary  # Analyst
+    description: "Analysis — brainstorm, research, product brief, project documentation"
+    artifacts:
+      - product-brief
+      - research
+      - brainstorm
+    audience: small
+
+  businessplan:
+    display_name: "BusinessPlan"
+    agent: john  # PM
+    supporting_agents: [sally]  # UX Designer
+    description: "Business planning — PRD creation/validation, UX design"
+    artifacts:
+      - prd
+      - ux-design
+    audience: small
+
+  techplan:
+    display_name: "TechPlan"
+    agent: winston  # Architect
+    description: "Technical design — architecture document, technical decisions"
+    artifacts:
+      - architecture
+    audience: small
+
+  devproposal:
+    display_name: "DevProposal"
+    agent: john  # PM (again — translating specs into implementable work)
+    description: "Implementation proposal — epics, stories, readiness check"
+    artifacts:
+      - epics
+      - stories
+      - implementation-readiness
+    audience: medium
+
+  sprintplan:
+    display_name: "SprintPlan"
+    agent: bob  # Scrum Master
+    description: "Sprint planning — sprint-status, individual story files"
+    artifacts:
+      - sprint-status
+      - story-files
+    audience: large
+
+# -----------------------------------------------------------------------------
+# TRACKS (predefined lifecycle profiles)
+# -----------------------------------------------------------------------------
+# The canonical lifecycle defines all possible phases.
+# Each initiative selects a track that determines which phases are active.
+# Constitution enforcement controls which tracks are permitted per LENS layer.
+tracks:
+  full:
+    description: "Complete lifecycle — all phases, all audiences"
+    phases: [preplan, businessplan, techplan, devproposal, sprintplan]
+    audiences: [small, medium, large, base]
+
+  feature:
+    description: "Known business context — skip research, start at business plan"
+    phases: [businessplan, techplan, devproposal, sprintplan]
+    audiences: [small, medium, large, base]
+
+  tech-change:
+    description: "Pure technical change — no business case needed"
+    phases: [techplan, sprintplan]
+    audiences: [small, medium, large, base]
+    constitution_controlled_gates: [devproposal, medium-to-large]
+
+  hotfix:
+    description: "Urgent fix — minimal planning, fast to execution"
+    phases: [techplan]
+    audiences: [small, base]
+    constitution_controlled_gates: [adversarial-review]
+
+  spike:
+    description: "Research only — no implementation"
+    phases: [preplan]
+    audiences: [small]
+
+# -----------------------------------------------------------------------------
+# ADVERSARIAL REVIEW (party mode)
+# -----------------------------------------------------------------------------
+# All adversarial reviews invoke party mode — multi-agent group discussion.
+# Lead reviewer drives; participants challenge from their expertise.
+# Constitution can ADD participants per domain/service (additive inheritance).
+adversarial_review:
+  mode: party
+  reviews:
+    product-brief:
+      lead: john
+      participants: [john, winston, sally]
+      focus: "Actionable? Buildable? User-centered?"
+    prd:
+      lead: winston
+      participants: [winston, mary, sally]
+      focus: "Buildable? Well-researched? UX-aligned?"
+    ux-design:
+      lead: john
+      participants: [john, winston, mary]
+      focus: "Serves requirements? Technically feasible? Grounded?"
+    architecture:
+      lead: john
+      participants: [john, mary, bob]
+      focus: "Meets spec? Practical? Sprintable?"
+    epics-and-stories:
+      lead: winston
+      participants: [winston, bob, amelia]
+      focus: "Buildable? Right-sized? Implementable?"
+
+# -----------------------------------------------------------------------------
+# BRANCH TOPOLOGY — LENS-WORK REPO (planning artifacts)
+# -----------------------------------------------------------------------------
+# Rich branch topology for human-speed review gates.
+# All planning artifacts live here, never in target code repos.
+planning_repo:
+  artifacts_location: central-only  # Never in target repos (avoids security scan false positives)
+  branch_pattern:
+    phase: "{initiative-root}-{audience}-{phase}"
+    audience: "{initiative-root}-{audience}"
+  merge_chain:
+    - phase-branch → PR → audience-branch       # Phase completion
+    - small → PR → medium                        # Adversarial review (party mode)
+    - medium-phase → PR → medium                 # DevProposal completion
+    - medium → PR → large                        # Stakeholder approval
+    - large-phase → PR → large                   # SprintPlan completion
+    - large → PR → base                          # Constitution gate (Scribe)
+  example:
+    # For initiative "init-svc-foo":
+    - "init-svc-foo-small-preplan      → PR → init-svc-foo-small"
+    - "init-svc-foo-small-businessplan → PR → init-svc-foo-small"
+    - "init-svc-foo-small-techplan     → PR → init-svc-foo-small"
+    - "init-svc-foo-small              → PR → init-svc-foo-medium"
+    - "init-svc-foo-medium-devproposal → PR → init-svc-foo-medium"
+    - "init-svc-foo-medium             → PR → init-svc-foo-large"
+    - "init-svc-foo-large-sprintplan   → PR → init-svc-foo-large"
+    - "init-svc-foo-large              → PR → base"
+
+# -----------------------------------------------------------------------------
+# BRANCH TOPOLOGY — TARGET PROJECTS (code execution)
+# -----------------------------------------------------------------------------
+# GitFlow with Jira-linked branch names.
+# AI-speed execution (sprints in hours, not weeks).
+target_projects:
+  branching_model: gitflow
+  branch_patterns:
+    story: "feature/{jira-storyid}"
+    epic: "feature/{jira-epicid}"
+    integration: develop
+    release: "release/{version}"
+    production: main
+  merge_chain:
+    - "feature/{jira-storyid} → PR → feature/{jira-epicid}"    # Story → Epic (code review)
+    - "feature/{jira-epicid}  → PR → develop"                   # Epic → Develop (feature-complete review)
+    - "develop                → PR → release/{version}"          # Develop → Release (release readiness)
+    - "release/{version}      → PR → main"                      # Release → Main (production gate)
+  merge_gate_isomorphism:
+    # Planning audience levels mirror code merge gates:
+    planning_to_code:
+      "phase → small":    "story → epic"       # IC self-review
+      "small → medium":   "epic → develop"     # Lead review
+      "medium → large":   "develop → release"  # Stakeholder/QA
+      "large → base":     "release → main"     # Production gate
+
+# -----------------------------------------------------------------------------
+# INITIATIVE CONFIGURATION
+# -----------------------------------------------------------------------------
+initiative:
+  scope_levels: [repo, service, domain, org]
+  # Scope determined by where /new-feature is invoked
+  scope_behavior:
+    repo:
+      coupling: none
+      description: "Single-repo initiative, no coupling question"
+    service:
+      coupling: initiator-decides
+      description: "Multi-repo within one service, initiator chooses repo coupling"
+    domain:
+      coupling: initiator-decides
+      description: "Multi-service, initiator chooses service coupling"
+    org:
+      coupling: initiator-decides
+      description: "Cross-domain, initiator chooses domain + service coupling"
+
+# -----------------------------------------------------------------------------
+# CONSTITUTION SCHEMA
+# -----------------------------------------------------------------------------
+constitution:
+  inheritance: additive
+  resolution_order: [org, domain, service, repo]
+  # Resolution: merge all levels, union of all requirements
+  # If ANY level requires something, it's required
+  capabilities:
+    - permitted_tracks          # Which tracks are allowed
+    - required_gates            # Which gates cannot be skipped
+    - additional_review_participants  # Extra agents for party mode (additive)
+    - required_artifacts        # Extra artifacts beyond track defaults
+    - enforce_stories           # Require story decomposition even for lightweight tracks
+
+# -----------------------------------------------------------------------------
+# AGENT ROLES
+# -----------------------------------------------------------------------------
+agents:
+  # Phase-facing agents (own lifecycle phases):
+  mary:
+    role: Analyst
+    owns_phases: [preplan]
+    capabilities: [brainstorm, research, create-brief, document-project]
+  john:
+    role: PM
+    owns_phases: [businessplan, devproposal]
+    capabilities: [create-prd, validate-prd, edit-prd, create-epics-and-stories, implementation-readiness, correct-course]
+  winston:
+    role: Architect
+    owns_phases: [techplan]
+    capabilities: [create-architecture, implementation-readiness]
+  sally:
+    role: UX Designer
+    supports_phases: [businessplan]
+    capabilities: [create-ux-design]
+  bob:
+    role: Scrum Master
+    owns_phases: [sprintplan]
+    capabilities: [sprint-planning, create-story, retrospective, correct-course]
+  amelia:
+    role: Developer
+    execution_context: target-projects
+    capabilities: [dev-story, code-review]
+  quinn:
+    role: QA
+    execution_context: target-projects
+    capabilities: [test-automation, test-review]
+
+  # Infrastructure agents (cross-cutting):
+  compass:
+    role: Router
+    description: "User-facing lifecycle router — decides what workflow/agent to invoke"
+  casey:
+    role: Git Discipline
+    description: "Branch topology, PR creation, merge gate validation"
+  tracey:
+    role: State Management
+    description: "Personal state, event log, resume/sync"
+  scout:
+    role: Discovery
+    description: "Repo inventory, doc generation, impact analysis"
+  scribe:
+    role: Governance
+    description: "Constitution validation, compliance checks, promotion gates"
+
+# -----------------------------------------------------------------------------
+# OPEN QUESTIONS (to be resolved in future sessions)
+# -----------------------------------------------------------------------------
+# - Sally and Quinn exact integration points beyond current mapping
+# - Paige (Technical Writer) — documentation as phase or cross-cutting?
+# - Barry (Quick Flow Solo Dev) — alternative to full Amelia+Bob execution?
+# - Bob/SM bridging lens-work state and TargetProject tracking
+# - Constitution full field specification and validation rules
+# - Party mode participant lists — fixed here or constitution-additive?
+# - Event log schema design
+# - State migration from current lens-work to this architecture
