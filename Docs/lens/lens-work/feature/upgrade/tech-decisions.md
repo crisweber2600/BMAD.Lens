@@ -508,24 +508,56 @@ Constitution checks run at every workflow step. If they block progress on every 
 
 ---
 
+## TD-015: Agent Context Injection via Workflow File Instructions
+
+**Status:** Accepted
+**Category:** Agent Architecture
+**Priority:** Foundation
+
+### Context
+
+FR27 requires that @lens "inject initiative context (config, prior artifacts, constitution) when activating an agent." The mechanism for context injection determines how phase agents access prior phase artifacts and the resolved constitution.
+
+### Decision
+
+**Context is injected via workflow file instructions.** Each phase workflow's execute step contains explicit `read_file` directives that load prior artifacts from `{docs_path}/`. The @lens router resolves artifact paths from `initiative.docs.path` and embeds them in the workflow's context-loading step. The AI agent's native file-reading capability (VS Code + Copilot Chat) handles the actual loading.
+
+### Alternatives Considered
+
+| Alternative | Pros | Cons | Rejection Reason |
+|-------------|------|------|------------------|
+| Environment variables | Standard OS mechanism | AI agents don't read env vars during conversation; limited to short strings | Incompatible with AI agent execution model |
+| Context file (JSON/YAML manifest) | Clean separation; machine-readable | Requires a separate generation step; another file to manage | Adds complexity without benefit |
+| API injection (Copilot Chat API) | Programmatic; reliable | No public API for injecting context into Copilot Chat conversations | API doesn't exist |
+| Agent prompt prepending | Reliable; always available | Bloats agent system prompt; context window limits | Doesn't scale with artifact count |
+
+### Consequences
+
+- **Positive:** Zero additional infrastructure; uses the AI agent's native file-reading ability; workflow files are self-documenting (you can read the workflow to see what context is loaded); no additional state or files to manage
+- **Negative:** Context loading depends on AI agent correctly following workflow instructions; large artifacts may consume context window budget
+- **Trade-off:** Simplicity and transparency over programmatic reliability; acceptable because the AI agent is the execution environment
+
+---
+
 ## Decision Index
 
-| ID | Decision | Category | Priority | Status |
-|----|----------|----------|----------|--------|
-| TD-001 | File-based state storage | Data Architecture | Foundation | Accepted |
-| TD-002 | JSONL for event log | Data Architecture | Foundation | Accepted |
-| TD-003 | Flat hyphen-separated branches | Git Operations | Foundation | Accepted |
-| TD-004 | Constitution Markdown + YAML | Governance | Structural | Accepted |
-| TD-005 | Single @lens agent | Agent Architecture | Foundation | Accepted |
-| TD-006 | Two-tier branch model for MVP | Git Operations | MVP Scope | Accepted |
-| TD-007 | User-triggered audience promotions | Workflow Architecture | Foundation | Accepted |
-| TD-008 | Set-union constitution merge | Governance | Structural | Accepted |
-| TD-009 | Planning-context YAML cross-repo | Integration Architecture | Structural | Accepted |
-| TD-010 | PR-only merge (never auto-merge) | Git Operations | Safety (P0) | Accepted |
-| TD-011 | Remote-wins for state sync | State Management | Recovery | Accepted |
-| TD-012 | Feature name + 6-char ID | Naming | Usability | Accepted |
-| TD-013 | Lifecycle YAML single source | Architecture | Foundation | Accepted |
-| TD-014 | Advisory-first constitution mode | Governance | Usability | Accepted |
+| ID | Decision | Category | Priority | Status | Reversibility | Complexity |
+|----|----------|----------|----------|--------|---------------|------------|
+| TD-001 | File-based state storage | Data Architecture | Foundation | Accepted | Hard | Medium |
+| TD-002 | JSONL for event log | Data Architecture | Foundation | Accepted | Easy | Low |
+| TD-003 | Flat hyphen-separated branches | Git Operations | Foundation | Accepted | Hard | Low |
+| TD-004 | Constitution Markdown + YAML | Governance | Structural | Accepted | Medium | Medium |
+| TD-005 | Single @lens agent | Agent Architecture | Foundation | Accepted | Hard | Medium |
+| TD-006 | Two-tier branch model for MVP | Git Operations | MVP Scope | Accepted | Easy | Low |
+| TD-007 | User-triggered audience promotions | Workflow Architecture | Foundation | Accepted | Easy | Low |
+| TD-008 | Set-union constitution merge | Governance | Structural | Accepted | Medium | Medium |
+| TD-009 | Planning-context YAML cross-repo | Integration Architecture | Structural | Accepted | Easy | Low |
+| TD-010 | PR-only merge (never auto-merge) | Git Operations | Safety (P0) | Accepted | Easy | Low |
+| TD-011 | Remote-wins for state sync | State Management | Recovery | Accepted | Easy | Low |
+| TD-012 | Feature name + 6-char ID | Naming | Usability | Accepted | Easy | Low |
+| TD-013 | Lifecycle YAML single source | Architecture | Foundation | Accepted | Hard | Medium |
+| TD-014 | Advisory-first constitution mode | Governance | Usability | Accepted | Easy | Low |
+| TD-015 | Context injection via workflow | Agent Architecture | Foundation | Accepted | Easy | Low |
 
 ---
 

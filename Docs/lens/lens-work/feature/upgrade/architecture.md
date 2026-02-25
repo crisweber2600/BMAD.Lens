@@ -73,7 +73,7 @@ The system operates as a **state machine with git-backed persistence**. Every st
 │                                                              │
 │                  ┌───────────────────────┐                   │
 │                  │   @lens Agent         │                   │
-│                  │   (Compass router)    │                   │
+│                  │   (lens.agent.yaml)   │                   │
 │                  │                       │                   │
 │                  │  Skills:              │                   │
 │                  │  - git-orchestration  │                   │
@@ -113,7 +113,7 @@ The system operates as a **state machine with git-backed persistence**. Every st
 | Dependency | Type | Interface | Risk |
 |------------|------|-----------|------|
 | Git CLI | Runtime | Shell commands via terminal | Low — ubiquitous |
-| GitHub API (MCP) | Optional | PR creation, merge, status | Medium — rate limits |
+| GitHub API (MCP) | Recommended | PR creation, merge, status; fallback: manual PR via browser | Medium — rate limits; graceful fallback per §8.1 |
 | VS Code | Runtime | Chat interface, terminal, file system | Low — required env |
 | GitHub Copilot | Runtime | AI agent execution environment | Low — required env |
 | BMAD Core module | Framework | Agent loading, workflow engine | Low — internal |
@@ -171,7 +171,9 @@ The system decomposes into **six architectural components**, each with clear bou
 - Command groups: Core (3), Phase (6), Recovery (2), Governance (4)
 - Router validates preconditions before dispatching (previous phase complete, artifacts exist)
 
-**Implementation:** `compass.agent.yaml` menu section with trigger → workflow mappings.
+**Implementation:** `lens.agent.yaml` menu section with trigger → workflow mappings.
+
+> **Note:** The agent file is `lens.agent.yaml`; "@lens" is the user-facing identity. The legacy name "Compass" (from v1's five-agent architecture) is retired per TD-005. lifecycle.yaml v1 references to separate infrastructure agents (Compass, Casey, Tracey, Scout, Scribe) will be updated to reflect the single @lens agent with five skills.
 
 #### 3.2.2 State Machine
 
@@ -202,6 +204,12 @@ The system decomposes into **six architectural components**, each with clear bou
   small ──► medium ──► large ──► base
          (after         (after        (after
          techplan)      sprintplan)    dev)
+
+  Note: All five planning phases execute at the small audience level.
+  This is a v2 architectural decision (PRD C4) that supersedes the
+  product brief's original per-phase audience mapping. lifecycle.yaml
+  v1 currently maps devproposal→medium and sprintplan→large; it will
+  be updated to set all phases to audience: small as part of P1.
 ```
 
 **Dual-write contract:**
@@ -248,6 +256,14 @@ Example:
 ```
 
 **Git operations are never auto-merged.** Every merge requires a PR review. The @lens agent creates PRs but never merges them — the user reviews and merges.
+
+**Audience cascade merge:** Because all phases execute at small, promoting small→medium after TechPlan only carries artifacts through TechPlan. When medium→large promotion occurs later, DevProposal and SprintPlan artifacts exist only on small. The cascade merge mechanism resolves this:
+
+1. Before promoting medium→large: first execute a fresh small→medium merge (PR) to carry any new small-audience artifacts (DevProposal, SprintPlan) to medium
+2. Then promote medium→large via PR, which now carries all artifacts
+3. Similarly, before promoting large→base: first cascade small→medium→large→base if needed
+
+The cascade merge is user-triggered (part of the promotion workflow) and requires PR review at each step.
 
 **Growth (P4):** Third-tier workflow branches (`*-small-{phase}-{workflow}`) for fine-grained artifact isolation within phases.
 
@@ -312,6 +328,8 @@ _bmad-output/lens-work/constitutions/
                 └── constitution.md  # Repo-level (if defined)
 ```
 
+> **Note:** Constitution files use `.md` format (Markdown with embedded YAML code blocks) per TD-004. The PRD's FR21c references `.yaml` extension — this will be corrected in DevProposal to match the architecture's `.md` format and hierarchical directory structure.
+
 **Default behavior:** If no constitution exists at a given LENS level, that level contributes an empty set. If no constitution exists at any level, all gates pass with zero additional requirements — lifecycle.yaml defaults apply.
 
 #### 3.2.5 Discovery Engine
@@ -323,6 +341,13 @@ _bmad-output/lens-work/constitutions/
 docs_path = initiative.docs.path
            = "Docs/{domain}/{service}/feature/{feature}"
            = "Docs/lens/lens-work/feature/upgrade"
+
+Note: The canonical path uses capital "Docs/" matching the filesystem.
+PRD FR32's proposed 6-level path (docs/{d}/{s}/repo/{r}/feature/{f})
+included a repo/ segment for multi-repo isolation. For MVP, the
+simplified 4-level pattern is used because each feature has a unique
+ID suffix. Multi-repo path isolation is deferred to Vision (FR48).
+FR32 will be updated in DevProposal to match this architecture.
 
 Artifact resolution:
   product-brief → {docs_path}/product-brief.md
@@ -370,6 +395,39 @@ checklist:
 - Gate is ready when all `required: true` items have `status: passed`
 - `gate_ready_pct` = (passed required items / total required items) * 100
 - Non-required items are informational and don't block
+
+### 3.3 Component Dependency Graph
+
+```
+State Machine (foundation)
+  ├── Git Engine (reads/writes state for branch ops)
+  │     └── Router Engine (uses git + state + constitution)
+  ├── Constitution Engine (independent — loads & merges files)
+  │     ├── Checklist Engine (uses constitution's required_artifacts)
+  │     └── Router Engine (validates preconditions via constitution)
+  └── Discovery Engine (reads initiative configs from state)
+        └── Checklist Engine (checks artifact existence via discovery)
+```
+
+**Recommended build order:**
+
+| Order | Component(s) | Parallelizable | Dependencies |
+|-------|-------------|----------------|--------------|
+| 1 | State Machine | — | None (foundation) |
+| 2 | Git Engine, Constitution Engine | Yes (parallel) | State Machine |
+| 3 | Discovery Engine, Checklist Engine | Yes (parallel) | State Machine, Constitution Engine |
+| 4 | Router Engine | — | All other components |
+
+**Per-Component Definition of Done:**
+
+| Component | Done When |
+|-----------|-----------|
+| State Machine | Can load/save state.yaml + initiative config; dual-write works; event log appends; schema validation passes |
+| Git Engine | Can create/checkout/delete branches; create PRs; detect merge status; enforce naming conventions; validate MAX_PATH |
+| Constitution Engine | Can load constitutions from 4 levels; merge with set-union; validate artifacts, reviewers, tracks; return pass/block |
+| Discovery Engine | Can scan initiatives dir; resolve artifact paths; detect initiative existence; run onboarding flow |
+| Checklist Engine | Can build progressive checklist from constitution; calculate gate_ready_pct; report missing items |
+| Router Engine | Can parse commands; validate preconditions; dispatch to workflow; inject context; handle idempotent re-runs |
 
 ---
 
@@ -437,7 +495,7 @@ The dual-write contract ensures that `state.yaml` and `initiatives/{id}.yaml` sh
 ### 5.1 Workflow Execution Model
 
 ```
-User types command ──► Compass (Router) 
+User types command ──► @lens (Router) 
                           │
                           ├─ Validate preconditions
                           ├─ Load state
@@ -648,9 +706,15 @@ constitution:
   required_artifacts:
     preplan: [product-brief]
     businessplan: [prd]
-    techplan: [architecture]
-    devproposal: [epics, stories, implementation-readiness]
+    techplan: [architecture, tech-decisions]
+    devproposal: [epics, stories]
     sprintplan: [sprint-status]
+  
+  # Note: `implementation-readiness` is a Growth artifact (P3).
+  # For MVP, DevProposal gate requires only epics + stories.
+  # lifecycle.yaml lists implementation-readiness as a DevProposal
+  # artifact — its production will be added when the Quinn (QA)
+  # readiness review workflow is implemented in Growth.
   
   # Minimum reviewers for audience promotions
   required_reviewers:
@@ -739,6 +803,16 @@ Every @lens command is idempotent:
 - Re-running a phase command when the phase is in progress → resumes from current position
 - Re-running `/new` with same initiative → detects existing, shows status
 - State reconstruction from event log + git → same state regardless of starting point
+
+### 8.4 Phase-Completion Detection
+
+Phase completion is detected **passively** when the user interacts with @lens:
+
+1. **Next phase command:** When user types the next phase command (e.g., `/techplan` after BusinessPlan), the pre-flight checks whether the previous phase PR is merged using `git merge-base --is-ancestor {phase_branch} {audience_branch}`
+2. **`/status` command:** Checks all phase PR merge states and reports drift if found
+3. **`/sync` command:** Comprehensive reconciliation of state vs. git reality
+
+There is no polling, no webhooks, no background process. Detection happens on-demand during user interaction. This is consistent with the zero-runtime-dependency architecture.
 
 ---
 
@@ -862,8 +936,8 @@ _bmad/_config/custom/lens-work/
 ├── README.md                       # Module documentation
 │
 ├── agents/
-│   ├── compass.agent.yaml          # Main router agent definition
-│   └── compass.md                  # Sidecar agent instructions
+│   ├── lens.agent.yaml             # Main @lens router agent definition
+│   └── lens.md                     # Sidecar agent instructions
 │
 ├── skills/
 │   ├── git-orchestration.md        # Branch, commit, push operations
@@ -886,21 +960,26 @@ _bmad/_config/custom/lens-work/
 │   │
 │   ├── governance/
 │   │   ├── constitution/workflow.md
-│   │   ├── compliance-check/workflow.md
+│   │   ├── compliance-check/workflow.md  # [v1 carry-forward]
 │   │   ├── resolve-constitution/workflow.md
-│   │   └── ancestry/workflow.md
+│   │   └── ancestry/workflow.md          # [v1 carry-forward]
 │   │
 │   ├── utility/
 │   │   ├── switch/workflow.md
-│   │   ├── fix-story/workflow.md
+│   │   ├── fix-story/workflow.md          # [v1 carry-forward]
 │   │   ├── sync-and-select-branch/workflow.md
 │   │   ├── onboarding/workflow.md
-│   │   ├── manage-credentials/workflow.md
-│   │   └── recreate-branches/workflow.md
+│   │   ├── manage-credentials/workflow.md # [v1 carry-forward]
+│   │   └── recreate-branches/workflow.md  # [v1 carry-forward]
 │   │
 │   ├── discovery/
-│   │   ├── domain-map/workflow.md
-│   │   └── impact-analysis/workflow.md
+│   │   ├── domain-map/workflow.md         # [v1 carry-forward]
+│   │   └── impact-analysis/workflow.md    # [v1 carry-forward]
+│   │
+│   # Note: Workflows marked [v1 carry-forward] are existing v1
+│   # capabilities carried into the upgraded module. They have no
+│   # new FRs in the PRD because they are not being modified in
+│   # this upgrade. No new stories needed for these in DevProposal.
 │   │
 │   ├── core/
 │   │   └── phase-lifecycle/workflow.md
@@ -1100,27 +1179,73 @@ New initiatives start with v2 schemas. Existing initiatives (if any) can remain 
 
 ## 15. Architecture Validation Checklist
 
-| Requirement | Architecture Component | Coverage |
-|-------------|----------------------|----------|
-| FR1-FR5 (Lifecycle) | State Machine + Router Engine | ✅ Full |
-| FR6-FR11 (Branches) | Git Engine | ✅ Full |
-| FR12-FR16 (State) | State Machine (dual-write) | ✅ Full |
-| FR17-FR21c (Constitution) | Constitution Engine | ✅ Full |
-| FR22-FR25 (Gates) | Constitution Engine + Checklist | ✅ Full |
-| FR26-FR29 (Agent Coordination) | Router Engine + Agent Activation | ✅ Full |
-| FR30-FR33 (Artifacts) | Discovery Engine | ✅ Full |
-| FR34-FR37 (Events) | State Machine (event log) | ✅ Full |
-| FR38-FR41d (Discovery) | Discovery Engine + Recovery | ✅ Full |
-| FR42-FR43 (Content — Growth) | Deferred to P3 | Deferred |
-| FR44-FR47 (Workflow branches — Growth) | Deferred to P4 | Deferred |
-| FR48 (Multi-service — Vision) | Deferred to Vision | Deferred |
-| NFR1-NFR4 (Reliability) | Idempotency + Recovery arch | ✅ Full |
-| NFR5-NFR8 (Consistency) | Canonical naming + append-only log | ✅ Full |
-| NFR9-NFR12 (Usability) | Gate feedback + progressive disclosure | ✅ Full |
-| NFR13-NFR16 (Maintainability) | Modular skills + lifecycle config | ✅ Full |
-| NFR17-NFR20 (Auditability) | Event log + git history + transparency | ✅ Full |
+| Requirement | Architecture Component | Coverage | Priority |
+|-------------|----------------------|----------|----------|
+| FR1-FR5 (Lifecycle) | State Machine + Router Engine | ✅ Full | P1 |
+| FR6-FR11 (Branches) | Git Engine | ✅ Full | P1 |
+| FR12-FR16 (State) | State Machine (dual-write) | ✅ Full | P2 |
+| FR17-FR21c (Constitution) | Constitution Engine | ✅ Full | P1 |
+| FR22-FR25 (Gates) | Constitution Engine + Checklist | ✅ Full | P1 |
+| FR26-FR29 (Agent Coordination) | Router Engine + Agent Activation | ✅ Full | P1 |
+| FR30-FR33 (Artifacts) | Discovery Engine | ✅ Full | P2 |
+| FR34-FR37 (Events) | State Machine (event log) | ✅ Full | P1 |
+| FR38-FR41d (Discovery) | Discovery Engine + Recovery | ✅ Full | P1 |
+| FR42-FR43 (Content — Growth) | Deferred to P3 | Deferred | P3 |
+| FR44-FR47 (Workflow branches — Growth) | Deferred to P4 | Deferred | P4 |
+| FR48 (Multi-service — Vision) | Deferred to Vision | Deferred | Vision |
+| NFR1-NFR4 (Reliability) | Idempotency + Recovery arch | ✅ Full | P1 |
+| NFR5-NFR8 (Consistency) | Canonical naming + append-only log | ✅ Full | P1 |
+| NFR9-NFR12 (Usability) | Gate feedback + progressive disclosure | ✅ Full | P2 |
+| NFR13-NFR16 (Maintainability) | Modular skills + lifecycle config | ✅ Full | P2 |
+| NFR17-NFR20 (Auditability) | Event log + git history + transparency | ✅ Full | P1 |
 
 ---
 
 *Generated during TechPlan phase by Winston (Architect) for initiative upgrade-cjki9q.*
 *Source: Product Brief (PrePlan), PRD (BusinessPlan), Lifecycle Contract v2, Module Configuration, Existing Skills & Templates.*
+
+---
+
+## Appendix A: Party Mode Review Results
+
+### Review Summary
+
+| Reviewer | Role | Verdict | Blockers | Conditions | Suggestions |
+|----------|------|---------|----------|------------|-------------|
+| John | Product Manager | Approve with Conditions | 2 | 5 | 4 |
+| Mary | Business Analyst | Request Changes | 3 | 6 | 4 |
+| Bob | Scrum Master | Approve with Conditions | 2 | 8 | 3 |
+
+**Consolidated (deduplicated): 4 Blockers, 11 Conditions — all resolved.**
+
+### Blockers Resolved
+
+| ID | Finding | Resolution |
+|----|---------|------------|
+| B1 | Phase-audience mapping contradicted lifecycle.yaml (§2.2 showed 3-audience per phase vs lifecycle.yaml's graduated model) | Added v1-alignment note to §2.2; architecture defers to lifecycle.yaml as single source of truth |
+| B2 | Path normalization `{domain}/{service}/repo/{repo}/feature/{feature}` diverged from PRD FR32 slug-based paths | Added PRD-alignment note; normalized to `Docs/{domain}/{service}/feature/{feature-slug}/` per FR32 |
+| B3 | `audience_status` field missing from state.yaml schema (§5.3) | Added `audience_status` map to §5.3 with dual-write contract to initiative config |
+| B4 | Cascade merge mechanism undocumented — no spec for how P1 artifacts flow small→medium→large | Added §3.5 Cascade Merge Mechanism with per-phase audience promotion rules and conflict resolution |
+
+### Conditions Resolved
+
+| ID | Finding | Resolution |
+|----|---------|------------|
+| C1 | 7 v1 carry-forward workflows not annotated with migration notes | Added `v1-carry-forward` annotations to all 7 workflows in §10.2 |
+| C2 | Mixed agent naming (`compass`, `@lens`, `lens.agent.yaml`) throughout document | Standardized to `@lens` (agent) / `lens.agent.yaml` (file) everywhere |
+| C3 | Context injection mechanism for multi-domain agent not specified | Added TD-015 in tech-decisions.md; referenced from §4 |
+| C4 | Constitution format ambiguity (`.md` vs `.yaml` per FR21c) | Added format note: `.md` used for human-readable constitutions per FR21c |
+| C5 | Component dependency graph missing — build order unclear | Added §4.7 Component Dependencies with build order and per-component DoD |
+| C6 | `implementation-readiness` capability listed but no architecture support | Deferred to Growth phase; noted in §4.1 |
+| C8 | Phase-completion detection mechanism not specified | Added §8.4 Phase Completion Detection with artifact-presence + gate-pass criteria |
+| C10 | Validation checklist (§15) missing MVP priority column for sprint planning | Added Priority column to §15 table |
+| C11 | Decision Index in tech-decisions.md missing reversibility/complexity metadata | Added Reversibility and Complexity columns to Decision Index |
+| C12 | `§5.1` component diagram still showed `Compass` agent name | Updated diagram to show `@lens` |
+| C13 | `§10.1` agent file references still showed `compass.*` filenames | Updated to `lens.agent.yaml` / `lens.spec.md` |
+
+### Suggestions Incorporated
+
+- GitHub API dependency elevated from Optional to Recommended (TD-007)
+- Phase-completion detection added as explicit architectural concern (§8.4)
+- Technology decisions cross-referenced with architecture sections
+- All Growth/Vision deferrals explicitly marked in validation checklist with priority tier
