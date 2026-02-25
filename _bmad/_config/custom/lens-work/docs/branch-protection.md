@@ -11,8 +11,8 @@ lens-work creates a flat, hyphen-separated branch topology. Proper branch protec
 {featureBranchRoot}-small                    ← Small-team group (planning phases merge here)
 {featureBranchRoot}-medium                   ← Medium review group
 {featureBranchRoot}-large                    ← Large review group (receives from small/medium after review)
-{featureBranchRoot}-small-p1                 ← Phase branch (Analysis)
-{featureBranchRoot}-small-p1-*               ← Workflow branches (individual work)
+{featureBranchRoot}-small-preplan              ← Phase branch (PrePlan)
+{featureBranchRoot}-small-preplan-*             ← Workflow branches (individual work)
 ```
 
 ## Recommended Protection Rules
@@ -27,7 +27,7 @@ lens-work creates a flat, hyphen-separated branch topology. Proper branch protec
 | Allow force push | ❌ No | Group branches are accumulation points — never rewrite |
 | Allow deletion | ❌ No | Group branches persist for the initiative lifetime |
 
-### Phase Branches (p1, p2, p3, p4)
+### Phase Branches (preplan, businessplan, techplan, devproposal, sprintplan)
 
 | Rule | Value | Rationale |
 |------|-------|-----------|

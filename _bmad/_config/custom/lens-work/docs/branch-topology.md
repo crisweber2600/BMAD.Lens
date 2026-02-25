@@ -11,7 +11,7 @@ LENS Workbench uses a hierarchical branch naming convention that encodes **domai
 ## Branch Name Composition
 
 ```
-{domain}-{service}-{initiative}-{audience}-p{N}-{workflow}
+{domain}-{service}-{initiative}-{audience}-{phaseName}-{workflow}
 ```
 
 | Segment       | Required | Description                                      | Example                    |
@@ -20,8 +20,8 @@ LENS Workbench uses a hierarchical branch naming convention that encodes **domai
 | `service`     | Yes      | Service or product within the domain             | `lens`                     |
 | `initiative`  | Yes      | Short initiative / feature identifier            | `onboarding-enhancements`  |
 | `audience`    | No       | Review-audience size (`small`, `medium`, `large`) | `small`                    |
-| `p{N}`        | No       | Phase number (1–4)                               | `p1`                       |
-| `workflow`    | No       | Active workflow name                             | `pre-plan`                 |
+| `{phaseName}` | No       | Canonical phase name                             | `preplan`                  |
+| `workflow`    | No       | Active workflow name                             | `brainstorm`               |
 
 Each segment is separated by a hyphen (`-`). Branches are created **incrementally** — you only add segments as you move deeper in the hierarchy.
 
@@ -34,14 +34,14 @@ bmad                                                  ← Domain
  └─ bmad-lens                                         ← Service
      └─ bmad-lens-onboarding-enhancements             ← Feature Root
          ├─ bmad-lens-onboarding-enhancements-small          ← Audience
-         │   ├─ bmad-lens-onboarding-enhancements-small-p1          ← Phase
-         │   │   └─ bmad-lens-onboarding-enhancements-small-p1-pre-plan  ← Workflow
-         │   └─ bmad-lens-onboarding-enhancements-small-p2
+         │   ├─ bmad-lens-onboarding-enhancements-small-preplan         ← Phase
+         │   │   └─ bmad-lens-onboarding-enhancements-small-preplan-brainstorm  ← Workflow
+         │   ├─ bmad-lens-onboarding-enhancements-small-businessplan
+         │   └─ bmad-lens-onboarding-enhancements-small-techplan
          ├─ bmad-lens-onboarding-enhancements-medium
-         │   └─ bmad-lens-onboarding-enhancements-medium-p2
+         │   └─ bmad-lens-onboarding-enhancements-medium-devproposal
          └─ bmad-lens-onboarding-enhancements-large
-             ├─ bmad-lens-onboarding-enhancements-large-p3
-             └─ bmad-lens-onboarding-enhancements-large-p4
+             └─ bmad-lens-onboarding-enhancements-large-sprintplan
 ```
 
 ---
@@ -86,24 +86,25 @@ Appends the target review-audience size to the feature root.
 
 **Example:** `bmad-lens-onboarding-enhancements-small`
 
-### 5. Phase Branch — `{featureBranchRoot}-{audience}-p{N}`
+### 5. Phase Branch — `{featureBranchRoot}-{audience}-{phaseName}`
 
-Encodes the current phase of work.
+Encodes the current phase of work using canonical phase names.
 
-| Phase | Name                  | Description                           |
-| ----- | --------------------- | ------------------------------------- |
-| `p1`  | Pre-plan / Analysis   | Initial discovery and analysis        |
-| `p2`  | Spec / Planning       | Specification and detailed planning   |
-| `p3`  | Plan / Solutioning    | Solution design and architecture      |
-| `p4`  | Implementation        | Code, test, and deliver               |
+| Phase          | Name                   | Audience  | Description                           |
+| -------------- | ---------------------- | --------- | ------------------------------------- |
+| `preplan`      | PrePlan                | `small`   | Discovery and initial analysis        |
+| `businessplan` | BusinessPlan           | `small`   | Requirements, PRD & UX design         |
+| `techplan`     | TechPlan               | `small`   | Architecture & technical design       |
+| `devproposal`  | DevProposal            | `medium`  | Adversarial review & dev proposal     |
+| `sprintplan`   | SprintPlan             | `large`   | Sprint planning & handoff             |
 
-**Example:** `bmad-lens-onboarding-enhancements-small-p1`
+**Example:** `bmad-lens-onboarding-enhancements-small-preplan`
 
-### 6. Workflow Branch — `{featureBranchRoot}-{audience}-p{N}-{workflow}`
+### 6. Workflow Branch — `{featureBranchRoot}-{audience}-{phaseName}-{workflow}`
 
 The most granular branch, representing the active workflow within a phase.
 
-**Example:** `bmad-lens-onboarding-enhancements-small-p1-pre-plan`
+**Example:** `bmad-lens-onboarding-enhancements-small-preplan-brainstorm`
 
 ---
 
@@ -113,14 +114,15 @@ The most granular branch, representing the active workflow within a phase.
 
 Phases map to review audiences as follows:
 
-| Phase | Default Audience | Review Expectation               |
-| ----- | ---------------- | -------------------------------- |
-| p1    | `small`          | Solo dev, 1 reviewer             |
-| p2    | `medium`         | Small team, 2–3 reviewers        |
-| p3    | `large`          | Full team, formal gates          |
-| p4    | `large`          | Full team, formal gates          |
+| Phase          | Default Audience | Review Expectation               |
+| -------------- | ---------------- | -------------------------------- |
+| preplan        | `small`          | Solo dev, 1 reviewer             |
+| businessplan   | `small`          | Solo dev, 1 reviewer             |
+| techplan       | `small`          | Solo dev, 1 reviewer             |
+| devproposal    | `medium`         | Small team, 2–3 reviewers        |
+| sprintplan     | `large`          | Full team, formal gates          |
 
-Early phases use lighter review cycles; later phases require broader team consensus.
+Early phases use lighter review cycles; later phases require broader team consensus. Promotion between audiences is gated by adversarial review (small→medium) and stakeholder approval (medium→large).
 
 ---
 
@@ -137,8 +139,8 @@ Most Git hosting platforms support branch names up to 256 characters, but many C
 A fully-qualified workflow branch can grow long quickly:
 
 ```
-bmad-lens-onboarding-enhancements-small-p1-pre-plan   (52 chars ✔)
-bmad-lens-customer-experience-redesign-2026-large-p4-implementation   (67 chars ✔)
+bmad-lens-onboarding-enhancements-small-preplan-brainstorm   (56 chars ✔)
+bmad-lens-customer-experience-redesign-2026-large-sprintplan   (60 chars ✔)
 ```
 
 If your initiative name is verbose, the full path may approach or exceed 128 characters. Use the tips below to keep names compact.
@@ -164,8 +166,8 @@ If your initiative name is verbose, the full path may approach or exceed 128 cha
 
 6. **Validate before creating** — Run a quick character count when defining a new initiative:
    ```bash
-   echo -n "bmad-lens-cx-redesign-26-large-p4-impl" | wc -c
-   # 38 — well within limits
+   echo -n "bmad-lens-cx-redesign-26-large-sprintplan" | wc -c
+   # 51 — well within limits
    ```
 
 ---
@@ -173,10 +175,10 @@ If your initiative name is verbose, the full path may approach or exceed 128 cha
 ## Quick Reference
 
 ```
-Pattern:   {domain}-{service}-{initiative}-{audience}-p{N}-{workflow}
+Pattern:   {domain}-{service}-{initiative}-{audience}-{phaseName}-{workflow}
 Max chars: 128 (recommended)
 Audiences: small | medium | large
-Phases:    p1 (analysis) | p2 (spec) | p3 (solution) | p4 (implementation)
+Phases:    preplan | businessplan | techplan | devproposal | sprintplan
 ```
 
 ---

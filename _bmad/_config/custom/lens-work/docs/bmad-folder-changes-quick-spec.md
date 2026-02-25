@@ -335,14 +335,22 @@ Benefits:
 
 ### 13.2 Branch Topology
 
+> **Note:** This section documents the original design. The current convention uses flat hyphen-separated naming with canonical phase names (e.g., `{featureBranchRoot}-small-techplan`). See [branch-topology.md](branch-topology.md).
+
 ```
 {domain}/{initiative_id}/{lane}-{phase}
 ```
 
-Example:
+Example (legacy format):
 
 ```
 claut/redis-scraper-f4c8e1/small-p3
+```
+
+Current format:
+
+```
+claut-redis-scraper-f4c8e1-small-techplan
 ```
 
 ### 13.3 Casey Integration
@@ -360,23 +368,23 @@ Benefits:
 
 ### 14.1 State File Format
 
-Old:
+Old (legacy numbered phases):
 
 ```
-initiative:
+initiation:
   id: xyz
   gates: [...]
 current:
   phase: p2
 ```
 
-New:
+New (canonical named phases):
 
 ```
 # state.yaml (personal)
 active_initiative: xyz
 current:
-  phase: p2
+  phase: businessplan
 
 # initiatives/xyz.yaml (shared)
 id: xyz

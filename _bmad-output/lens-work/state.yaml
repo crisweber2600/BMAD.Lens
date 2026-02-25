@@ -1,0 +1,31 @@
+# v2 — Lifecycle Contract personal state
+lifecycle_version: 2
+lens_contract_version: "2.0"
+
+active_initiative: upgrade-cjki9q
+# For feature-layer: active_initiative = initiative_id (e.g., "upgrade-cjki9q")
+# Load via: initiatives/upgrade-cjki9q.yaml
+
+# v2: Named phase tracking
+current_phase: preplan
+active_track: full
+workflow_status: pr_pending
+
+# v2: Phase status (dual-written to initiative config)
+phase_status:
+  preplan: pr_pending
+  businessplan: null
+  techplan: null
+  devproposal: null
+  sprintplan: null
+
+# v2: Audience promotion status
+audience_status:
+  small_to_medium: null
+  medium_to_large: null
+  large_to_base: null
+
+background_errors: []
+created_at: "2026-02-24T00:00:00Z"
+last_activity: "2026-02-24T00:00:00Z"
+last_pr: "https://github.com/crisweber2600/BMAD.Lens/pull/13"

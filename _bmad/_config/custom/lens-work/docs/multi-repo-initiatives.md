@@ -61,10 +61,10 @@ No audience, phase, or workflow branches are created for domain-layer. Service a
 
 ```
 NorthStarET.BMAD (control repo)
-├── {featureBranchRoot}                    ← initiative root (lifecycle branches live HERE)
-├── {featureBranchRoot}-small               ← small audience group
-├── {featureBranchRoot}-small-p1            ← phase 1 (created by /pre-plan)
-└── {featureBranchRoot}-small-p1-brainstorm ← workflow branch
+├── {featureBranchRoot}                       ← initiative root (lifecycle branches live HERE)
+├── {featureBranchRoot}-small                ← small audience group
+├── {featureBranchRoot}-small-preplan         ← preplan phase (created by /pre-plan)
+└── {featureBranchRoot}-small-preplan-brainstorm ← workflow branch
 
 Target repos (e.g., bmad-chat)
 └── (no initiative branches — work happens via PRs or feature branches)
@@ -74,13 +74,13 @@ All branches pushed to remote immediately on creation.
 
 ### When Target Repos Need Branches
 
-For implementation phase (p4) work that touches target repo code directly:
+For sprintplan phase work that touches target repo code directly:
 
 ```bash
 # Casey creates matching feature branches in target repos
 cd TargetProjects/BMAD/CHAT/bmad-chat
-git checkout -b "{featureBranchRoot}-large-p4-feature-name"
-git push -u origin "{featureBranchRoot}-large-p4-feature-name"
+git checkout -b "{featureBranchRoot}-large-sprintplan-feature-name"
+git push -u origin "{featureBranchRoot}-large-sprintplan-feature-name"
 ```
 
 These branches follow a simplified pattern — no full topology duplication. They link back to the control repo's initiative via the `{initiative_id}` segment.
@@ -93,15 +93,15 @@ The control repo's `state.yaml` tracks position across all repos:
 active_initiative: bmad-9d7732
 # Size is stored in initiatives/{id}.yaml
 current:
-  phase: p4
+  phase: sprintplan
   workflow: dev-story
   workflow_status: in_progress
   active_repos:
     - repo: bmad-chat
-      branch: "{featureBranchRoot}-large-p4-auth-flow"
+      branch: "{featureBranchRoot}-large-sprintplan-auth-flow"
       status: in_progress
     - repo: bmadServer
-      branch: "{featureBranchRoot}-large-p4-auth-api"
+      branch: "{featureBranchRoot}-large-sprintplan-auth-api"
       status: in_progress
     - repo: BMAD.Lens
       branch: null
@@ -128,7 +128,7 @@ Each target repo PR includes a reference back to the control repo:
 ```markdown
 ## lens-work Initiative: bmad-9d7732
 
-- **Phase:** p4 (Implementation)
+- **Phase:** sprintplan (SprintPlan)
 - **Workflow:** dev-story/auth-flow
 - **Control PR:** NorthStarET.BMAD#42
 - **Related PRs:** bmadServer#7
@@ -142,11 +142,11 @@ A concrete example using the BMAD domain initiative:
 
 | Phase | Control Repo Activity | Target Repo Activity |
 |-------|----------------------|---------------------|
-| p1 (Analysis) | Brainstorm, research, product brief | Scout discovers repos, generates inventories |
-| p2 (Planning) | PRD, UX design | No target repo changes |
-| p3 (Solutioning) | Architecture, epics, stories | No target repo changes |
-| p4 (Implementation) | Sprint plan, story tracking | Feature branches in `bmad-chat`, `bmadServer` |
-| Completion | Merge `small` → `large` → `base` → `main` | Merge feature branches → `main` per repo |
+| preplan (PrePlan) | Brainstorm, research, product brief | Scout discovers repos, generates inventories |
+| businessplan (BusinessPlan) | PRD, UX design | No target repo changes |
+| techplan (TechPlan) | Architecture, epics, stories | No target repo changes |
+| sprintplan (SprintPlan) | Sprint plan, story tracking | Feature branches in `bmad-chat`, `bmadServer` |
+| Completion | Merge `small` → `medium` → `large` → `base` → `main` | Merge feature branches → `main` per repo |
 
 ## Best Practices
 

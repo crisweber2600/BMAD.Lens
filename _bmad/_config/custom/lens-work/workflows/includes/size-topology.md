@@ -28,7 +28,7 @@ Where `{initiative_root}` = `{domain_prefix}-{service_prefix}-{initiative_id}` (
   or `{domain_prefix}-{service_prefix}-{repo}-{initiative_id}` (multi-repo)
   or `{domain_prefix}-{initiative_id}` (domain parent, no service)
 
-> **v2 change:** `{initiative_root}` replaces the legacy `{featureBranchRoot}`. Named phase segments (e.g., `-preplan-`) replace numbered segments (e.g., `-p1-`).
+> **v2 change:** `{initiative_root}` replaces the legacy `{featureBranchRoot}`. Named phase segments (e.g., `-preplan-`) replace numbered segments (e.g., `-p1-` through `-p4-`).
 
 ---
 
@@ -116,7 +116,7 @@ Audiences are the primary progression axis in the lifecycle. Phases happen WITHI
 | `large` | Stakeholder approval | sprintplan | stakeholder-approval | `init-initiative` |
 | `base` | Ready for execution | (none) | constitution-gate (Scribe) | = initiative root |
 
-> **v2 change:** In the legacy model, p2 mapped to medium and p3 to large. In v2, ALL creation phases (preplan, businessplan, techplan) live in `small`. Audience promotions happen BETWEEN creation and review phases.
+> **v2 change:** In the legacy model, phases p2/p3 mapped to medium/large audiences. In v2, ALL creation phases (preplan, businessplan, techplan) live in `small`. Audience promotions happen BETWEEN creation and review phases.
 
 #### Audience Behaviors
 

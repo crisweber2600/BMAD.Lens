@@ -318,7 +318,7 @@ Audience branches are created at `init-initiative`. Phase branches (e.g., `-smal
 #new-domain "payment-platform"
 # → Sets up domain branch (payment-platform), creates Domain.yaml,
 #   scaffolds domain folders (initiatives/, TargetProjects/, Docs/)
-#   Only one branch created — no base/small/large/p1 branches
+#   Only one branch created — no base/small/large/phase branches
 
 # Phase progression (full track)
 /preplan        # PrePlan: brainstorm, research, brief
