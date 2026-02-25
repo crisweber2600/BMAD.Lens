@@ -40,8 +40,8 @@ blocks: [...]
 ```
 
 The new architecture splits this into:
-1. **Personal state** (`state.yaml`) — git-ignored, tracks user's current position
-2. **Initiative config** (`initiatives/{id}.yaml`) — git-committed, shared initiative definition
+1. **State** (`state.yaml`) — committed, tracks current position
+2. **Initiative config** (`initiatives/{id}.yaml`) — committed, shared initiative definition
 
 ---
 
@@ -229,28 +229,23 @@ Append to `_bmad-output/lens-work/event-log.jsonl`:
 
 **Files created/modified:**
 ├── 📄 initiatives/${migration_data.id}.yaml (NEW — commit this)
-├── 📄 state.yaml (REWRITTEN — git-ignored)
+├── 📄 state.yaml (REWRITTEN — committed)
 ├── 📄 state.yaml.backup (backup of old format)
 └── 📄 event-log.jsonl (migration event appended)
 
 **Next steps:**
 
-1. Ensure state.yaml is git-ignored:
+1. Commit the state and initiative config:
    ```bash
-   echo "_bmad-output/lens-work/state.yaml" >> .gitignore
-   ```
-
-2. Commit the initiative config:
-   ```bash
+   git add _bmad-output/lens-work/state.yaml
    git add _bmad-output/lens-work/initiatives/${migration_data.id}.yaml
    git add _bmad-output/lens-work/event-log.jsonl
-   git add .gitignore
    git commit -m "migrate(${migration_data.id}): Convert to two-file state architecture
 
    Migrates initiative '${migration_data.name}' from single-file state.yaml
    to two-file architecture:
    - initiatives/${migration_data.id}.yaml (shared, committed)
-   - state.yaml (personal, git-ignored)
+   - state.yaml (committed)
 
    Current position preserved: ${migration_data.current.phase} / ${migration_data.current.workflow}"
    git push

@@ -12,7 +12,7 @@ lens-work stores state and configuration under `_bmad-output/lens-work/`.
 
 | Path | Description | Git Status |
 |------|-------------|------------|
-| `_bmad-output/lens-work/state.yaml` | Personal state (active initiative pointer) | git-ignored |
+| `_bmad-output/lens-work/state.yaml` | State (active initiative pointer) | committed |
 | `_bmad-output/lens-work/initiatives/{id}.yaml` | Shared initiative config | committed |
 | `_bmad-output/lens-work/event-log.jsonl` | Append-only event log for recovery/audit | committed |
 | `_bmad-output/lens-work/domain-map.yaml` | Domain architecture map | committed |

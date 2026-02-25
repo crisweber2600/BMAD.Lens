@@ -930,7 +930,7 @@ cp "_bmad-output/lens-work/initiatives/${initiative_id}.yaml" "${bmad_docs}/init
 > compatibility; the BmadDocs copy is a convenience snapshot.
 ${endif}
 
-### 7. Write Personal State (Git-Ignored)
+### 7. Write State File (Git-Committed)
 
 Write to `{project-root}/_bmad-output/lens-work/state.yaml`:
 
@@ -975,7 +975,7 @@ created_at: "${ISO_TIMESTAMP}"
 last_activity: "${ISO_TIMESTAMP}"
 ```
 
-> **Note:** This file is git-ignored. It tracks the individual user's current position in the initiative. Each collaborator has their own local copy. Audience is derived from the current phase via lifecycle.yaml (not stored in state).
+> **Note:** This file is git-committed and tracks the current position in the initiative. Audience is derived from the current phase via lifecycle.yaml (not stored in state).
 
 ### 8. Log Event
 
@@ -992,11 +992,12 @@ ${if layer == "domain"}
 # Domain-layer: checkout the domain branch
 git checkout "${domain_prefix}"
 
-# Stage domain scaffolding and event log (NO separate initiative config — Domain.yaml IS the config)
+# Stage domain scaffolding, state, and event log (NO separate initiative config — Domain.yaml IS the config)
 git add "_bmad-output/lens-work/initiatives/${domain_prefix}/Domain.yaml"
 git add "_bmad-output/lens-work/initiatives/${domain_prefix}/.gitkeep"
 git add "TargetProjects/${domain_prefix}/.gitkeep"
 git add "Docs/${domain_prefix}/.gitkeep"
+git add "_bmad-output/lens-work/state.yaml"
 git add "_bmad-output/lens-work/event-log.jsonl"
 
 # Create targeted commit
@@ -1022,11 +1023,12 @@ ${elif layer == "service"}
 # Service-layer: checkout the service branch
 git checkout "${domain_prefix}-${service_prefix}"
 
-# Stage service scaffolding and event log (NO separate initiative config — Service.yaml IS the config)
+# Stage service scaffolding, state, and event log (NO separate initiative config — Service.yaml IS the config)
 git add "_bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/Service.yaml"
 git add "_bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/.gitkeep"
 git add "TargetProjects/${domain_prefix}/${service_prefix}/.gitkeep"
 git add "Docs/${domain_prefix}/${service_prefix}/.gitkeep"
+git add "_bmad-output/lens-work/state.yaml"
 git add "_bmad-output/lens-work/event-log.jsonl"
 
 # Create targeted commit
@@ -1053,8 +1055,9 @@ ${else}
 # Feature-layer: checkout the initiative root branch
 git checkout "${initiative_root}"
 
-# Stage initiative config and event log (NOT state.yaml — it's git-ignored)
+# Stage initiative config, state, and event log
 git add "_bmad-output/lens-work/initiatives/${initiative_id}.yaml"
+git add "_bmad-output/lens-work/state.yaml"
 git add "_bmad-output/lens-work/event-log.jsonl"
 git add "${bmad_docs}/"   # REQ-10: BmadDocs initiative config copy
 
@@ -1085,25 +1088,10 @@ git push -u origin "${initiative_root}"
 ```
 ${endif}
 
-### 10. Ensure .gitignore for Personal State
+### 10. (Removed — state.yaml is now git-committed)
 
-```bash
-${if layer == "domain"}
-PUSH_BRANCH="${domain_prefix}"
-${elif layer == "service"}
-PUSH_BRANCH="${domain_prefix}-${service_prefix}"
-${else}
-PUSH_BRANCH="${initiative_root}"
-${endif}
-
-# Ensure state.yaml is git-ignored (personal state should not be committed)
-if ! grep -q "_bmad-output/lens-work/state.yaml" .gitignore 2>/dev/null; then
-  echo "_bmad-output/lens-work/state.yaml" >> .gitignore
-  git add .gitignore
-  git commit -m "chore: gitignore personal lens-work state"
-  git push origin "${PUSH_BRANCH}"
-fi
-```
+> **Note:** In v2.1+, `state.yaml` is committed alongside initiative configs and event logs.
+> The previous step that added `state.yaml` to `.gitignore` has been removed.
 
 ### 10.5. Run Daily Branch Sync and Selection
 
@@ -1172,7 +1160,7 @@ ${if layer == "domain"}
 │   ${endfor}
 ├──
 ├── State Architecture:
-│   ├── Personal state: _bmad-output/lens-work/state.yaml (git-ignored)
+│   ├── State: _bmad-output/lens-work/state.yaml (committed)
 │   ├── Domain.yaml: _bmad-output/lens-work/initiatives/${domain_prefix}/Domain.yaml (committed, includes initiative config)
 │   └── Profile selected_branch: _bmad-output/personal/profile.yaml (git-ignored)
 ├──
@@ -1211,7 +1199,7 @@ ${elif layer == "service"}
 │   ${endfor}
 ├──
 ├── State Architecture:
-│   ├── Personal state: _bmad-output/lens-work/state.yaml (git-ignored)
+│   ├── State: _bmad-output/lens-work/state.yaml (committed)
 │   ├── Service.yaml: _bmad-output/lens-work/initiatives/${domain_prefix}/${service_prefix}/Service.yaml (committed, includes initiative config)
 │   └── Profile selected_branch: _bmad-output/personal/profile.yaml (git-ignored)
 ├──
@@ -1260,7 +1248,7 @@ ${endfor}
 │   ${endfor}
 ├──
 ├── State Architecture:
-│   ├── Personal state: _bmad-output/lens-work/state.yaml (git-ignored, lifecycle_version: 2)
+│   ├── State: _bmad-output/lens-work/state.yaml (committed, lifecycle_version: 2)
 │   ├── Initiative config: _bmad-output/lens-work/initiatives/${initiative_id}.yaml (committed, lifecycle_version: 2)
 │   └── Profile selected_branch: _bmad-output/personal/profile.yaml (git-ignored, includes branch + commit)
 ├──
@@ -1285,7 +1273,7 @@ The three-part state architecture:
 
 | File | Scope | Git Status | Contents |
 |------|-------|------------|----------|
-| `state.yaml` | Personal | git-ignored | Active initiative pointer, current phase/workflow position |
+| `state.yaml` | Shared | committed | Active initiative pointer, current phase/workflow position |
 | `initiatives/{id}.yaml` | Shared | committed | Initiative definition, track, active_phases, phase_status, branches, target repos |
 | `initiatives/{domain}/Domain.yaml` | Shared | committed | Domain-layer: domain descriptor + initiative config (replaces `{id}.yaml` for domain-layer) |
 | `initiatives/{domain}/{service}/Service.yaml` | Shared | committed | Service-layer: service descriptor + initiative config (replaces `{id}.yaml` for service-layer) |
@@ -1346,8 +1334,7 @@ last_sync_date = profile.lens_work.last_sync.date
 ### All Layers
 - [ ] Initiative ID generated and unique
 - [ ] Initiative config created and committed (for domain: Domain.yaml; for service: Service.yaml; for others: `initiatives/{id}.yaml`)
-- [ ] `state.yaml` written locally (git-ignored)
-- [ ] `.gitignore` updated for `state.yaml`
+- [ ] `state.yaml` written and committed
 - [ ] `event-log.jsonl` entry appended and committed
 - [ ] **Target repos synced and branches selected** (via sync-and-select-branch)
 - [ ] `profile.lens_work.selected_branch` and `last_sync.date` updated

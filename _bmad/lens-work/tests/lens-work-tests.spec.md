@@ -47,7 +47,7 @@ created: 2026-02-05
 | 1.1.3 | Init initiative creates `initiatives/{domain}/Domain.yaml` (domain-layer) | File exists at `_bmad-output/lens-work/initiatives/{domain_prefix}/Domain.yaml` |
 | 1.1.4 | `state.yaml` has `active_initiative` field | YAML key `active_initiative` is present and matches `{id}` (or `{domain_prefix}` for domain-layer) |
 | 1.1.5 | `initiatives/{id}.yaml` has required fields | Fields: `id`, `name`, `layer`, `gates`, `blocks` all present |
-| 1.1.6 | `state.yaml` is NOT committed (git-ignored) | `.gitignore` contains `_bmad-output/lens-work/state.yaml` or equivalent pattern |
+| 1.1.6 | `state.yaml` IS committed | `state.yaml` is tracked by git after init-initiative completes |
 | 1.1.7 | `initiatives/{id}.yaml` IS committed | File tracked by git after init-initiative completes |
 
 ### 1.2 State Loading

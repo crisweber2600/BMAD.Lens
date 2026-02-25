@@ -23,7 +23,7 @@ Manages the two-file state system (state.yaml + event-log.jsonl). Handles all re
 ## State Schema (v2 — Lifecycle Contract)
 
 ```yaml
-# state.yaml — personal runtime state (git-ignored)
+# state.yaml — runtime state (committed)
 lifecycle_version: 2
 lens_contract_version: "2.0"
 

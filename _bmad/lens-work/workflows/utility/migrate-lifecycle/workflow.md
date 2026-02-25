@@ -298,7 +298,7 @@ Append to `_bmad-output/lens-work/event-log.jsonl`:
 **Current Phase:** ${current_phase_v2} (was: ${state.current_phase})
 
 **Files modified:**
-├── 📄 state.yaml (rewritten to v2 — git-ignored)
+├── 📄 state.yaml (rewritten to v2 — committed)
 ├── 📄 ${initiative_config_path} (rewritten to v2 — commit this)
 ├── 📄 state.yaml.v1.backup (backup of old format)
 ├── 📄 ${initiative_config_path}.v1.backup (backup of old format)

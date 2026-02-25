@@ -4,8 +4,8 @@
 
 lens-work v2 splits `state.yaml` into two files:
 
-- **Personal state** (`state.yaml`) — git-ignored, tracks your active position (phase, lane, workflow)
-- **Initiative config** (`initiatives/{id}.yaml`) — git-committed, shared team config (initiative metadata, gates, blocks)
+- **State** (`state.yaml`) — committed, tracks your active position (phase, lane, workflow)
+- **Initiative config** (`initiatives/{id}.yaml`) — committed, shared team config (initiative metadata, gates, blocks)
 
 ### Why the Split?
 
@@ -21,7 +21,7 @@ v2 separates _shared truth_ (initiative config) from _personal context_ (where y
 
 ```
 _bmad-output/lens-work/
-├── state.yaml                  # Personal state (git-ignored)
+├── state.yaml                  # State (committed)
 ├── event-log.jsonl             # Event audit trail
 └── initiatives/
     ├── rate-limit-x7k2m9.yaml  # Shared initiative config
@@ -87,7 +87,7 @@ blocks: []
 Replace `state.yaml` with personal-only content:
 
 ```yaml
-# state.yaml — git-ignored, personal position
+# state.yaml — committed, current position
 version: 2
 active_initiative: rate-limit-x7k2m9
 current:
@@ -98,18 +98,12 @@ current:
   workflow_status: pending
 ```
 
-#### Step 4: Update .gitignore
+#### Step 4: Commit state and initiative config
 
 ```bash
-echo "_bmad-output/lens-work/state.yaml" >> .gitignore
-```
-
-#### Step 5: Commit initiative config
-
-```bash
+git add _bmad-output/lens-work/state.yaml
 git add _bmad-output/lens-work/initiatives/
-git add .gitignore
-git commit -m "[lens-work] Migrate state to v2: split personal state from initiative config"
+git commit -m "[lens-work] Migrate state to v2: split state from initiative config"
 ```
 
 ## Rollback
@@ -119,8 +113,6 @@ If something goes wrong, restore from the backup:
 ```bash
 cp _bmad-output/lens-work/state.yaml.backup _bmad-output/lens-work/state.yaml
 rm -rf _bmad-output/lens-work/initiatives/
-# Remove the .gitignore entry for state.yaml
-git checkout -- .gitignore
 ```
 
 ## Verification

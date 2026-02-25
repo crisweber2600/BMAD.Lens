@@ -116,7 +116,7 @@ Next Steps
 └── ${next_step_3}
 
 State Architecture
-├── Personal: _bmad-output/lens-work/state.yaml (git-ignored)
+├── State: _bmad-output/lens-work/state.yaml (committed)
 └── Initiative: _bmad-output/lens-work/initiatives/${initiative.id}.yaml (committed)
 
 ═══════════════════════════════════════════════════
