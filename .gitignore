@@ -1,8 +1,7 @@
-
-# lens-work
-_bmad/lens-work/_memory/
-_bmad-output/lens-work/
-tmp*
+# LENS Workbench local outputs
+_bmad-output/lens-work/personal/
+_bmad-output/lens-work/event-log.jsol
 TargetProjects/
-node_modules/
-_bmad-output/lens-work/state.yaml
+_bmad/
+.claude/
+.github/
