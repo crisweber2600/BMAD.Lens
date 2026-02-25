@@ -155,17 +155,17 @@ active_track: full
 
 ### Scenario 1: Mid-Phase Initiative
 
-**Situation:** You're in the middle of p3 (tech-plan)
+**Situation:** You're in the middle of v1 `p3` (tech-plan)
 
 **Migration:**
 1. Complete current phase work
-2. Merge p3 PR
+2. Merge the v1 `p3` PR
 3. Run `@tracey migrate-lifecycle`
-4. Continue with `/devproposal` (was p4)
+4. Continue with `/devproposal` (was v1 `p4`)
 
 ### Scenario 2: Between Phases
 
-**Situation:** Just finished p2, about to start p3
+**Situation:** Just finished v1 `p2`, about to start v1 `p3`
 
 **Migration:**
 1. Run `@tracey migrate-lifecycle` immediately

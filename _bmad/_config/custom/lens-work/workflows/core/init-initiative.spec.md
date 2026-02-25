@@ -37,11 +37,11 @@ target_repo: api-gateway  # resolved from service map
 ### Sequence
 
 1. Generate initiative ID (e.g., `rate-limit-x7k2m9`)
-2. Create base branch from current HEAD
-3. Create small size from base
-4. Create large size from base
-5. Create p1 branch from small
-6. Checkout to `small/p1`
+2. Create root branch from current HEAD
+3. Create small audience from root
+4. Create medium audience from root
+5. Create large audience from root
+6. Checkout to `small` (first phase branch created by router)
 7. Initialize state.yaml
 8. Log to event-log.jsonl
 9. Return control to Compass
@@ -50,10 +50,10 @@ target_repo: api-gateway  # resolved from service map
 
 ```
 ✅ Initiative created: rate-limit-x7k2m9
-├── Base: lens/rate-limit-x7k2m9/base
-├── Small: lens/rate-limit-x7k2m9/small
-├── Large: lens/rate-limit-x7k2m9/large
-├── Phase: lens/rate-limit-x7k2m9/small/p1
+├── Root: lens-rate-limit-x7k2m9
+├── Small: lens-rate-limit-x7k2m9-small
+├── Medium: lens-rate-limit-x7k2m9-medium
+├── Large: lens-rate-limit-x7k2m9-large
 └── Ready for /pre-plan
 ```
 

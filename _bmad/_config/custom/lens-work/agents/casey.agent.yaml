@@ -77,36 +77,38 @@ agent:
           Service parent + multi-repo: {domain_prefix}-{service_prefix}-{repo}-{initiative_id}
           Domain parent: {domain_prefix}-{initiative_id}
         
-        Audience = PR review audience. It progresses per phase:
-          p1 → small (solo dev, 1 reviewer)
-          p2 → medium (small team, 2-3 reviewers)
-          p3 → large (full team, formal gates)
-          p4 → large (full team, formal gates)
+        Audience = PR review audience. Phases are grouped by audience:
+          preplan, businessplan, techplan → small (solo dev, 1 reviewer)
+          devproposal → medium (small team, 2-3 reviewers)
+          sprintplan → large (full team, formal gates)
+          (none) → base (constitution-gated, ready for execution)
         
-        {featureBranchRoot}                                        # Initiative root (replaces old /base)
-        ├── {featureBranchRoot}-small      AKA {smallGroupBranchRoot}  # Review audience: small
-        │   └── {featureBranchRoot}-small-p1                           # Phase 1 (Analysis)
-        │       └── {featureBranchRoot}-small-p1-{workflow}            # Workflow branches
-        ├── {featureBranchRoot}-medium     AKA {mediumGroupBranchRoot} # Review audience: medium
-        │   └── {featureBranchRoot}-medium-p2                          # Phase 2 (Planning)
-        │       └── {featureBranchRoot}-medium-p2-{workflow}           # Workflow branches
-        └── {featureBranchRoot}-large      AKA {largeGroupBranchRoot}  # Review audience: large
-            ├── {featureBranchRoot}-large-p3                           # Phase 3 (Solutioning)
-            │   └── {featureBranchRoot}-large-p3-{workflow}            # Workflow branches
-            └── {featureBranchRoot}-large-p4                           # Phase 4 (Implementation)
-                └── {featureBranchRoot}-large-p4-{workflow}            # Workflow branches
+        {featureBranchRoot}                                            # Initiative root
+        ├── {featureBranchRoot}-small          AKA {smallGroupBranchRoot}  # Review audience: small
+        │   ├── {featureBranchRoot}-small-preplan                          # PrePlan (Mary/Analyst)
+        │   │   └── {featureBranchRoot}-small-preplan-{workflow}            # Workflow branches
+        │   ├── {featureBranchRoot}-small-businessplan                      # BusinessPlan (John/PM + Sally/UX)
+        │   │   └── {featureBranchRoot}-small-businessplan-{workflow}        # Workflow branches
+        │   └── {featureBranchRoot}-small-techplan                          # TechPlan (Winston/Architect)
+        │       └── {featureBranchRoot}-small-techplan-{workflow}            # Workflow branches
+        ├── {featureBranchRoot}-medium         AKA {mediumGroupBranchRoot}  # Review audience: medium
+        │   └── {featureBranchRoot}-medium-devproposal                      # DevProposal (John/PM)
+        │       └── {featureBranchRoot}-medium-devproposal-{workflow}        # Workflow branches
+        └── {featureBranchRoot}-large          AKA {largeGroupBranchRoot}   # Review audience: large
+            └── {featureBranchRoot}-large-sprintplan                        # SprintPlan (Bob/SM)
+                └── {featureBranchRoot}-large-sprintplan-{workflow}          # Workflow branches
         
-        Branch naming convention: {featureBranchRoot}-{audience}-p{phaseNumber}-{workflow}
-        - Phase-only: {featureBranchRoot}-small-p1
-        - With workflow: {featureBranchRoot}-small-p1-brainstorm
+        Branch naming convention: {featureBranchRoot}-{audience}-{phaseName}-{workflow}
+        - Phase-only: {featureBranchRoot}-small-preplan
+        - With workflow: {featureBranchRoot}-small-preplan-brainstorm
         - Audience-only: {featureBranchRoot}-small (review audience branch, PR target)
         - Root: {featureBranchRoot} (final merge target)
         
         Review audience map (phase → audience):
-          review_audience = {1: "small", 2: "medium", 3: "large", 4: "large"}
+          review_audience = {preplan: "small", businessplan: "small", techplan: "small", devproposal: "medium", sprintplan: "large"}
         
         init-initiative creates 4 branches (root + 3 audience groups).
-        Phase branches (e.g., -small-p1) are created by phase router workflows, NOT at init.
+        Phase branches (e.g., -small-preplan) are created by phase router workflows, NOT at init.
         
         PR flow (feature only — domain/service layers have no PR flow):
           workflow branch → phase branch (finish-workflow)
@@ -120,18 +122,19 @@ agent:
       content: |
         Phase-to-review-audience mapping:
         
-        | Phase | Audience | Branch Suffix | Reviewers |
-        |-------|----------|---------------|-----------|
-        | p1 (Analysis) | small | -small-p1 | Solo dev, 1 reviewer |
-        | p2 (Planning) | medium | -medium-p2 | Small team, 2-3 reviewers |
-        | p3 (Solutioning) | large | -large-p3 | Full team, formal gates |
-        | p4 (Implementation) | large | -large-p4 | Full team, formal gates |
+        | Phase | Agent | Audience | Branch Suffix | Reviewers |
+        |-------|-------|----------|---------------|-----------|
+        | PrePlan | Mary (Analyst) | small | -small-preplan | Solo dev, 1 reviewer |
+        | BusinessPlan | John (PM) + Sally (UX) | small | -small-businessplan | Solo dev, 1 reviewer |
+        | TechPlan | Winston (Architect) | small | -small-techplan | Solo dev, 1 reviewer |
+        | DevProposal | John (PM) | medium | -medium-devproposal | Small team, 2-3 reviewers |
+        | SprintPlan | Bob (SM) | large | -large-sprintplan | Full team, formal gates |
         
         Lookup function:
-          review_size = review_audience_map[phase_number]
-          review_audience_map = {1: "small", 2: "medium", 3: "large", 4: "large"}
+          review_size = review_audience_map[phase_name]
+          review_audience_map = {preplan: "small", businessplan: "small", techplan: "small", devproposal: "medium", sprintplan: "large"}
         
-        The review audience branch (e.g., {featureBranchRoot}-medium) is the PR target
+        The review audience branch (e.g., {featureBranchRoot}-small) is the PR target
         when a phase completes. This tells developers exactly who should review.
     
     - id: merge-gate-check
@@ -202,9 +205,9 @@ agent:
         
         PR targets by trigger:
         - finish-workflow: workflow branch → phase branch
-          e.g., {featureBranchRoot}-small-p1-brainstorm → {featureBranchRoot}-small-p1
+          e.g., {featureBranchRoot}-small-preplan-brainstorm → {featureBranchRoot}-small-preplan
         - finish-phase: phase branch → review audience branch
-          e.g., {featureBranchRoot}-small-p1 → {featureBranchRoot}-small
+          e.g., {featureBranchRoot}-small-preplan → {featureBranchRoot}-small
           The audience branch name tells the dev which reviewers to invite.
         
         Multi-host support:

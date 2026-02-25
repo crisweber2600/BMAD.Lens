@@ -76,7 +76,7 @@ target_repos:
   - "api-gateway"
 created_at: "2026-01-15T10:30:00-06:00"
 gates:
-  - name: "p1/w/brainstorm"
+  - name: "preplan/brainstorm"   # legacy format was "p1/w/brainstorm"
     status: completed
     completed_at: "2026-01-16T14:00:00-06:00"
 blocks: []
@@ -91,8 +91,8 @@ Replace `state.yaml` with personal-only content:
 version: 2
 active_initiative: rate-limit-x7k2m9
 current:
-  phase: p2
-  phase_name: "Planning"
+  phase: businessplan
+  phase_name: "BusinessPlan"
   lane: small
   workflow: null
   workflow_status: pending

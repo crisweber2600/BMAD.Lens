@@ -69,9 +69,9 @@ output_path = docs_path
 ensure_directory(output_path)
 
 # REQ-7/REQ-9: Validate previous phase PR merged [S1.5]
-prev_phase = "p3"
-prev_phase_branch = "${initiative.featureBranchRoot}-large-p3"
-prev_audience_branch = "${initiative.featureBranchRoot}-large"
+prev_phase = "techplan"
+prev_phase_branch = "${initiative.featureBranchRoot}-small-techplan"
+prev_audience_branch = "${initiative.featureBranchRoot}-small"
 
 if initiative.phases[prev_phase] exists:
   if initiative.phases[prev_phase].status == "pr_pending":
@@ -85,15 +85,15 @@ if initiative.phases[prev_phase] exists:
         initiative_id: ${initiative.id}
         updates:
           phases:
-            p3:
+            techplan:
               status: "complete"
               completed_at: "${ISO_TIMESTAMP}"
-      output: "✅ Previous phase (p3 tech-plan) PR merged — status updated to complete"
+      output: "✅ Previous phase (techplan) PR merged — status updated to complete"
     else:
       # PR not merged yet — warn but allow proceeding
       pr_url = initiative.phases[prev_phase].pr_url || "(no PR URL recorded)"
       output: |
-        ⚠️  Previous phase (p3 tech-plan) PR not yet merged
+        ⚠️  Previous phase (techplan) PR not yet merged
         ├── Status: pr_pending
         ├── PR: ${pr_url}
         └── You may continue, but phase artifacts may not be on the audience branch
@@ -102,13 +102,13 @@ if initiative.phases[prev_phase] exists:
       if no:
         exit: 0  # User chose to wait for merge
 
-# Derive audience for story-gen (always large) [REQ-9]
-audience = "large"
+# Derive audience for story-gen (medium for devproposal) [REQ-9]
+audience = "medium"
 featureBranchRoot = initiative.featureBranchRoot
-audience_branch = "${featureBranchRoot}-large"
+audience_branch = "${featureBranchRoot}-medium"
 
 # Determine phase branch [REQ-9]
-phase_branch = "${featureBranchRoot}-large-p4"
+phase_branch = "${featureBranchRoot}-medium-devproposal"
 
 # Step 5: Create phase branch if it doesn't exist [REQ-9]
 if not branch_exists(phase_branch):
@@ -224,8 +224,8 @@ invoke: casey.create-pr
 params:
   head: ${phase_branch}
   base: ${audience_branch}
-  title: "[P4] Story Generation: ${initiative.name}"
-  body: "Phase 4 (Story Generation) complete for ${initiative.id}.\n\nArtifacts: implementation-stories.md, story-estimates.md, dependency-map.md"
+  title: "[DevProposal] Story Generation: ${initiative.name}"
+  body: "DevProposal (Story Generation) complete for ${initiative.id}.\n\nArtifacts: implementation-stories.md, story-estimates.md, dependency-map.md"
 capture: pr_result  # { url, number } or fallback message
 
 # REQ-7/REQ-8: Phase enters pr_pending after PR creation
@@ -234,7 +234,7 @@ params:
   initiative_id: ${initiative.id}
   updates:
     phases:
-      p4:
+      devproposal:
         status: "pr_pending"
         pr_url: "${pr_result.url}"
         pr_number: ${pr_result.number}
@@ -245,7 +245,7 @@ if pr_result.fallback:
     initiative_id: ${initiative.id}
     updates:
       phases:
-        p4:
+        devproposal:
           status: "pr_pending"
           pr_url: null
           pr_number: null

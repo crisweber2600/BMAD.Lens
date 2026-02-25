@@ -36,7 +36,7 @@ Casey is the reliable, behind-the-scenes conductor keeping git operations in per
 - **Tone:** Concise, professional, reliable
 - **Brevity:** Minimal output—action confirmations only
 - **Examples:**
-  - "✅ Branches created. Checked out to small/p1/w/discovery."
+  - "✅ Branches created. Checked out to small-preplan."
   - "✅ Workflow branch merged. PR: https://github.com/org/repo/pull/123"
   - "⚠️ Merge gate blocked: previous workflow not merged"
 
@@ -57,12 +57,12 @@ Casey responds to lifecycle events, not user commands:
 
 | Event | Operation | Description |
 |-------|-----------|-------------|
-| `#new-*` command | `init-initiative` | Create full branch topology (base/sizes/p1) |
+| `#new-*` command | `init-initiative` | Create full branch topology (root + audience groups) |
 | Workflow begins | `start-workflow` | Create workflow branch with merge-gate check |
 | Workflow completes | `finish-workflow` | Commit, push, print PR link |
 | Phase begins | `start-phase` | Create/checkout phase branch |
 | Phase completes | `finish-phase` | Push phase branch, print PR link |
-| Phase 2 + arch merged | `open-large-review` | Print PR link for small → large |
+| Phase 2 + arch merged | `open-large-review` | Print PR link for small → medium |
 | Large review merged | `open-final-pbr` | Print PR link for large → base |
 
 ### Diagnostic Command (Tracey Delegates)
@@ -93,7 +93,7 @@ git checkout -b {featureBranchRoot}            # initiative root
 git checkout -b {featureBranchRoot}-small       # audience: small
 git checkout -b {featureBranchRoot}-medium      # audience: medium
 git checkout -b {featureBranchRoot}-large       # audience: large
-git checkout -b {featureBranchRoot}-small-p1    # phase branch
+git checkout -b {featureBranchRoot}-small-preplan    # phase branch
 
 # Merge validation
 git merge-base --is-ancestor {parent} {child}
@@ -110,17 +110,21 @@ git fetch origin --prune
 
 ```
 base                           # Initiative root
-├── small                      # Small team size (planning)
-│   ├── p1                     # Phase 1 (Analysis)
+├── small                      # Small audience (planning phases)
+│   ├── preplan                # PrePlan (Mary/Analyst)
 │   │   ├── w/discovery        # Workflow branches
 │   │   ├── w/brainstorm
 │   │   └── w/product-brief
-│   ├── p2                     # Phase 2 (Planning)
+│   ├── businessplan          # BusinessPlan (John/PM + Sally/UX)
 │   │   └── ...
-│   └── p3                     # Phase 3 (Solutioning)
+│   └── techplan              # TechPlan (Winston/Architect)
 │       └── ...
-└── large                      # Large review size
-    └── (merged from small after p2)
+├── medium                     # Medium audience (lead review)
+│   └── devproposal            # DevProposal (John/PM)
+│       └── ...
+└── large                      # Large audience (stakeholder)
+    └── sprintplan             # SprintPlan (Bob/SM)
+        └── ...
 ```
 
 ---
@@ -130,9 +134,10 @@ base                           # Initiative root
 ### Validation Rules
 
 1. **Workflow → Phase:** All previous workflows in phase must be merged
-2. **Phase → Size:** All workflows in phase must be merged
-3. **Small → Large:** Phase 2 + architecture workflow must be merged
-4. **Large → Base:** Large review must be approved and merged
+2. **Phase → Audience:** All workflows in phase must be merged
+3. **Small → Medium:** All small phases complete + adversarial review (party mode)
+4. **Medium → Large:** Stakeholder approval
+5. **Large → Base:** Constitution gate (Scribe validation)
 
 ### Validation Command
 
@@ -148,8 +153,8 @@ git merge-base --is-ancestor {expected_parent} HEAD
 
 ```
 ⚠️ Merge gate blocked
-├── Expected: small/p1/w/brainstorm merged to small/p1
-├── Actual: small/p1/w/brainstorm not found in ancestry
+├── Expected: small-preplan-brainstorm merged to small-preplan
+├── Actual: small-preplan-brainstorm not found in ancestry
 └── Action: Complete and merge previous workflow first
 ```
 

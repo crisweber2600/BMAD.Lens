@@ -36,9 +36,9 @@ Tracey is the structured, methodical diagnostician of lens-work. When users need
 - **Tone:** Structured, diagnostic, methodical
 - **Brevity:** Information-dense status reports
 - **Examples:**
-  - "📍 Initiative: rate-limit-x7k2m9 | Phase: p1 | Status: in_progress | Blocks: None"
+  - "📍 Initiative: rate-limit-x7k2m9 | Phase: preplan | Status: in_progress | Blocks: None"
   - "🔧 State reconstructed from event log. 3 events recovered."
-  - "⚠️ State divergence detected: git shows p2, state.yaml shows p1. Run FIX to resolve."
+  - "⚠️ State divergence detected: git shows businessplan, state.yaml shows preplan. Run FIX to resolve."
 
 ### Principles
 
@@ -111,21 +111,22 @@ initiative:
   created_at: "2026-02-03T10:30:00Z"
   
 current:
-  phase: p1
-  phase_name: "Analysis"
+  phase: preplan
+  phase_name: "PrePlan"
   workflow: discovery
   workflow_status: in_progress
-  size: small
+  audience: small
   
 branches:
-  base: lens/rate-limit-x7k2m9/base
-  active: lens/rate-limit-x7k2m9/small/p1/w/discovery
+  root: lens-rate-limit-x7k2m9
+  active: lens-rate-limit-x7k2m9-small-preplan-discovery
   
 gates:
-  - name: p1/w/discovery
+  - name: preplan/w/discovery
     status: in_progress
-  - name: p1/w/brainstorm
+  - name: preplan/w/brainstorm
     status: pending
+```
     
 blocks: []  # Empty = no blocks
 
@@ -139,8 +140,8 @@ telemetry:
 
 ```jsonl
 {"ts":"2026-02-03T10:30:00Z","event":"init-initiative","id":"rate-limit-x7k2m9","layer":"microservice"}
-{"ts":"2026-02-03T10:35:00Z","event":"start-phase","phase":"p1","size":"small"}
-{"ts":"2026-02-03T10:35:01Z","event":"start-workflow","workflow":"discovery","branch":"lens/rate-limit-x7k2m9/small/p1/w/discovery"}
+{"ts":"2026-02-03T10:35:00Z","event":"start-phase","phase":"preplan","audience":"small"}
+{"ts":"2026-02-03T10:35:01Z","event":"start-workflow","workflow":"discovery","branch":"lens-rate-limit-x7k2m9-small-preplan-discovery"}
 ```
 
 ---
@@ -158,15 +159,15 @@ Layer: microservice | Target: api-gateway
 Created: 2026-02-03T10:30:00Z
 
 Current Position
-├── Phase: p1 (Analysis)
+├── Phase: preplan (PrePlan)
 ├── Workflow: discovery (in_progress)
-├── Size: small
-└── Branch: lens/rate-limit-x7k2m9/small/p1/w/discovery
+├── Audience: small
+└── Branch: lens-rate-limit-x7k2m9-small-preplan-discovery
 
 Merge Gates
-├── ✅ p1/w/discovery — in_progress
-├── ⏳ p1/w/brainstorm — pending
-└── ⏳ p1/w/product-brief — pending
+├── ✅ preplan/w/discovery — in_progress
+├── ⏳ preplan/w/brainstorm — pending
+└── ⏳ preplan/w/product-brief — pending
 
 Blocks: None
 
