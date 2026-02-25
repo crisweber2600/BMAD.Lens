@@ -4,14 +4,14 @@
 
 lens-work's branch topology maps naturally to CI/CD pipelines. Each branch level (workflow, phase, size) represents a different validation scope, enabling progressively stricter checks as work flows toward the base branch.
 
-> **IMPORTANT:** Branch patterns use flat, hyphen-separated naming (no `/` separators). For example, `*-small-p*-*` matches workflow branches like `chat-spark-xyz-small-p1-brainstorm`. See [size-topology.md](size-topology.md) for branch naming conventions.
+> **IMPORTANT:** Branch patterns use flat, hyphen-separated naming (no `/` separators). For example, `*-small-preplan-*` matches workflow branches like `chat-spark-xyz-small-preplan-brainstorm`. See [size-topology.md](size-topology.md) for branch naming conventions.
 
 ## Branch-Level CI Strategy
 
 | Branch Level | CI Scope | Trigger |
 |---|---|---|
-| `*-small-p*-*` | Fast checks: lint, unit tests, format | Push |
-| `*-small-p*` | Full validation: integration tests, artifact checks | PR merge from workflow |
+| `*-{phaseName}-*` | Fast checks: lint, unit tests, format | Push |
+| `*-{phaseName}` | Full validation: integration tests, artifact checks | PR merge from workflow |
 | `*-small` | Audience validation: cross-phase consistency | PR merge from phase |
 | `*-large` | Large review: full regression, security scan | PR merge from small |
 | `{featureBranchRoot}` | Release candidate: E2E, deploy preview | PR merge from large |
@@ -25,11 +25,20 @@ name: lens-work CI
 on:
   push:
     branches:
-      - '*-small-p*-*'
+      - '*-preplan-*'
+      - '*-businessplan-*'
+      - '*-techplan-*'
+      - '*-devproposal-*'
+      - '*-sprintplan-*'
   pull_request:
     branches:
-      - '*-small-p*'
+      - '*-preplan'
+      - '*-businessplan'
+      - '*-techplan'
+      - '*-devproposal'
+      - '*-sprintplan'
       - '*-small'
+      - '*-medium'
       - '*-large'
 
 jobs:
@@ -67,10 +76,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate Planning Artifacts
         run: |
-          # Extract phase number from branch name: {featureBranchRoot}-small-p{N}
-          # Example: chat-spark-xyz-small-p2 → phase=p2
-          PHASE_NUM=$(echo "${{ github.base_ref }}" | grep -oP 'p[0-9]+$')
-          PHASE="p${PHASE_NUM}"
+          # Extract phase name from branch name: {featureBranchRoot}-{audience}-{phaseName}
+          # Example: chat-spark-xyz-small-businessplan → phase=businessplan
+          PHASE=$(echo "${{ github.base_ref }}" | grep -oP '[^-]+$')
           ./.github/scripts/validate-artifacts.sh "$PHASE"
 
   large-review:
@@ -92,10 +100,10 @@ Each BMAD phase produces specific artifacts. CI can validate their presence:
 
 | Phase | Expected Artifacts |
 |-------|-------------------|
-| p1 (Analysis) | `brainstorm-notes.md`, `product-brief.md` |
-| p2 (Planning) | `prd.md`, `ux-design.md` |
-| p3 (Solutioning) | `architecture.md`, `epics/`, `implementation-readiness.md` |
-| p4 (Implementation) | `sprint-plan.md`, story files |
+| preplan (PrePlan) | `brainstorm-notes.md`, `product-brief.md` |
+| businessplan (BusinessPlan) | `prd.md`, `ux-design.md` |
+| techplan (TechPlan) | `architecture.md`, `epics/`, `implementation-readiness.md` |
+| sprintplan (SprintPlan) | `sprint-plan.md`, story files |
 
 Example validation script:
 
@@ -106,10 +114,10 @@ PHASE=$1
 ARTIFACTS_DIR="_bmad-output/planning-artifacts"
 
 case $PHASE in
-  p1) required=("brainstorm-notes.md" "product-brief.md") ;;
-  p2) required=("prd.md") ;;
-  p3) required=("architecture.md") ;;
-  p4) required=("sprint-plan.md") ;;
+  preplan) required=("brainstorm-notes.md" "product-brief.md") ;;
+  businessplan) required=("prd.md") ;;
+  techplan) required=("architecture.md") ;;
+  sprintplan) required=("sprint-plan.md") ;;
 esac
 
 for artifact in "${required[@]}"; do

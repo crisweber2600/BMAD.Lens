@@ -32,14 +32,14 @@ lens-work stores state and configuration under `_bmad-output/lens-work/`.
 
 version: 2
 active_initiative: chat-spark-backend-alignment-50cf37
-current_phase: p3
-current_phase_name: Solutioning
-active_branch: "chat/chat-spark-backend-alignment-50cf37/small-3"
+current_phase: techplan
+current_phase_name: TechPlan
+active_branch: "chat-chat-spark-backend-alignment-50cf37-small-techplan"
 updated_at: "2026-02-05T22:44:19Z"
 
 current:
-  phase: p3
-  phase_name: "Solutioning"
+  phase: techplan
+  phase_name: "TechPlan"
   workflow: review
   workflow_status: completed
   review_completed_at: "2026-02-06T15:52:42Z"
@@ -69,7 +69,7 @@ blocks: []
 |-------|------|-------------|
 | `version` | integer | Schema version (current: 2) |
 | `active_initiative` | string | Initiative ID pointer -- used to load initiative config |
-| `current_phase` | string | Current phase identifier (e.g., `p3`) |
+| `current_phase` | string | Current phase identifier (e.g., `techplan`) |
 | `current_phase_name` | string | Human-readable phase name |
 | `active_branch` | string | Currently checked-out branch |
 | `updated_at` | string (ISO-8601) | Last state update timestamp |
@@ -129,29 +129,29 @@ target_repos:
 repo_branches:
   bmadServer: "feature/chat-spark-backend-alignment-50cf37"
   bmad-chat: "feature/chat-spark-backend-alignment-50cf37"
-current_phase: p3
-current_phase_name: Solutioning
+current_phase: techplan
+current_phase_name: TechPlan
 phases:
-  p1:
+  preplan:
     status: completed
-    phase_name: Analysis
+    phase_name: PrePlan
     completed_at: "2026-02-05T22:44:19Z"
-  p2:
+  businessplan:
     status: completed
-    phase_name: Planning
+    phase_name: BusinessPlan
     completed_at: "2026-02-05T22:44:19Z"
-  p3:
+  techplan:
     status: completed
-    phase_name: Solutioning
+    phase_name: TechPlan
     completed_at: "2026-02-05T22:44:19Z"
 gates:
-  p1_complete:
+  preplan_complete:
     status: passed
     verified_at: "2026-02-05T22:44:19Z"
-  p2_complete:
+  businessplan_complete:
     status: passed
     verified_at: "2026-02-05T22:44:19Z"
-  p3_complete:
+  techplan_complete:
     status: passed
     verified_at: "2026-02-06T15:52:42Z"
   large_review:
@@ -170,10 +170,10 @@ branches:
   base: "chat-chat-spark-backend-alignment-50cf37"
   small: "chat-chat-spark-backend-alignment-50cf37-small"
   large: "chat-chat-spark-backend-alignment-50cf37-large"
-  p1: "chat-chat-spark-backend-alignment-50cf37-small-p1"
-  p2: "chat-chat-spark-backend-alignment-50cf37-medium-p2"
-  p3: "chat-chat-spark-backend-alignment-50cf37-large-p3"
-  active: "chat-chat-spark-backend-alignment-50cf37-large-p3"
+  preplan: "chat-chat-spark-backend-alignment-50cf37-small-preplan"
+  businessplan: "chat-chat-spark-backend-alignment-50cf37-small-businessplan"
+  techplan: "chat-chat-spark-backend-alignment-50cf37-small-techplan"
+  active: "chat-chat-spark-backend-alignment-50cf37-small-techplan"
 ```
 
 ### Field Reference
@@ -191,7 +191,7 @@ branches:
 | `created_by` | string | Creator identity |
 | `target_repos` | array[string] | Target repository names |
 | `repo_branches` | map[string, string] | Per-repo branch mapping |
-| `current_phase` | string | Current phase (e.g., `p3`) |
+| `current_phase` | string | Current phase (e.g., `techplan`) |
 | `current_phase_name` | string | Human-readable phase name |
 | `phases` | map | Phase status tracking |
 | `phases.{key}.status` | enum | `pending`, `in_progress`, `completed` |
@@ -226,8 +226,8 @@ Domain-layer initiatives create a single organizational branch using just the do
 |---------|-------------|---------|
 | `{domain}` | Domain prefix from initiative config | `chat` |
 | `{initiative_id}` | Unique initiative ID | `chat-spark-backend-alignment-50cf37` |
-| `{size}` | Size branch: `small` or `large` (old naming `lane` / `lead` is obsolete) | `small` |
-| `{phase_number}` | Phase number (1-based integer) | `1`, `2`, `3` |
+| `{size}` | Audience branch: `small`, `medium`, or `large` (old naming `lane` / `lead` is obsolete) | `small` |
+| `{phaseName}` | Canonical phase name | `preplan`, `businessplan`, `techplan` |
 
 ### Branch Hierarchy
 
@@ -242,12 +242,13 @@ main
 main
   └── {featureBranchRoot}                              (initiative root)
         ├── {featureBranchRoot}-small                   (audience: small)
-        │     ├── {featureBranchRoot}-small-p1           (phase 1 = Analysis)
-        │     ├── {featureBranchRoot}-small-p2           (phase 2 = Planning)
-        │     ├── {featureBranchRoot}-small-p3           (phase 3 = Solutioning)
-        │     └── {featureBranchRoot}-small-p4           (phase 4 = Implementation)
+        │     ├── {featureBranchRoot}-small-preplan        (PrePlan)
+        │     ├── {featureBranchRoot}-small-businessplan   (BusinessPlan)
+        │     └── {featureBranchRoot}-small-techplan       (TechPlan)
         ├── {featureBranchRoot}-medium                  (audience: medium)
+        │     └── {featureBranchRoot}-medium-devproposal  (DevProposal)
         └── {featureBranchRoot}-large                   (audience: large)
+              └── {featureBranchRoot}-large-sprintplan    (SprintPlan)
 ```
 
 ### Examples
@@ -257,9 +258,9 @@ main
 | `chat-spark-backend-alignment-50cf37` | Initiative root branch |
 | `chat-spark-backend-alignment-50cf37-small` | Small audience branch |
 | `chat-spark-backend-alignment-50cf37-large` | Large audience review branch |
-| `chat-spark-backend-alignment-50cf37-small-p1` | Phase 1 (Analysis) |
-| `chat-spark-backend-alignment-50cf37-small-p2` | Phase 2 (Planning) |
-| `chat-spark-backend-alignment-50cf37-small-p3` | Phase 3 (Solutioning) |
+| `chat-spark-backend-alignment-50cf37-small-preplan` | PrePlan phase |
+| `chat-spark-backend-alignment-50cf37-small-businessplan` | BusinessPlan phase |
+| `chat-spark-backend-alignment-50cf37-small-techplan` | TechPlan phase |
 
 > **Migration note:** The old pattern `lens/{slug}/{lane}/...` is obsolete. All `lead` references are now `large`. All `lane`/`size` references are now `audience`. Branch names use flat hyphen-separated format.
 

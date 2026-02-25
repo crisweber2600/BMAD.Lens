@@ -4,7 +4,7 @@
 
 lens-work's branch topology is designed for structured lifecycle flow, but real-world emergencies require escape hatches. This guide covers how to handle hotfixes, releases, and merge-back operations without breaking initiative state.
 
-> **IMPORTANT:** Replace `{featureBranchRoot}` in all commands with your actual initiative root branch name (e.g., `chat-spark-backend-alignment-50cf37`). For example, `{featureBranchRoot}-small-p1` becomes `chat-spark-backend-alignment-50cf37-small-p1`.
+> **IMPORTANT:** Replace `{featureBranchRoot}` in all commands with your actual initiative root branch name (e.g., `chat-spark-backend-alignment-50cf37`). For example, `{featureBranchRoot}-small-preplan` becomes `chat-spark-backend-alignment-50cf37-small-preplan`.
 
 ## Emergency Hotfix Flow
 

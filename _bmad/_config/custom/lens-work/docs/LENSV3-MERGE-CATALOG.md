@@ -236,14 +236,16 @@ M All config references (path updates)
 
 ## Branch Topology (Final State)
 
+> **Historical note:** This topology reflects the v3 merge era. The current convention uses flat hyphen-separated branch names with canonical phase names (preplan, businessplan, techplan, devproposal, sprintplan). See [branch-topology.md](branch-topology.md).
+
 ```
 {domain}/{initiative_id}/
 ├── base                    # Main integration branch
-├── small                   # Fast iteration lane (P1–P2)
-│   ├── p1/w/{workflow}    # Analysis phase workflows
-│   └── p2/w/{workflow}    # Planning phase workflows
-└── large                   # Architecture review lane (P3)
-    └── p3/w/{workflow}    # Solutioning phase workflows
+├── small                   # Fast iteration lane (preplan–techplan)
+│   ├── preplan/w/{workflow}     # PrePlan phase workflows
+│   └── businessplan/w/{workflow} # BusinessPlan phase workflows
+└── large                   # Architecture review lane (techplan)
+    └── techplan/w/{workflow}    # TechPlan phase workflows
 ```
 
 **Changes from legacy:**

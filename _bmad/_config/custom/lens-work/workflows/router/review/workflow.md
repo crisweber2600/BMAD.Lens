@@ -50,14 +50,14 @@ In v2.0.0, the lifecycle uses named phases instead of numbered phases:
 
 | v1 Legacy | v2 Named Phase | Audience | Agent |
 |-----------|---------------|----------|-------|
-| p1 | preplan | small | Mary |
-| p2 | businessplan | small | John+Sally |
-| p3 | techplan | small | Winston |
-| p4 | devproposal | medium | John |
-| p5 | sprintplan | large | Bob |
-| p6 | dev | base | Dev Team |
+| (legacy p1) | preplan | small | Mary |
+| (legacy p2) | businessplan | small | John+Sally |
+| (legacy p3) | techplan | small | Winston |
+| (legacy p4) | devproposal | medium | John |
+| (legacy p5) | sprintplan | large | Bob |
+| (legacy p6) | dev | base | Dev Team |
 
-The `/review` command (p5) is now `/sprintplan` in the large audience.
+The `/review` command (legacy p5) is now `/sprintplan` in the large audience.
 
 ---
 

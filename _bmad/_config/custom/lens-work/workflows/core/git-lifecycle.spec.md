@@ -100,16 +100,16 @@ Push phase branch and print PR to size.
 
 ### Trigger
 
-Phase 2 complete + architecture workflow merged
+All small-audience phases complete + adversarial review ready
 
 ### Purpose
 
-Open PR from small → large for large review.
+Open PR from small → medium for adversarial review (party mode).
 
 ### Sequence
 
-1. Validate p2 complete
-2. Print PR link: `{remote}/compare/large...small`
+1. Validate all small phases complete
+2. Print PR link: `{remote}/compare/medium...small`
 3. Log to event-log.jsonl
 
 ---

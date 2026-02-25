@@ -58,19 +58,19 @@ git push -u origin "bmad/${initiative_id}/base"
 git checkout -b "bmad/${initiative_id}/small"
 git push -u origin "bmad/${initiative_id}/small"
 
-# Large review size (created but empty until p2 complete)
+# Large review audience (created but empty until small phases complete)
 git checkout "bmad/${initiative_id}/base"
 git checkout -b "bmad/${initiative_id}/large"
 git push -u origin "bmad/${initiative_id}/large"
 ```
 
-### 4. Create Phase 1 Branch
+### 4. Create First Phase Branch
 
 ```bash
-# Phase 1 (Analysis) from small size
+# PrePlan phase (Mary/Analyst) from small audience
 git checkout "bmad/${initiative_id}/small"
-git checkout -b "bmad/${initiative_id}/small/p1"
-git push -u origin "bmad/${initiative_id}/small/p1"
+git checkout -b "bmad/${initiative_id}/small/preplan"
+git push -u origin "bmad/${initiative_id}/small/preplan"
 ```
 
 ### 5. Initialize State
@@ -87,15 +87,15 @@ initiative:
   created_at: "${ISO_TIMESTAMP}"
 
 current:
-  phase: p1
-  phase_name: "Analysis"
+  phase: preplan
+  phase_name: "PrePlan"
   workflow: null
   workflow_status: pending
-  size: small
+  audience: small
 
 branches:
-  base: "bmad/${initiative_id}/base"
-  active: "bmad/${initiative_id}/small/p1"
+  root: "bmad/${initiative_id}"
+  active: "bmad/${initiative_id}/small/preplan"
 
 gates: []
 blocks: []
@@ -115,10 +115,10 @@ Output to Compass:
 
 ```
 ✅ Initiative created: ${initiative_id}
-├── Base: bmad/${initiative_id}/base
+├── Root: bmad/${initiative_id}
 ├── Small: bmad/${initiative_id}/small
 ├── Large: bmad/${initiative_id}/large
-├── Phase: bmad/${initiative_id}/small/p1
+├── Phase: bmad/${initiative_id}/small/preplan
 └── Ready for /pre-plan
 ```
 
