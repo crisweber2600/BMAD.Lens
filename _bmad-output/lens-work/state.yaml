@@ -9,7 +9,7 @@ active_initiative: upgrade-cjki9q
 # v2: Named phase tracking
 current_phase: dev
 active_track: full
-workflow_status: ready
+workflow_status: in_progress
 
 # v2: Phase status (dual-written to initiative config)
 phase_status:
