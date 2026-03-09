@@ -1,0 +1,8 @@
+# Initiative configuration — committed to git (Service 1 artifact)
+initiative: lens
+scope: service
+domain: bmad
+service: lens
+language: unknown
+created: "2026-03-09T00:00:00Z"
+initiative_root: bmad-lens
