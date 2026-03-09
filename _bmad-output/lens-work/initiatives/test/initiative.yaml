@@ -1,0 +1,7 @@
+# Initiative configuration — committed to git (Domain 1 artifact)
+initiative: test
+scope: domain
+domain: test
+language: unknown           # auto-detected later or user-specified
+created: 2026-03-09T00:00:00Z
+initiative_root: test
