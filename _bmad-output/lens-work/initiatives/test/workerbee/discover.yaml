@@ -1,0 +1,8 @@
+initiative: discover
+scope: feature
+domain: test
+service: workerbee
+track: feature
+language: unknown           # auto-detected later or user-specified
+created: 2026-03-09T00:00:00Z
+initiative_root: test-workerbee-discover
