@@ -1,149 +1,155 @@
 ---
-stepsCompleted:
-  - step-01-init
-  - step-02-discovery
-  - step-02b-vision
-  - step-02c-executive-summary
-  - step-03-success
-  - step-04-journeys
-  - step-05-domain
-  - step-06-innovation
-  - step-07-project-type
-  - step-08-scoping
-  - step-09-functional
-  - step-10-nonfunctional
-  - step-11-polish
-  - step-12-complete
+stepsCompleted: [step-01-init, step-02-discovery, step-02b-vision, step-02c-executive-summary, step-03-success, step-04-journeys, step-05-domain, step-06-innovation, step-07-project-type, step-08-scoping, step-09-functional, step-10-nonfunctional, step-11-polish, step-12-complete]
 inputDocuments:
   - _bmad-output/lens-work/initiatives/bmad/lens/phases/preplan/product-brief.md
   - _bmad-output/lens-work/initiatives/bmad/lens/phases/businessplan/businessplan-questions.md
-workflowType: prd
+workflowType: 'prd'
 mode: batch
 initiative: bmad-lens-repodiscovery
+phase: businessplan
+author: John (PM)
+created: "2026-03-09"
 ---
 
 # Product Requirements Document — Repo Discovery
 
-**Author:** CrisWeber (facilitated by John, PM)
+**Author:** CrisWeber
 **Date:** 2026-03-09
-**Initiative:** bmad-lens-repodiscovery
 
 ---
 
 ## Executive Summary
 
-The `/discover` command completes the post-clone lifecycle after `/new-service`, detecting cloned repositories within `TargetProjects/{domain}/{service}/`, updating the governance inventory (`repo-inventory.yaml`), generating `project-context.md` for AI agents, creating initiative-aware branches for `/switch` navigation, and reporting results. There is no alternative tooling — without `/discover`, the workflow stalls after cloning: governance is out of date, project context is missing, and branch navigation is broken.
+### Product Definition
 
-**North-Star Vision:** After running `/new-service` and cloning repos, `/discover` seamlessly completes the service setup — governance inventory is current, project context is generated, and branches are navigable — all in one command.
+A `/discover` command that completes the post-clone lifecycle after `/new-service`, detecting cloned repos, updating governance inventory, generating `project-context.md`, creating initiative branches, and reporting results.
 
-**Primary Differentiator:** No alternative exists. Manual post-clone setup requires separate governance updates, project-context generation, and branch creation across multiple tools and workflows. `/discover` consolidates this into a single automated step.
+### Problem
+
+The `@lens` agent scaffolds `TargetProjects/{domain}/{service}/` via `/new-service` but stops there. After the user clones repositories into that folder, nothing detects what was cloned. Governance inventory (`repo-inventory.yaml`) stays stale, `project-context.md` is missing, and `/switch` cannot navigate to any discovered repo. The user's workflow stalls.
+
+### Solution
+
+`/discover` scans `TargetProjects/{domain}/{service}/` for `.git/` directories, detects primary language and BMAD configuration, updates `repo-inventory.yaml` in the governance repo, generates `project-context.md` per repo, creates initiative-aware branches in the control repo for `/switch` navigation, and displays a table-formatted discovery report.
+
+### North-Star Vision
+
+Repos are discovered seamlessly after `/new-service` runs — post-clone detection is a natural, expected step in the service creation lifecycle, not a separate tool the user must remember.
+
+### Primary Differentiator
+
+No alternative exists. This is greenfield tooling addressing a gap in the lens-work lifecycle.
 
 ---
 
 ## Success Criteria
 
-| ID | Metric | Target | Measurement |
-|----|--------|--------|-------------|
-| SC-1 | Governance integrity | Zero data loss — if governance push fails, discovery must not report success | Pull-then-push strategy; failure halts execution |
-| SC-2 | Inventory completeness | After `/discover`, `repo-inventory.yaml` contains entries for all repos found in the service folder | Diff inventory before/after |
-| SC-3 | Project context generation | Each discovered repo has `project-context.md` generated via standard workflow | File existence check per repo |
-| SC-4 | Branch navigation | `/switch` can navigate to any discovered repo | Navigation test per discovered repo |
-| SC-5 | Language detection | Initiative configs have `language` updated from `unknown` to detected value (when detectable) | Config field check |
-| SC-6 | Graceful fallback | Repos with no detectable language fall through to `unknown` without crash | No-language repo included in test |
-| SC-7 | Discovery report | Human-readable summary displayed showing repos found, languages detected, and any failures | Report output verification |
+| ID | Criterion | Measurement |
+|---|---|---|
+| SC-1 | Governance inventory is complete after discovery | `repo-inventory.yaml` contains entries for 100% of repos with `.git/` directories in the scanned folder |
+| SC-2 | Zero data loss on governance updates | If governance push fails, `/discover` does not report success for that operation. Pull-before-push pattern enforced. |
+| SC-3 | `/switch` navigates to discovered repos | All discovered repos have corresponding branches in the control repo; `/switch` resolves them correctly |
+| SC-4 | Idempotent re-runs produce no corruption | Running `/discover` twice on the same service with identical repos produces identical governance state (after user confirms overwrites) |
+| SC-5 | Graceful language fallback | Repos with no detectable language fall through to `unknown` without errors |
+| SC-6 | Runtime within budget | Discovery of 10 repos completes within 1 hour |
 
 ---
 
 ## User Personas
 
 | Persona | Role | Primary Value from `/discover` |
-|---------|------|-------------------------------|
-| Admin | Governance maintainer | Inventory stays current — `repo-inventory.yaml` reflects what's cloned |
-| Team Lead | Service health overview | Health snapshot — what's present, configured, and what language each uses |
-| Architect | Constitution enforcement | Language-specific constitutions activate once language is resolved |
-| Product Owner | End-to-end flow | Complete service setup in one flow — clone, discover, document, navigate |
-
-No additional personas required.
+|---|---|---|
+| Admin | System administration | Governance inventory stays current — `repo-inventory.yaml` reflects what's cloned |
+| Team Lead | Team oversight | Health snapshot of service repos — presence, configuration, language |
+| Architect | Technical leadership | Language-specific constitutions activate once language is resolved |
+| Product Owner | Product management | Complete service setup in one flow — clone, discover, document, navigate |
 
 ---
 
 ## User Journeys
 
-### Journey 1: Admin — Post-Service Discovery
+### Journey 1: Standard Post-Service Discovery (Admin / PO)
 
-**Trigger:** Admin has just run `/new-service` and cloned repositories into `TargetProjects/{domain}/{service}/`.
+**Trigger:** User has just run `/new-service` and cloned repos into the scaffolded folder.
 
-1. Admin runs `/discover`
-2. Agent scans the service folder for `.git/` directories
-3. For each discovered repo: detects language, checks BMAD config presence
-4. Agent updates `repo-inventory.yaml` in the governance repo (pull, merge, commit, push)
-5. Agent generates `project-context.md` per repo
-6. Agent creates initiative-aware branches in the control repo
-7. Agent displays discovery report table
-8. Agent nudges: "All done! You can now use `/switch` to navigate to any discovered repo."
+1. User runs `/new-service` → folder `TargetProjects/{domain}/{service}/` created
+2. User clones repos into the folder manually (e.g., `git clone ...`)
+3. User replies "done" or runs `/discover`
+4. `/discover` scans the folder, detects repos
+5. Progress: one line per repo ("✓ discovered: {repo-name}")
+6. Governance `repo-inventory.yaml` updated, committed, pushed
+7. `project-context.md` generated per repo (nice-to-have)
+8. Branches created in control repo for `/switch`
+9. Table-formatted report displayed
+10. "What next" nudge: "You can now use `/switch` to navigate to any discovered repo."
 
-**Post-condition:** Governance is current, branches are navigable, AI agents have project context.
+**Success:** User's workflow continues without manual governance updates.
 
-### Journey 2: Architect — Language Resolution
+### Journey 2: Re-Discovery (Admin)
 
-**Trigger:** Architect clones repos after `/new-service` to begin technical planning.
+**Trigger:** User adds a new repo to an existing service folder and re-runs `/discover`.
 
-1. Architect runs `/discover`
-2. Discovery detects primary language per repo (build files → file extensions → `unknown`)
-3. Initiative config `language` field updated from `unknown` to detected value
-4. Language-specific constitutions now activate for those repos
-5. Discovery report confirms: languages detected, BMAD configs found/absent
+1. User clones another repo into `TargetProjects/{domain}/{service}/`
+2. User runs `/discover`
+3. `/discover` detects repos, finds some already in `repo-inventory.yaml`
+4. For existing repos: warns and asks "Repo X already in inventory. Update? [Y/N]"
+5. For new repos: proceeds normally
+6. Report shows both updated and newly added entries
 
-**Post-condition:** Constitutional enforcement is language-aware.
+**Success:** No data loss, user has explicit control over overwrites.
 
-### Journey 3: Failure — Discovery Before Cloning
+### Journey 3: Empty Folder (Error Case)
 
 **Trigger:** User runs `/discover` before cloning any repos.
 
 1. User runs `/discover`
-2. Agent scans service folder — finds zero `.git/` directories
-3. Agent displays: "No repos found. Did you clone them to the right folder?"
-4. User clones repos, then runs `/discover` again
+2. Scan finds zero `.git/` directories
+3. Agent responds: "No repos found. Did you clone them to the right folder?"
+4. No governance updates, no branches created
 
-**Post-condition:** Graceful handling, no crash, clear guidance.
+**Success:** Clear error message, no side effects.
 
-### Journey 4: Failure — Undiscovered Repos
+### Journey 4: Forgotten Discovery (Failure Detection)
 
-**Trigger:** User clones repos but forgets to run `/discover`.
+**Trigger:** User clones repos but never runs `/discover`. Another workflow (e.g., `/switch`, `/status`) detects undiscovered repos.
 
-This is the most common failure scenario. Detection of undiscovered repos should be integrated into other lifecycle gates (e.g., preflight checks in phase workflows could warn: "Found cloned repos not in governance inventory — run `/discover`").
+1. User clones repos, forgets to run `/discover`
+2. Later workflow detects repos in `TargetProjects/` not in `repo-inventory.yaml`
+3. Nudge: "Undiscovered repos detected in {service}. Run `/discover` to complete setup."
+
+**Success:** User is reminded proactively. *(Enhancement — flagged as open question for implementation.)*
 
 ---
 
-## Scope & MVP Prioritization
+## Scope
 
-### Must Have (MVP)
+### Must-Have (MVP)
 
-| ID | Feature | Description |
-|----|---------|-------------|
-| F-1 | Repo scanning | Scan `TargetProjects/{domain}/{service}/` for directories containing `.git/` |
-| F-2 | BMAD config detection | Check for `.bmad/` directory presence in each discovered repo |
-| F-3 | Governance inventory update | Write discovered repos to `repo-inventory.yaml`, commit, and push (pull-first strategy) |
-| F-4 | Initiative branch creation | Create branches in the control repo for `/switch` navigation |
+| ID | Requirement |
+|---|---|
+| MVP-1 | Scan `TargetProjects/{domain}/{service}/` for directories containing `.git/` |
+| MVP-2 | Detect `.bmad/` directory presence in each discovered repo |
+| MVP-3 | Update `repo-inventory.yaml` with discovered repos (pull → update → commit → push) |
+| MVP-4 | Create initiative-aware branches in the control repo for `/switch` navigation |
 
-### Nice to Have (v1)
+### Nice-to-Have
 
-| ID | Feature | Description |
-|----|---------|-------------|
-| F-5 | Language detection | Detect primary language using build files → file extensions → `unknown` fallback |
-| F-6 | Project context generation | Invoke `bmad-bmm-generate-project-context` per discovered repo |
-| F-7 | Language field update | Update initiative config `language` field from `unknown` to detected value |
-| F-8 | Discovery report | Display human-readable table of discovery results |
+| ID | Requirement |
+|---|---|
+| NTH-1 | Language detection (build files → extensions → `unknown` fallback) |
+| NTH-2 | `project-context.md` generation per repo via `bmad-bmm-generate-project-context` |
+| NTH-3 | Initiative config `language` field update (replacing `unknown`) |
+| NTH-4 | Human-readable discovery report (table format) |
 
 ### Out of Scope
 
 - Repository cloning (user clones manually)
-- GitHub API calls (filesystem-only detection — firm constraint, not a preference)
+- GitHub API calls (detection is filesystem-only — firm constraint)
 - Framework detection beyond language-level
 - Dependency graph or cross-repo impact analysis
 - Monorepo sub-project decomposition
 - Remote sync or repository state reconciliation
-- Phased rollout — all features ship together
+- Multi-user / concurrent discovery scenarios
 
 ---
 
@@ -151,117 +157,69 @@ This is the most common failure scenario. Detection of undiscovered repos should
 
 ### FR-1: Repo Scanning
 
-**Trigger:** User runs `/discover` after `/new-service` and cloning.
+`/discover` scans `TargetProjects/{domain}/{service}/` for immediate child directories containing a `.git/` subdirectory.
 
-**Behavior:**
-1. Resolve service folder path from initiative config: `TargetProjects/{domain}/{service}/`
-2. Walk directory tree (depth 1) looking for subdirectories containing `.git/`
-3. Each directory with `.git/` is a discovered repository
-4. If zero repos found: display "No repos found. Did you clone them to the right folder?" and exit
+- **Input:** domain and service derived from active initiative context
+- **Output:** list of discovered repo paths
+- **Edge case:** Zero repos found → display "No repos found. Did you clone them to the right folder?" and exit without side effects
 
-**Constraints:**
-- Filesystem-only — no GitHub API calls
-- Scan only the service folder, not recursive submodules
+### FR-2: BMAD Configuration Detection
 
-### FR-2: BMAD Config Detection
+For each discovered repo, check for the presence of a `.bmad/` directory.
 
-For each discovered repo:
-1. Check for `.bmad/` directory existence
-2. Record `bmad_configured: true|false` in discovery results
+- **Output per repo:** `bmad_configured: true | false`
 
-### FR-3: Language Detection (Nice to Have)
+### FR-3: Language Detection (Nice-to-Have)
 
-For each discovered repo, detect primary language using this priority:
-1. Explicit `{language}` field in initiative config (if already set, skip detection)
-2. `.bmad/language` file in target repository
-3. Build file heuristics: `package.json` → typescript, `pyproject.toml`/`setup.py` → python, `go.mod` → go, `pom.xml`/`build.gradle` → java, `*.csproj`/`*.sln` → csharp, `Cargo.toml` → rust, `composer.json` → php, `build.gradle.kts` → kotlin, `Package.swift` → swift, `CMakeLists.txt`/`Makefile` → cpp
-4. Source code file extension distribution (highest count wins)
-5. Fallback to `unknown`
+For each discovered repo, detect primary language using `lifecycle.yaml`'s `language_detection_priority`:
+1. Check `.bmad/language` file
+2. Build file heuristics (e.g., `package.json` → JavaScript/TypeScript, `*.csproj` → C#)
+3. File extension frequency analysis
+4. Fallback to `unknown`
 
-**Supported languages:** typescript, python, go, java, csharp, rust, php, kotlin, swift, cpp (per `lifecycle.yaml`).
+- **Output per repo:** `language: {detected_language}`
+- **Accuracy:** Best-effort; repos without build files fall through to `unknown` gracefully
 
 ### FR-4: Governance Inventory Update
 
-**Schema** (per `repo-inventory.yaml` existing format):
+Update `repo-inventory.yaml` in the governance repo (`TargetProjects/lens/lens-governance/`).
 
-```yaml
-- name: {repo-directory-name}
-  domain: {initiative-domain}
-  layer: service
-  local_path: TargetProjects/{domain}/{service}/{repo-name}
-  remote_url: {detected-from-git-config}
-  default_branch: {detected-from-git}
-  role: target
-  status: active
-  notes: "Discovered by /discover on {date}"
-```
+- **Pull-before-push:** Always `git pull` the governance repo before writing. If pull fails, report error and continue with remaining repos.
+- **Schema fields per entry:** `name`, `path`, `language`, `bmad_configured`, `domain`, `service`
+- **Idempotency:** If a repo already exists in inventory, warn and ask before overwriting
+- **Commit message:** `[discover] Add/update repos for {domain}/{service}`
+- **Push failure:** Continue with remaining repos and report partial success. Do not report governance update as successful if push fails.
 
-Required fields: `name`, `domain`, `layer`, `local_path`, `remote_url`, `default_branch`, `role`, `status`, `notes`.
+### FR-5: Initiative Branch Creation
 
-Optional fields (if language detection enabled): `language`, `bmad_configured`.
+Create branches in the **control repo** for each discovered repo so `/switch` can navigate to them.
 
-**Update strategy:**
-1. Pull latest governance repo before any writes
-2. Read existing `repo-inventory.yaml`
-3. For each discovered repo, check if entry already exists (match by `name` + `local_path`)
-4. If exists: warn and ask user whether to update or skip (idempotency behavior: warn-and-ask)
-5. If new: add to `repos.matched` array
-6. Write updated file
-7. Commit and push
-8. If push fails: stop immediately and report failure (zero data loss — never report success on push failure)
+- **Branch naming:** Same convention as control repo branches (not in target project repos)
+- **Scope:** Control repo only — no branches created inside `TargetProjects/` repos
 
-### FR-5: Project Context Generation (Nice to Have)
+### FR-6: Project Context Generation (Nice-to-Have)
 
-For each discovered repo:
-1. Invoke `bmad-bmm-generate-project-context` workflow
-2. Inputs: repo path, detected language (no additional inputs required)
-3. Output: `project-context.md` written into the repo
+For each discovered repo, invoke `bmad-bmm-generate-project-context` workflow.
 
-### FR-6: Initiative Branch Creation
+- **Inputs:** repo path, detected language
+- **Output:** `project-context.md` created in the repo
 
-Create branches in the **control repo** (not in target project repos) for `/switch` navigation:
-- Branch naming follows existing control repo convention
-- Branches reference discovered repos but do not modify target repo branches
-- `/switch` can then navigate to discovered repo working directories
+### FR-7: Initiative Config Update (Nice-to-Have)
 
-### FR-7: Initiative Config Update (Nice to Have)
+Update the initiative config's `language` field from `unknown` to the detected value.
 
-Update the initiative config YAML:
-- Set `language` field from `unknown` to detected language value
-- Only update if language was successfully detected (not `unknown`)
+### FR-8: Discovery Report (Nice-to-Have)
 
-### FR-8: Discovery Report (Nice to Have)
+Display a table-formatted summary report after discovery completes.
 
-Display a summary table after all operations complete:
+- **Columns:** repo name, language (if detected), BMAD configured (Y/N), governance status, branch status, any warnings
+- **Zero repos:** Display error message instead of empty table
 
-```
-📋 Discovery Report — {domain}/{service}
+### FR-9: Proactive Discovery Nudge (Enhancement — Open Question)
 
-| Repo | Language | BMAD Config | Inventory | Context | Branch |
-|------|----------|-------------|-----------|---------|--------|
-| RepoA | typescript | ✓ | ✓ added | ✓ generated | ✓ created |
-| RepoB | unknown | ✗ | ✓ added | ✓ generated | ✓ created |
+When other workflows detect repos in `TargetProjects/` not present in `repo-inventory.yaml`, nudge the user to run `/discover`.
 
-All done! You can now use /switch to navigate to any discovered repo.
-```
-
-### FR-9: Idempotency
-
-When `/discover` is run on a service that was previously discovered:
-- Warn the user that repos already exist in inventory
-- Ask whether to update existing entries or skip
-- Safe to run multiple times with identical outcomes when choosing skip
-
-### FR-10: Error Recovery
-
-If governance push fails mid-discovery:
-- Continue processing remaining repos
-- Report partial success with clear indication of what failed
-- Never report full success when governance push failed (zero data loss contract)
-
-### FR-11: Undiscovered Repo Detection
-
-Lifecycle preflight checks (in phase workflows) should detect repos cloned into `TargetProjects/{domain}/{service}/` that are not yet in `repo-inventory.yaml` and warn: "Found cloned repos not in governance inventory — run `/discover`."
+- **Scope:** Design-only in this PRD; implementation deferred pending architecture review
 
 ---
 
@@ -269,51 +227,43 @@ Lifecycle preflight checks (in phase workflows) should detect repos cloned into 
 
 ### NFR-1: Performance
 
-- Maximum acceptable runtime for 10 repos: 1 hour
-- No hard execution time constraint for typical usage (1–5 repos)
-- Operations are sequential per repo (scan → detect → update → generate → branch)
+Discovery of a service folder containing up to 10 repos completes within 1 hour. No per-repo SLA required.
 
 ### NFR-2: Reliability
 
-- Fully idempotent: safe to run multiple times with identical outcomes
-- Pull-before-push governance strategy prevents data loss
-- Graceful degradation: repos with no detectable language fall to `unknown`
+`/discover` is idempotent: running it multiple times on the same service with identical repos produces identical governance state (after user confirms overwrites). No data corruption on re-runs.
 
-### NFR-3: Security
+### NFR-3: Data Integrity
 
-- No specific read/write restrictions beyond standard workspace boundaries
-- No secrets emitted in output
-- Filesystem-only detection — no network calls for repo analysis (firm constraint)
+Zero data loss on governance updates. If governance push fails, the governance update is not reported as successful. Pull-before-push pattern is mandatory.
 
-### NFR-4: Maintainability
+### NFR-4: Error Recovery
 
-- Language detection patterns are not externalized — they are inline in the implementation
-- Supported languages list lives in `lifecycle.yaml` (already the case)
+On push failure mid-discovery, proceed with remaining repos and report partial success. The report clearly indicates which operations succeeded and which failed.
 
----
+### NFR-5: Graceful Degradation
 
-## Assumptions
-
-1. Repos are cloned by the user into `TargetProjects/{domain}/{service}/` before `/discover` runs
-2. Each repo is a standard git repository (`.git/` directory present)
-3. One primary language per repo is sufficient for constitution enforcement
-4. Detection runs locally — no network access required for repo analysis
-5. The governance repo is cloned at `TargetProjects/lens/lens-governance/`
-6. `repo-inventory.yaml` follows the existing schema (see FR-4)
-
-## Risks
-
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|------------|
-| Monorepos with multiple languages | Medium | Low | Detect by highest file-count language; document limitation |
-| Build files absent (config/doc repos) | Medium | Low | Fall through to `unknown` gracefully; flag in report |
-| Governance repo not cloned | Low | High | Preflight checks verify governance repo presence |
-| `repo-inventory.yaml` schema drift | Low | Medium | Validate on write against known schema |
-| User clones repos to wrong folder | Low | Medium | Validate against `target_projects_path` from config |
-| User forgets to run `/discover` | High | Medium | Preflight warning in phase workflows (FR-11) |
+Repos with no detectable language fall through to `unknown` without errors. Missing build files or empty repos do not crash the workflow.
 
 ---
 
 ## Open Questions
 
-None flagged by stakeholder. All decisions resolved in batch questionnaire.
+| ID | Question | Context |
+|---|---|---|
+| OQ-1 | Should `/new-service` automatically suggest `/discover` after completion? | User's primary failure case is forgetting to run `/discover`. Proactive nudge reduces this risk. |
+| OQ-2 | Should proactive detection of undiscovered repos be built into `/status` or `/switch`? | Journey 4 describes this, but implementation approach needs architecture review. |
+| OQ-3 | What is the exact `repo-inventory.yaml` schema and validation? | User confirmed all fields but schema definition lives in governance repo — needs cross-reference. |
+
+---
+
+## Risks
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| Monorepos with multiple languages | Medium | Low | Detect by highest file-count language; document limitation |
+| Build files absent (config/doc repos) | Medium | Low | Fall through to `unknown`; flag in report |
+| Governance repo not cloned | Low | High | Preflight checks verify governance repo presence |
+| `repo-inventory.yaml` schema drift | Low | Medium | Define schema in governance README; validate on write |
+| User clones repos to wrong folder | Low | Medium | Validate against `target_projects_path` from `bmadconfig.yaml` |
+| User forgets to run `/discover` | Medium | Medium | Proactive nudge from downstream workflows (OQ-1, OQ-2) |

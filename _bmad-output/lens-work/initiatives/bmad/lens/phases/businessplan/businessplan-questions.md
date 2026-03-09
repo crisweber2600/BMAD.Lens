@@ -6,10 +6,6 @@ scope: "PRD + UX Design"
 mode: batch
 created: "2026-03-09"
 status: processed
-processed_at: "2026-03-09"
-outputs:
-  - prd.md
-  - ux-design-specification.md
 ---
 
 # BusinessPlan — Batch Questionnaire
