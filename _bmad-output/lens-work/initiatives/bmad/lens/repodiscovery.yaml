@@ -27,4 +27,19 @@ promotion_status:
     gate: adversarial-review
     completed_at: "2026-03-09T23:55:00Z"
 audience_status:
-  small_to_medium: in_progress
+  small_to_medium: complete
+phase_status:
+  preplan:
+    status: complete
+    completed_at: "2026-03-09T22:11:44Z"
+  businessplan:
+    status: complete
+    completed_at: "2026-03-09T23:00:34Z"
+  techplan:
+    status: complete
+    completed_at: "2026-03-09T23:30:23Z"
+    pr_url: "https://github.com/crisweber2600/BMAD.Lens/pull/22"
+    pr_number: 22
+  devproposal:
+    status: in_progress
+    started_at: "2026-03-10T00:00:00Z"
