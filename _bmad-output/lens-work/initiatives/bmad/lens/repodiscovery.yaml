@@ -41,5 +41,7 @@ phase_status:
     pr_url: "https://github.com/crisweber2600/BMAD.Lens/pull/22"
     pr_number: 22
   devproposal:
-    status: in_progress
+    status: pr_pending
     started_at: "2026-03-10T00:00:00Z"
+    pr_url: "https://github.com/crisweber2600/BMAD.Lens/pull/25"
+    pr_number: 25
