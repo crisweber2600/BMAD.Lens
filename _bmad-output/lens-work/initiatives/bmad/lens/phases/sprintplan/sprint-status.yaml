@@ -1,0 +1,150 @@
+# ============================================================
+# Sprint Status — Repo Discovery (/discover)
+# ============================================================
+# generated: 2026-03-09
+# project: bmad-lens-repodiscovery
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/lens-work/initiatives/bmad/lens/phases/sprintplan
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: "2026-03-09"
+project: "bmad-lens-repodiscovery"
+project_key: "NOKEY"
+tracking_system: "file-system"
+story_location: "_bmad-output/lens-work/initiatives/bmad/lens/phases/sprintplan"
+
+# Sprint assignment (from DevProposal epic plan):
+#   Sprint 1: E1 — Discovery Pipeline & Pre-flight
+#   Sprint 2: E2 — Governance Integration
+#   Sprint 3: E3 — Branch Management + E4 — Workflow Integration
+#   Sprint 4 (optional): E5 — NTH Enhancements
+
+development_status:
+  # -------------------------------------------------------
+  # E1 — Discovery Pipeline & Pre-flight  [MVP, P0]
+  # Sprint 1
+  # -------------------------------------------------------
+  epic-1: backlog
+
+  # S1.1 — InitiativeContextResolver (XS, P0)
+  # Reads domain + service from active initiative config; resolves scan path
+  1-1-initiative-context-resolver: ready-for-dev
+
+  # S1.2 — FileSystemScanner (S, P0)
+  # Enumerates TargetProjects/{domain}/{service}/ for .git/ dirs; incremental output
+  1-2-file-system-scanner: backlog
+
+  # S1.3 — RepoInspector (XS, P0)
+  # Detects .bmad/ presence per repo; per-repo error isolation
+  1-3-repo-inspector: backlog
+
+  epic-1-retrospective: optional
+
+  # -------------------------------------------------------
+  # E2 — Governance Integration  [MVP, P0]
+  # Sprint 2
+  # Depends on: E1
+  # -------------------------------------------------------
+  epic-2: backlog
+
+  # S2.1 — GovernanceWriter: Pull Gate (XS, P0)
+  # Pull governance repo before any write attempt (AR-2 DoD)
+  2-1-governance-writer-pull-gate: backlog
+
+  # S2.2 — GovernanceWriter: Schema Validation (S, P0)
+  # Validate repo-inventory.yaml before writing; fail with diff if invalid (AR-5)
+  2-2-governance-writer-schema-validation: backlog
+
+  # S2.3 — GovernanceWriter: Idempotent Upsert (M, P0)
+  # Conflict prompts; idempotent upsert; user-controlled overwrite
+  2-3-governance-writer-idempotent-upsert: backlog
+
+  # S2.4 — GovernanceWriter: Push & Error Isolation (S, P0)
+  # Commit + push; non-fatal push failure; per-repo isolation
+  2-4-governance-writer-push-and-error-isolation: backlog
+
+  epic-2-retrospective: optional
+
+  # -------------------------------------------------------
+  # E3 — Control Repo Branch Management  [MVP, P0]
+  # Sprint 3
+  # Depends on: E1
+  # -------------------------------------------------------
+  epic-3: backlog
+
+  # S3.1 — GitOrchestrator: Create /switch Branches (S, P0)
+  # Create {initiative_root}-{domain}-{service}-{repo_name} per discovered repo
+  3-1-git-orchestrator-create-switch-branches: backlog
+
+  epic-3-retrospective: optional
+
+  # -------------------------------------------------------
+  # E4 — Workflow Completion & Module Integration  [MVP, P0]
+  # Sprint 3 (parallel with E3)
+  # Depends on: E1, E2, E3
+  # -------------------------------------------------------
+  epic-4: backlog
+
+  # S4.1 — Complete discover/workflow.md (L, P0)
+  # Full step-by-step workflow; no stubs/TODOs; TD-006 note inline
+  4-1-complete-discover-workflow-md: backlog
+
+  # S4.2 — Discovery Report Output (S, P0)
+  # End-of-workflow summary table: repo_name, language, has_bmad, governance_status, branch_created
+  4-2-discovery-report-output: backlog
+
+  # S4.3 — Module Registration Validation (XS, P0)
+  # Verify module.yaml entry resolves to discover/workflow.md
+  4-3-module-registration-validation: backlog
+
+  epic-4-retrospective: optional
+
+  # -------------------------------------------------------
+  # E5 — NTH Enhancements  [NTH, P1]
+  # Sprint 4 (optional, parallel-capable)
+  # Depends on: E4
+  # -------------------------------------------------------
+  epic-5: backlog
+
+  # S5.1 — LanguageDetector (M, P1)
+  # Language detection via lifecycle.yaml priority; returns 'unknown' on failure (AR-1)
+  5-1-language-detector: backlog
+
+  # S5.2 — ContextGenerator (M, P1)
+  # Delegates project-context.md generation to bmad-bmm-generate-project-context
+  5-2-context-generator: backlog
+
+  # S5.3 — StateManager: Language Update (S, P1)
+  # Updates initiative config language field; prompts if multiple languages found
+  5-3-state-manager-language-update: backlog
+
+  epic-5-retrospective: optional
