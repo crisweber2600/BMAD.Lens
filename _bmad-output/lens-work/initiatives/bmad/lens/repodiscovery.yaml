@@ -42,6 +42,13 @@ promotion_status:
     pr_url: "https://github.com/crisweber2600/BMAD.Lens/pull/26"
     pr_number: 26
     completed_at: "2026-03-10T01:30:00Z"
+  large_to_base:
+    status: pr_pending
+    gate: constitution-gate
+    pr_url: "https://github.com/crisweber2600/BMAD.Lens/pull/28"
+    pr_number: 28
+    created_at: "2026-03-10T02:10:00Z"
 audience_status:
   small_to_medium: complete
   medium_to_large: complete
+  large_to_base: pr_pending
